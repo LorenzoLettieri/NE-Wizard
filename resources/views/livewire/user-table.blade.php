@@ -24,13 +24,13 @@
                             </a>
                             <ul class="dropdown-menu">
                                 @if($user->hasRole('supervisor'))
-                                    <li><a class="dropdown-item" href="#">Rimuovi Ruolo Supervisor</a></li>
+                                    <li><a class="dropdown-item" wire:click="removeRole({{$user->id}}, 'supervisor')" href="#">Rimuovi Ruolo Supervisor</a></li>
                                 @else
-                                    <li><a class="dropdown-item" href="#">Rendi Supervisor</a></li>
+                                    <li><a class="dropdown-item" wire:click="addRole({{$user->id}}, 'supervisor')" href="#">Rendi Supervisor</a></li>
                                 @endif
 
                                 @if(!$user->hasRole('admin'))
-                                    <li><a class="dropdown-item text-danger" href="#">Elimina Account</a></li>
+                                    <li><a class="dropdown-item text-danger" wire:click="deleteUser({{$user->id}})" wire:confirm="Sei sicuro di voler eliminare questo account?" href="#">Elimina Account</a></li>
                                 @endif
                             </ul>
                         </div>

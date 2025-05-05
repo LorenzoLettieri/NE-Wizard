@@ -9,11 +9,23 @@ class UserTable extends Component
 {
     public $users;
 
+    public function addRole($id,$role){
+        $this->users->where("id",$id)->first()->assignRole($role);
+    }
+
+    public function removeRole($id,$role){
+        $this->users->where("id",$id)->first()->removeRole($role);  
+    }
+
+    public function deleteUser($id){
+        $this->users->where("id",$id)->first()->delete();  
+    }
+
     public function mount(){
-        $this->users = User::all();
     }
     public function render()
     {
+        $this->users = User::all();
         return view('livewire.user-table');
     }
 }
