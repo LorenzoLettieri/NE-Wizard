@@ -33,4 +33,27 @@ class UsersController extends Controller
         return redirect()->route('users-table')->with('message','Utente creato con successo!');
     }
 
+    public function edit($id){
+        $user = User::find($id);
+
+        return view('users.edit', compact('user'));
+    }
+
+    public function update(Request $request, $id){
+        $validated = $request->validate([
+            'name' => 'required | string | max:255',
+            'email' => 'required | string | email | max:255',
+            'password'=> 'sometimes | nullable | string | min:8'
+            ]);
+        $user = User::find($id);
+        $user->update([
+            'name'=> $validated['name'],
+            'email'=> $validated['email'],
+            'password'=> !empty($validated["password"]) ? $validated['password'] : $user->password,
+        ]);
+
+        return redirect()->route('users-table')->with('message','Utente modificato con successo!');
+
+    }
+
 }
