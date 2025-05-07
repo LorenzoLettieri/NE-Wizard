@@ -16,6 +16,11 @@
                 <a class="nav-link active" href="{{route('users-table')}}">Gestisci Utenti</a>
             </li>
             @endrole
+            @hasanyrole('admin|supervisor')
+            <li class="nav-item">
+                <a class="nav-link active" href="{{route('works-table')}}">Lavorazioni</a>
+            </li>
+            @endhasanyrole
             @auth
                 <li class="nav-item">
                     <form action="/logout" method="POST">
