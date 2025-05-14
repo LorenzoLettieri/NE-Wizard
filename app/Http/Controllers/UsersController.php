@@ -30,6 +30,8 @@ class UsersController extends Controller
             'password'=> Hash::make($validated['password'])
         ]);
 
+        $user->assignRole('operator');
+
         return redirect()->route('users-table')->with('message','Utente creato con successo!');
     }
 

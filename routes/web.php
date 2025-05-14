@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('welcome');
-});
+})->name('welcome');
 
 Route::get("/users/table", [UsersController::class, "index"])->name("users-table");
 Route::get("/users/create", [UsersController::class, "create"])->name("addUser");

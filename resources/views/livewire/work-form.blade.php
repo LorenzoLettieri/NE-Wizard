@@ -1,6 +1,6 @@
 
 {{-- Stop trying to control. --}}
-<div class="col-12 col-md-4 my-3">
+<div class="col-12 col-md-6 my-3">
     @if ($errors->any())
     <div class="alert alert-danger">
         <ul>
@@ -43,9 +43,12 @@
                 </div>
 
                 <div class="col-12 col-md-4 mb-4">
-                    <label for="" class="form-label">CENTRALE (WIP)</label>
-                    <select wire:model="" class="form-select tom-select">
-                        <option value="">-- WIP --</option>
+                    <label for="" class="form-label">Centrale:</label>
+                    <select wire:model="central_id" class="form-select tom-select">
+                        <option value="">-- Seleziona --</option>
+                        @foreach($centrals as $central)
+                            <option value="{{ $central->id }}">{{ $central->central }}</option>
+                        @endforeach
                     </select>
                 </div>
             </div>
@@ -90,7 +93,7 @@
                     </select>
                 </div>
             </div>
-            <div class="row">
+            <div class="row mb-5 pb-2">
                 <div class="col-12 col-md-4 mb-4">
                     <label for="phase" class="form-label">Fase Lavoro:</label>
                     <select wire:model="phase" class="form-select tom-select">
@@ -121,6 +124,15 @@
                     <label for="notes" class="form-label">Note:</label>
                     <textarea class="form-control" id="notes" rows="5" wire:model="notes"></textarea>
                   </div>
+                  <div class="col-12 col-md-12 mb-4">
+                    <label for="phase" class="form-label">Assegna Lavorazione ad Operatore:</label>
+                    <select wire:model="operator_id" class="form-select tom-select-multiple">
+                            <option value="">-- Seleziona --</option>
+                        @foreach ($operators as $operator)
+                            <option value="{{$operator->id}}">{{$operator->name}}</option>
+                        @endforeach
+                    </select>
+                </div>
             </div>
             <button type="submit" class="btn btn-primary">Crea Lavorazione</button>
         </div>

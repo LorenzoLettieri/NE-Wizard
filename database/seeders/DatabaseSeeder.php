@@ -16,12 +16,15 @@ class DatabaseSeeder extends Seeder
         // User::factory(10)->create();
         $this->call(RoleSeeder::class);
         $this->call(CompanySeeder::class);
+        $this->call(CentralSeeder::class);
 
-        User::factory()->create([
+        $user = User::factory()->create([
             'name' => 'user',
             'email' => 'user@test.com',
             'password' => '12345678'
         ]);
+        $user->assignRole('operator');
+        
 
         $admin = User::factory()->create([
             'name' => 'admin',
