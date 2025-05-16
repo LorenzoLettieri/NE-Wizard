@@ -10,3 +10,7 @@
         </div>
     </div>
 </x-layout>
+
+<style>
+    
+</style>

@@ -32,3 +32,14 @@
         background-color: #3a3a3a;
     }
 }
+
+ul.dropdown-menu[role="menu"] {
+        min-width: 300px !important;
+        max-width: 100%;
+    }
+
+    /* Migliora anche gli input dentro */
+    ul.dropdown-menu[role="menu"] input,
+    ul.dropdown-menu[role="menu"] select {
+        width: 100% !important;
+    }

@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use Attribute;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Casts\Attribute as CastsAttribute;
 
 class Work extends Model
 {
-    
+
     protected $fillable = [
         'company_id','central_id','status','network','ao_cno','description','ntw_scope','type','phase','company_assistant','completion_date','acception_date','delivery_date','nroe','wo_number','unica_number','suspension_history','notes'
     ];
@@ -21,5 +23,7 @@ class Work extends Model
    public function central(){
     return $this->belongsTo(Central::class);
    }
+
+
 
 }
