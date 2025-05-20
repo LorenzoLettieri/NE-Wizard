@@ -6,6 +6,7 @@ use App\Models\Work;
 use Illuminate\Database\Eloquent\Builder;
 use Rappasoft\LaravelLivewireTables\Views\Column;
 use Rappasoft\LaravelLivewireTables\DataTableComponent;
+use Rappasoft\LaravelLivewireTables\Views\Columns\ComponentColumn;
 use Rappasoft\LaravelLivewireTables\Views\Filters\TextFilter;
 use Rappasoft\LaravelLivewireTables\Views\Filters\SelectFilter;
 use Rappasoft\LaravelLivewireTables\Views\Filters\BooleanFilter;
@@ -126,12 +127,6 @@ class WorksTable extends DataTableComponent
                 ->sortable()->searchable(),
             Column::make("Phase", "phase")
                 ->sortable()->searchable()->secondaryHeaderFilter('phase'),
-            Column::make("Acception date", "acception_date")
-                ->sortable(),
-            Column::make("Completion date", "completion_date")
-                ->sortable(),
-            Column::make("Delivery date", "delivery_date")
-                ->sortable(),
             Column::make("Nroe", "nroe")
                 ->sortable(),
                 Column::make("Network", "network")
@@ -147,18 +142,19 @@ class WorksTable extends DataTableComponent
                     $work = Work::find($row->id);
                     return $work->users->pluck('name')->join(', ');
                 })->secondaryHeaderFilter(filterKey: 'assigned_operators'),
-            //  Column::make('Assigned Operators')
-            //     ->label(
-            //         fn($row, Column $column) =>  dd($row),
-            //     )
-            //     ->html()
-
+            Column::make("Acception date", "acception_date")
+                ->sortable(),
+            Column::make("Completion date", "completion_date")
+                ->sortable(),
+            Column::make("Delivery date", "delivery_date")
+                ->sortable(),
+            Column::make('Actions')->label(function ($row, Column $column){
+                return view('works.works-table-actions')->with('row', Work::find($row->id));
+            })->html(),
+            
         ];
     }
 
-    public function getAssignedOperators($row){
-        return ;
-    }
-
     
+
 }

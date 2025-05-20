@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\UsersController;
 use App\Http\Controllers\WorkController;
+use Illuminate\Routing\RouteGroup;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -17,3 +18,5 @@ Route::put('/users/update/{id}', [UsersController::class,'update'])->name('updat
 
 Route::get('/works/table', [WorkController::class,'index'])->name('works-table');
 Route::get('/works/create', [WorkController::class, 'create'])->name('addWork');
+Route::get('/works/edit/{id}', [WorkController::class,'edit'])->name('editWork');
+Route::delete('/works/delete/{work}', [WorkController::class, 'delete'])->name('deleteWork');
