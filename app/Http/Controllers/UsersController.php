@@ -12,6 +12,10 @@ class UsersController extends Controller
         return view('users.index');
     }
 
+    public function accountsTable(){
+        return view('users.accounts-table');
+    }
+
     public function create(){
         return view('users.create');
     }
@@ -32,7 +36,7 @@ class UsersController extends Controller
 
         $user->assignRole('operator');
 
-        return redirect()->route('users-table')->with('message','Utente creato con successo!');
+        return redirect()->route('accounts-table')->with('message','Utente creato con successo!');
     }
 
     public function edit($id){
@@ -54,7 +58,7 @@ class UsersController extends Controller
             'password'=> !empty($validated["password"]) ? $validated['password'] : $user->password,
         ]);
 
-        return redirect()->route('users-table')->with('message','Utente modificato con successo!');
+        return redirect()->route('accounts-table')->with('message','Utente modificato con successo!');
 
     }
 

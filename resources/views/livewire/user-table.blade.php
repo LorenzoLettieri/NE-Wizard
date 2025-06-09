@@ -19,7 +19,7 @@
                     <td>@foreach ($user->getRoleNames() as $role) {{$role}} @endforeach</td>
                     <td>
                         <div class="dropdown">
-                            <a class="btn btn-secondary dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <a class="btn btn-primary dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                 <i class="bi bi-pencil"></i>
                             </a>
                             <ul class="dropdown-menu">

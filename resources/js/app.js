@@ -3,6 +3,7 @@ import 'bootstrap';
 import '../../vendor/rappasoft/laravel-livewire-tables/resources/imports/laravel-livewire-tables-all.js';
 
 import TomSelect from 'tom-select';
+import flatpickr from "flatpickr";
 
 document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('.tom-select').forEach((el) => {

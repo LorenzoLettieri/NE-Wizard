@@ -1,45 +1,11 @@
 @import 'bootstrap';
 @import 'tom-select/dist/css/tom-select.bootstrap5.css';
+@import 'flatpickr/dist/flatpickr.min.css';
+
+@import "./style.css";
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 @source '../**/*.blade.php';
 @source '../**/*.js';
 
-@media (prefers-color-scheme: dark) {
-    .ts-wrapper {
-        color: #f8f9fa !important;
-    }
-
-    .ts-wrapper .ts-control {
-        color: #f8f9fa !important;
-        border-color: #444 !important;
-    }
-
-    .ts-wrapper .ts-dropdown {
-        background-color: #2b2b2b !important;
-        color: #f8f9fa !important;
-        border-color: #444 !important;
-    }
-
-    .ts-wrapper .ts-dropdown .option {
-        background-color: transparent;
-        color: #f8f9fa;
-    }
-
-    .ts-wrapper .ts-dropdown .option:hover,
-    .ts-wrapper .ts-dropdown .option.selected {
-        background-color: #3a3a3a;
-    }
-}
-
-ul.dropdown-menu[role="menu"] {
-        min-width: 300px !important;
-        max-width: 100%;
-    }
-
-    /* Migliora anche gli input dentro */
-    ul.dropdown-menu[role="menu"] input,
-    ul.dropdown-menu[role="menu"] select {
-        width: 100% !important;
-    }

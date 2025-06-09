@@ -2,21 +2,29 @@
 
 namespace App\Livewire;
 
+use Carbon\Carbon;
 use App\Models\Work;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Builder;
 use Rappasoft\LaravelLivewireTables\Views\Column;
 use Rappasoft\LaravelLivewireTables\DataTableComponent;
-use Rappasoft\LaravelLivewireTables\Views\Columns\ComponentColumn;
 use Rappasoft\LaravelLivewireTables\Views\Columns\DateColumn;
 use Rappasoft\LaravelLivewireTables\Views\Filters\TextFilter;
 use Rappasoft\LaravelLivewireTables\Views\Filters\SelectFilter;
-use Rappasoft\LaravelLivewireTables\Views\Filters\BooleanFilter;
-use Rappasoft\LaravelLivewireTables\Views\Filters\DateTimeFilter;
 use Rappasoft\LaravelLivewireTables\Views\Filters\DateRangeFilter;
 
-class WorksTable extends DataTableComponent
+class OperatorTable extends DataTableComponent
 {
-    protected $model = Work::class;
+    
+    public function builder(): Builder{
+        // return Work::query()->with('users')->where('users.id', $current_user->id);
+        return Work::query()
+        ->with('users')
+        ->whereHas('users', function (Builder $query) {
+            $query->where('users.id', Auth::id());
+        });
+            
+    }
 
     public function configure(): void
     {
@@ -29,8 +37,6 @@ class WorksTable extends DataTableComponent
         $this->setTableAttributes([
             'class' => 'table-hover'
         ]);
-
-
     }
 
     public function filters(): array
@@ -51,21 +57,6 @@ class WorksTable extends DataTableComponent
                 ->whereDate('works.created_at', '<=', $dateRange['maxDate']); // maxDate is the end date selected
         }),
 
-        DateRangeFilter::make('Data FL', 'completion_date')->config([
-            'allowInput' => true,   // Allow manual input of dates
-            'altFormat' => 'F j, Y', // Date format that will be displayed once selected
-            'ariaDateFormat' => 'F j, Y', // An aria-friendly date format
-            'dateFormat' => 'Y-m-d', // Date format that will be received by the filter
-            'placeholder' => 'Inserisci Data', // A placeholder value
-            'locale' => 'it',
-        ])
-        ->setFilterPillValues([0 => 'minDate', 1 => 'maxDate']) // The values that will be displayed for the Min/Max Date Values
-        ->filter(function (Builder $builder, array $dateRange) { // Expects an array.
-            $builder
-                ->whereDate('works.completion_date', '>=', $dateRange['minDate']) // minDate is the start date selected
-                ->whereDate('works.completion_date', '<=', $dateRange['maxDate']); // maxDate is the end date selected
-        }),
-
         SelectFilter::make('Status', 'status')
             ->options([
                 '' => 'Tutti',
@@ -75,7 +66,6 @@ class WorksTable extends DataTableComponent
                 'Attesa Fine Lavori' => 'Attesa Fine Lavori',
                 'KO' => 'KO',
                 'Consegnato' => 'Consegnato',
-                'Fine Lavori' => 'Fine Lavori',
 
             ])->filter(function(Builder $builder, string $value){
                 $builder->where('status', $value);
@@ -145,7 +135,7 @@ class WorksTable extends DataTableComponent
                 ->sortable()->searchable(),
             Column::make("Status", "status")
                 ->sortable()->searchable()->secondaryHeaderFilter('status')->format(function($value){
-                    if($value == "Sospeso" ){
+                    if($value == "Sospeso"){
                         return "<span class='badge rounded-pill text-bg-warning'>$value</span>";
                     } 
                     else if($value == "In Lavorazione"){
@@ -159,12 +149,6 @@ class WorksTable extends DataTableComponent
                     }
                     else if($value == "Consegnato"){
                         return "<span class='badge rounded-pill text-bg-success'>$value</span>";
-                    }
-                    else if($value == "Attesa Fine Lavori"){
-                        return "<span class='badge rounded-pill bg-warning-subtle text-white'>$value</span>";
-                    }
-                    else if($value == "Fine Lavori"){
-                        return "<span class='badge rounded-pill pill-fine-lavori'>$value</span>";
                     }
 
                     return $value;
@@ -187,24 +171,26 @@ class WorksTable extends DataTableComponent
                 ->sortable()->searchable()->secondaryHeaderFilter('unica_number'),
             Column::make("AO/CNO", "ao_cno")->setCustomSlug('AO CNO')
                 ->sortable()->searchable()->secondaryHeaderFilter('ao_cno'),
-            Column::make('Assigned Operators', "assigned_operators")
-                ->label(function ($row, Column $column){
-                    $work = Work::find($row->id);
-                    return $work->users->pluck('name')->join(', ');
-                })->secondaryHeaderFilter(filterKey: 'assigned_operators'),
-            Column::make("Data PiC", "acception_date")
-                ->sortable(),
-            Column::make("Data Consegna", "delivery_date")
-                ->sortable(),
-            Column::make("Data FL", "completion_date")
-                ->sortable()->secondaryHeaderFilter(filterKey: 'completion_date'),
             Column::make('Actions')->label(function ($row, Column $column){
-                return view('works.works-table-actions')->with('row', Work::find($row->id));
+                return view('operator.operator-table-actions')->with('row', Work::find($row->id));
             })->html(),
             
         ];
     }
 
-    
+    public function takeWork($id){
+        $acceptedWork = Work::find($id);
+        $acceptedWork->status = 'In Lavorazione';
+        $acceptedWork->acception_date = Carbon::now();
+        $acceptedWork->save();
+    }
 
+    public function deliveryWork($id){
+        $acceptedWork = Work::find($id);
+        $acceptedWork->status = 'Consegnato';
+        $acceptedWork->delivery_date = Carbon::now();
+        $acceptedWork->save();
+
+    
+    }
 }
