@@ -18,27 +18,6 @@ class DatabaseSeeder extends Seeder
         $this->call(CompanySeeder::class);
         $this->call(CentralSeeder::class);
 
-        $user = User::factory()->create([
-            'name' => 'user',
-            'email' => 'user@test.com',
-            'password' => '12345678'
-        ]);
-        $user->assignRole('operator');
-        
-
-        $admin = User::factory()->create([
-            'name' => 'admin',
-            'email' => 'admin@test.com',
-            'password' => '12345678'
-        ]);
-        $admin->assignRole('admin');
-
-        $supervisor = User::factory()->create([
-            'name' => 'supervisor',
-            'email' => 'supervisor@test.com',
-            'password' => '12345678'
-        ]);
-        $supervisor->assignRole('supervisor');
 
     }
 }
