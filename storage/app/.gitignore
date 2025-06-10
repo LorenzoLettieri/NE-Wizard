@@ -1,4 +1,6 @@
 *
 !private/
 !public/
+!public/data/
+!public/data/*
 !.gitignore
