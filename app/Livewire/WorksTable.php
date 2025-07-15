@@ -30,6 +30,15 @@ class WorksTable extends DataTableComponent
             'class' => 'table-hover'
         ]);
 
+        $this->setTdAttributes(function(Column $column){
+            if($column->isField("created_at") || $column->isField("completion_date")){
+                return [
+                    'class' => "text-nowrap"
+                ];
+            }
+
+            return [];
+        });
 
     }
 
@@ -187,7 +196,7 @@ class WorksTable extends DataTableComponent
                 ->sortable()->searchable()->secondaryHeaderFilter('unica_number'),
             Column::make("AO/CNO", "ao_cno")->setCustomSlug('AO CNO')
                 ->sortable()->searchable()->secondaryHeaderFilter('ao_cno'),
-            Column::make('Assigned Operators', "assigned_operators")
+            Column::make('Operatori Assegnati', "assigned_operators")
                 ->label(function ($row, Column $column){
                     $work = Work::find($row->id);
                     return $work->users->pluck('name')->join(', ');

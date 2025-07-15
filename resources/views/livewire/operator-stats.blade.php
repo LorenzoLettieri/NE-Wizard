@@ -15,7 +15,8 @@
     <tr>
       <th scope="col">Operatore</th>
       <th scope="col">N. Lavorazioni Assegnate</th>
-      <th scope="col">N. Lavorazione in carico</th>
+      <th scope="col">N. Lavorazioni in carico</th>
+      <th scope="col">N. Lavorazioni consegnate</th>
       <th scope="col">Tempo medio di lavorazione</th>
     </tr>
   </thead>
@@ -29,7 +30,8 @@
         <td>{{$op->name}}</th>
         <td>{{$op->works->count()}}</td>
         <td>{{$op->works->where('status', 'In Lavorazione')->count()}}</td>
-        <td>{{round($avgTime, 1)}}</td>
+        <td>{{$op->works->whereIn('status', ['Consegnato', 'Fine Lavori'])->count()}}</td>
+        <td>{{round($avgTime, 1) <= 1 ? "<1 " : round($avgTime, 1)}} h</td>
         </tr>
     @endforeach
     
