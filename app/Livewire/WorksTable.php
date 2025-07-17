@@ -25,6 +25,8 @@ class WorksTable extends DataTableComponent
         $this->setEagerLoadAllRelationsStatus(true);
         $this->setAdditionalSelects(['works.id as id']);
 
+        $this->setDefaultSort('created_at', 'desc');
+
         //style
         $this->setTableAttributes([
             'class' => 'table-hover'
@@ -33,7 +35,7 @@ class WorksTable extends DataTableComponent
         $this->setTdAttributes(function(Column $column){
             if($column->isField("created_at") || $column->isField("completion_date")){
                 return [
-                    'class' => "text-nowrap"
+                    'class' => "text-nowrap "
                 ];
             }
 
