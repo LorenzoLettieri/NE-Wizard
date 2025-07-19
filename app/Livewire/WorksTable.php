@@ -2,6 +2,8 @@
 
 namespace App\Livewire;
 
+use App\Models\Central;
+use App\Models\Company;
 use App\Models\Work;
 use Illuminate\Database\Eloquent\Builder;
 use Rappasoft\LaravelLivewireTables\Views\Column;
@@ -46,6 +48,9 @@ class WorksTable extends DataTableComponent
 
     public function filters(): array
     {
+        $companies = ['' => 'Tutte'];
+        $companies = array_merge($companies,Company::pluck('name','name')->toArray() ) ;
+
         return [
             DateRangeFilter::make('Data Creazione', 'created_at')->config([
             'allowInput' => true,   // Allow manual input of dates
@@ -77,6 +82,15 @@ class WorksTable extends DataTableComponent
                 ->whereDate('works.completion_date', '<=', $dateRange['maxDate']); // maxDate is the end date selected
         }),
 
+       
+
+        SelectFilter::make('Impresa', 'company')->options($companies)->filter(function (Builder $builder, string $value){
+            $builder->whereHas('company', function ($query) use ($value) {
+                    $query->where('name', 'like', "%$value%");
+                })->get();
+        }),
+
+
         SelectFilter::make('Status', 'status')
             ->options([
                 '' => 'Tutti',
@@ -91,6 +105,26 @@ class WorksTable extends DataTableComponent
             ])->filter(function(Builder $builder, string $value){
                 $builder->where('status', $value);
             }),
+
+        SelectFilter::make('Ambito NTW', 'ntw_scope')
+            ->options([
+                '' => 'Tutti',
+                'FTTH' => 'FTTH',
+                'FTTH PTE' => 'FTTH PTE',
+                'FTTH PNRR' => 'FTTH PNRR',
+                '5G' => '5G',
+                'REACTIVE' => 'REACTIVE',
+                'INCREMENTALE' => 'INCREMENTALE',
+                'DESATURAZIONE' => 'DESATURAZIONE',
+                'NGAN' => 'NGAN',
+                'GIUNZIONE' => 'GIUNZIONE',
+                'SUB-LOOP' => 'SUB-LOOP',
+               
+                
+            ])->filter(function(Builder $builder, string $value){
+                $builder->where('ntw_scope', $value);
+            }),
+        
 
         SelectFilter::make('Fase', 'phase')
             ->options([
@@ -149,7 +183,7 @@ class WorksTable extends DataTableComponent
             DateColumn::make("Data", "created_at")
             ->sortable()->secondaryHeaderFilter(filterKey: 'created_at'),
             Column::make("Impresa", "company.name")
-                ->sortable()->searchable(),
+                ->sortable()->searchable()->secondaryHeaderFilter(filterKey: 'company'),
             Column::make("Centrale", "central.central")
                 ->sortable()->searchable(),
             Column::make("Regione", "central.region")
@@ -183,7 +217,7 @@ class WorksTable extends DataTableComponent
             Column::make("Descrizione", "description")
                 ->sortable(),
             Column::make("Ambito NTW", "ntw_scope")
-                ->sortable()->searchable(),
+                ->sortable()->searchable()->secondaryHeaderFilter(filterKey: 'ntw_scope'),
             Column::make("Tipo", "type")
                 ->sortable()->searchable(),
             Column::make("Fase", "phase")

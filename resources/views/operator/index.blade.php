@@ -1,5 +1,5 @@
 <x-layout>
-    <div class="container">
+    <div class="container-fluid">
         <div class="row justify-content-center">
             <div class="col-12 mt-3 d-flex justify-content-center align-items-center">
                 <h1 class="text-center mx-3">Tabella Lavorazioni</h1>

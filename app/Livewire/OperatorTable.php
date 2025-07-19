@@ -33,6 +33,8 @@ class OperatorTable extends DataTableComponent
         $this->setEagerLoadAllRelationsStatus(true);
         $this->setAdditionalSelects(['works.id as id']);
 
+        $this->setDefaultSort('created_at', 'desc');
+
         //style
         $this->setTableAttributes([
             'class' => 'table-hover'

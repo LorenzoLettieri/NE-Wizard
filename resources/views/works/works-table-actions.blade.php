@@ -12,7 +12,7 @@
     <li><hr class="dropdown-divider"></li>
     <li><a class="dropdown-item text-danger" data-bs-toggle="modal" data-bs-target="#deleteModal" href="#">Elimina 2.0</a></li>
 
-    
+  
   </ul>
 
   <!-- Modal -->
@@ -30,7 +30,7 @@
             @method('DELETE')
             @csrf
                   <button type="submit" class="btn btn-danger">Si, elimina questa lavorazione</button>
-    </form>
+          </form>
         </div>
       </div>
     </div>
