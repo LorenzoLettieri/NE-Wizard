@@ -2,23 +2,34 @@
 
 namespace App\Livewire;
 
+use App\Models\Work;
 use App\Models\Central;
 use App\Models\Company;
-use App\Models\Work;
+use Livewire\Attributes\On;
 use Illuminate\Database\Eloquent\Builder;
 use Rappasoft\LaravelLivewireTables\Views\Column;
 use Rappasoft\LaravelLivewireTables\DataTableComponent;
-use Rappasoft\LaravelLivewireTables\Views\Columns\ComponentColumn;
 use Rappasoft\LaravelLivewireTables\Views\Columns\DateColumn;
 use Rappasoft\LaravelLivewireTables\Views\Filters\TextFilter;
 use Rappasoft\LaravelLivewireTables\Views\Filters\SelectFilter;
 use Rappasoft\LaravelLivewireTables\Views\Filters\BooleanFilter;
 use Rappasoft\LaravelLivewireTables\Views\Filters\DateTimeFilter;
+use Rappasoft\LaravelLivewireTables\Views\Columns\ComponentColumn;
 use Rappasoft\LaravelLivewireTables\Views\Filters\DateRangeFilter;
 
 class WorksTable extends DataTableComponent
 {
     protected $model = Work::class;
+
+    // public function builder(): Builder
+    // {
+    //     return Work::query()->orderByDesc('created_at')
+            
+    // }
+    protected $listeners = [
+        'workUpdated' => '$refresh',
+    ];
+
 
     public function configure(): void
     {

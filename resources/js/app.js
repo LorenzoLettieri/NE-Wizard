@@ -1,9 +1,9 @@
 import './bootstrap';
 import 'bootstrap';
+import { Modal } from 'bootstrap';
 import '../../vendor/rappasoft/laravel-livewire-tables/resources/imports/laravel-livewire-tables-all.js';
 
 import TomSelect from 'tom-select';
-import flatpickr from "flatpickr";
 
 let changeModeBtn = document.querySelector('#changeModeBtn')
 let html = document.querySelector('html');
@@ -56,19 +56,51 @@ if(localStorage.getItem("mode")){
     });
   })();
 
-document.addEventListener('DOMContentLoaded', function () {
-    document.querySelectorAll('.tom-select').forEach((el) => {
-        new TomSelect(el, {
-            create: true,
-            persist: false,
-            selectOnTab: true,
-        });
-    });
-    document.querySelectorAll('.tom-select-multiple').forEach((el) => {
-        new TomSelect(el, {
-            selectOnTab: true,
-            maxItems: 99,
-        });
-    });
 
-});
+
+// document.addEventListener('DOMContentLoaded', function () {
+//     document.querySelectorAll('.tom-select').forEach((el) => {
+//         new TomSelect(el, {
+//             create: true,
+//             persist: false,
+//             selectOnTab: true,
+//         });
+//     });
+//     document.querySelectorAll('.tom-select-multiple').forEach((el) => {
+//         new TomSelect(el, {
+//             selectOnTab: true,
+//             maxItems: 99,
+//         });
+//     });
+
+    
+//   });
+  function initTomSelect(container = document) {
+    const selects = container.querySelectorAll('.tom-select, .tom-select-multiple');
+    selects.forEach(el => {
+      if (!el.tom_select) {
+        new TomSelect(el, {
+          create: el.classList.contains('tom-select'),
+          persist: false,
+          selectOnTab: true,
+          maxItems: el.multiple ? 99 : 1,
+        });
+        el.tom_select = true;
+      }
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {    
+    initTomSelect(); // pagine “statiche”
+    const editModal = document.getElementById('editModal');
+    if(editModal){
+      editModal.addEventListener('shown.bs.modal', () => {
+        initTomSelect(editModal);
+      });
+    }
+
+    Livewire.on('workUpdated', () => {
+        const modal = Modal.getInstance(editModal);
+        modal.hide();
+    });
+  });

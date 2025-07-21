@@ -5,6 +5,7 @@
 
   <ul class="dropdown-menu" >
     <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#viewModal" onclick="Livewire.dispatch('view-work', {id: {{$row->id}}})">Dettaglio</a></li>
+    <li><a class="dropdown-item text-warning" href="#" data-bs-toggle="modal" data-bs-target="#editModal" onclick="Livewire.dispatch('edit-work', {id: {{$row->id}}})">Modifica 2.0</a></li>
     <li><a class="dropdown-item" href="{{route('editWork', ['id'=>$row->id])}}">Modifica</a></li>
     <li><a class="dropdown-item" href="#" onclick="Livewire.dispatch('duplicate-work', {id: {{$row->id}}})">Duplica</a></li>
     <li><hr class="dropdown-divider"></li>
