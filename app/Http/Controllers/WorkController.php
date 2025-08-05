@@ -18,7 +18,7 @@ class WorkController extends Controller
     }
 
     public function edit($id){
-            $work = Work::find($id);
+        $work = Work::find($id);
 
         return view('works.edit', compact('work'));
     }

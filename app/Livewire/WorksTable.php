@@ -40,6 +40,8 @@ class WorksTable extends DataTableComponent
 
         $this->setDefaultSort('created_at', 'desc');
 
+        $this->setPerPageAccepted([10,25,50,100,-1]);
+
         //style
         $this->setTableAttributes([
             'class' => 'table-hover'
@@ -254,10 +256,13 @@ class WorksTable extends DataTableComponent
                 ->sortable(),
             Column::make("Data FL", "completion_date")
                 ->sortable()->secondaryHeaderFilter(filterKey: 'completion_date'),
-            Column::make('Actions')->label(function ($row, Column $column){
-                return view('works.works-table-actions')->with('row', Work::find($row->id));
-            })->html(),
-            
+                Column::make("Assistente Impresa", "company_assistant")->deselected()
+                ,
+                Column::make("Note", "notes")->deselected()
+                ,
+                Column::make('Actions')->label(function ($row, Column $column){
+                    return view('works.works-table-actions')->with('row', Work::find($row->id));
+                })->html(),
         ];
     }
 
