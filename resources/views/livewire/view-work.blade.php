@@ -46,6 +46,10 @@
             <label class="form-label">RAME/OTTICO</label>
             <div class="form-control">{{ $work->type ?? '' }}</div>
         </div>
+        <div class="col-md-4">
+            <label class="form-label">DAPHNE</label>
+            <div class="form-control">{{ $work?->daphne ? 'Si' : 'No' }}</div>
+        </div>
 
         <div class="col-md-4">
             <label class="form-label">Fase Lavoro</label>

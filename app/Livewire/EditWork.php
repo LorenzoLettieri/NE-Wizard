@@ -22,6 +22,7 @@ class EditWork extends Component
     public $suspension_history;
     public $company_id, $central_id, $operator_id, $status, $network, $ao_cno, $ntw_scope, $description, $type, $phase, $company_assistant, $nroe, $wo_number,$unica_number, $notes;
 
+    public $daphne;
     #[On('edit-work')] 
      public function editWork($id){
         $this->work = Work::find($id);
@@ -41,6 +42,7 @@ class EditWork extends Component
         $this->wo_number = $this->work->wo_number;
         $this->unica_number = $this->work->unica_number;
         $this->notes = $this->work->notes;
+        $this->daphne = $this->work->daphne;
 
         $this->suspension_history = $this->work->suspension_history;
      }

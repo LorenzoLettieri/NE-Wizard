@@ -127,7 +127,14 @@ class OperatorTable extends DataTableComponent
     public function columns(): array
     {
         return [
-            DateColumn::make("Data", "created_at")
+            Column::make("Data", "created_at")->format(
+                function($value,$row, Column $column) {
+                    if($value){
+                        return Carbon::parse($value)
+                            ->setTimezone('Europe/Rome')
+                            ->format('d/m/Y');
+                    }
+            })
             ->sortable()->secondaryHeaderFilter(filterKey: 'created_at'),
             Column::make("Impresa", "company.name")
                 ->sortable()->searchable(),
@@ -151,6 +158,12 @@ class OperatorTable extends DataTableComponent
                     }
                     else if($value == "Consegnato"){
                         return "<span class='badge rounded-pill text-bg-success'>$value</span>";
+                    }
+                    else if($value == "Attesa Fine Lavori"){
+                        return "<span class='badge rounded-pill bg-warning-subtle text-white'>$value</span>";
+                    }
+                    else if($value == "Fine Lavori"){
+                        return "<span class='badge rounded-pill pill-fine-lavori'>$value</span>";
                     }
 
                     return $value;
@@ -192,7 +205,21 @@ class OperatorTable extends DataTableComponent
         $acceptedWork->status = 'Consegnato';
         $acceptedWork->delivery_date = Carbon::now();
         $acceptedWork->save();
+    }
 
-    
+    public function suspendWork($id){
+        $acceptedWork = Work::find($id);
+        $acceptedWork->status = 'Sospeso';
+        $acceptedWork->save();
+    }
+
+    public function unsuspendWork($id){
+        $acceptedWork = Work::find($id);
+        $acceptedWork->status = 'In Lavorazione';
+        if(!$acceptedWork->acception_date){
+            $acceptedWork->acception_date = Carbon::now();
+        }
+
+        $acceptedWork->save();
     }
 }

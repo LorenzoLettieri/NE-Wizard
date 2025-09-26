@@ -101,6 +101,14 @@
                         <option value="OTTICO">OTTICO</option>
                     </select>
                 </div>
+                <div class="col-12 col-md-4 mb-4">
+                    <label for="type" class="form-label">DAPHNE:</label>
+                    <select wire:model="daphne" class="form-select tom-select">
+                        <option value="">-- Seleziona --</option>
+                        <option value="1">SI</option>
+                        <option value="0">NO</option>
+                    </select>
+                </div>
             </div>
             <div class="row mb-5 pb-2">
                 <div class="col-12 col-md-4 mb-4">

@@ -11,7 +11,7 @@ class Work extends Model
 {
     use SoftDeletes;
     protected $fillable = [
-        'company_id','central_id','status','network','ao_cno','description','ntw_scope','type','phase','company_assistant','completion_date','acception_date','delivery_date','nroe','wo_number','unica_number','suspension_history','notes'
+        'company_id','central_id','status','network','ao_cno','description','ntw_scope','type','phase','daphne','company_assistant','completion_date','acception_date','delivery_date','nroe','wo_number','unica_number','suspension_history','notes'
     ];
 
    public function users(){

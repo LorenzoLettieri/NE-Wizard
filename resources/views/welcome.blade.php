@@ -38,12 +38,28 @@
                     </div>
                 </div>
             </header>
-            <div class="container mt-5">
+            <div class="container mt-4">
+                <div class="row justify-content-center">
+                    <div class="col-12 col-md-8">
+                        <div class="border border-black rounded-4 p-4 shadow-lg">
+                            <h2 class="fw-bold mb-3">📌 Patch Notes</h2>
+                            <ul class="list-unstyled m-0">
+                                <li class="mb-2"><i class="bi bi-clock-fill text-primary me-2"></i> Le date ora vengono mostrate sempre con il fuso orario di Roma</li>
+                                <li class="mb-2"><i class="bi bi-database-fill text-success me-2"></i> Aggiornato il limite record: aggiunte le opzioni 200 e 300, rimossa l’opzione "Tutti"</li>
+                                <li class="mb-2"><i class="bi bi-pause-circle-fill text-warning me-2"></i> Gli operatori possono sospendere e riprendere le lavorazioni</li>
+                                <li class="mb-2"><i class="bi bi-pencil-square text-info me-2"></i> Gli operatori possono modificare le note e lo storico sospensioni</li>
+                                <li class="mb-2"><i class="bi bi-plus-circle-fill text-danger me-2"></i> Aggiunto il campo <strong>Daphne</strong></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="container">
                 <div class="row my-5">
                 @hasanyrole('admin|supervisor')
                     <div class="col-12 col-md-4">
-                        <a href="{{route('works-table')}}" class="text-decoration-none text-white">
-                        <div class="border border-black rounded-4 p-4 d-flex justify-content-between bg-dark hover-lighten">
+                        <a href="{{route('works-table')}}" class="text-decoration-none">
+                        <div class="border border-black rounded-4 p-4 d-flex justify-content-between hover-lighten">
                             <h3 class="display-5">Lavorazioni</h3>
                         </div>
                         </a>
@@ -51,8 +67,8 @@
                 @endhasanyrole
                 @role('admin')
                     <div class="col-12 col-md-4">
-                        <a href="{{route('users-table')}}" class="text-decoration-none text-white">
-                        <div class="border border-black rounded-4 p-4 d-flex justify-content-between bg-dark hover-lighten">
+                        <a href="{{route('users-table')}}" class="text-decoration-none">
+                        <div class="border border-black rounded-4 p-4 d-flex justify-content-between hover-lighten">
                             <h3 class="display-5">Utenti</h3>
                         </div>
                         </a>
@@ -60,8 +76,8 @@
                 @endrole
                 @can('get works')
                     <div class="col-12 col-md-4">
-                        <a href="{{route(name: 'operator-table')}}" class="text-decoration-none text-white">
-                        <div class="border border-black rounded-4 p-4 d-flex justify-content-between bg-dark hover-lighten">
+                        <a href="{{route(name: 'operator-table')}}" class="text-decoration-none">
+                        <div class="border border-black rounded-4 p-4 d-flex justify-content-between hover-lighten">
                             <h3 class="display-5">Dashboard</h3>
                         </div>
                         </a>

@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use Carbon\Carbon;
 use App\Models\Work;
 use App\Models\Central;
 use App\Models\Company;
@@ -40,7 +41,7 @@ class WorksTable extends DataTableComponent
 
         $this->setDefaultSort('created_at', 'desc');
 
-        $this->setPerPageAccepted([10,25,50,100,-1]);
+        $this->setPerPageAccepted([10,25,50,100,200,300]);
 
         //style
         $this->setTableAttributes([
@@ -193,7 +194,13 @@ class WorksTable extends DataTableComponent
     public function columns(): array
     {
         return [
-            DateColumn::make("Data", "created_at")
+             Column::make('Data creazione', 'created_at')
+            ->format(function($value, $row, Column $column) {
+                // $value è un Carbon o stringa a seconda del cast del model
+                return Carbon::parse($value)
+                    ->setTimezone('Europe/Rome')
+                    ->format('d/m/Y');
+            })
             ->sortable()->secondaryHeaderFilter(filterKey: 'created_at'),
             Column::make("Impresa", "company.name")
                 ->sortable()->searchable()->secondaryHeaderFilter(filterKey: 'company'),
@@ -245,20 +252,46 @@ class WorksTable extends DataTableComponent
                 ->sortable()->searchable()->secondaryHeaderFilter('unica_number'),
             Column::make("AO/CNO", "ao_cno")->setCustomSlug('AO CNO')
                 ->sortable()->searchable()->secondaryHeaderFilter('ao_cno'),
+            Column::make('DAPHNE','daphne')->format(function ($value){
+                $daphne = $value ? 'SI' : 'NO';
+                return $daphne;
+            }),
             Column::make('Operatori Assegnati', "assigned_operators")
                 ->label(function ($row, Column $column){
                     $work = Work::find($row->id);
                     return $work->users->pluck('name')->join(', ');
                 })->secondaryHeaderFilter(filterKey: 'assigned_operators'),
-            Column::make("Data PiC", "acception_date")
+            Column::make("Data PiC", "acception_date")->format(
+                function($value,$row, Column $column) {
+                    if($value){
+                        return Carbon::parse($row->acception_date)
+                            ->setTimezone('Europe/Rome')
+                            ->format('d/m/Y H:i');
+                    }
+            })
                 ->sortable(),
-            Column::make("Data Consegna", "delivery_date")
+            Column::make("Data Consegna", "delivery_date")->format(
+                function($value,$row, Column $column) {
+                    if($value){
+                        return Carbon::parse($row->delivery_date)
+                            ->setTimezone('Europe/Rome')
+                            ->format('d/m/Y H:i');
+                    }
+            })
                 ->sortable(),
-            Column::make("Data FL", "completion_date")
+            Column::make("Data FL", "completion_date")->format(
+                function($value,$row, Column $column) {
+                    if($value){
+                        return Carbon::parse($row->completion_date)
+                            ->setTimezone('Europe/Rome')
+                            ->format('d/m/Y');
+                    }
+            })
                 ->sortable()->secondaryHeaderFilter(filterKey: 'completion_date'),
                 Column::make("Assistente Impresa", "company_assistant")->deselected()
                 ,
-                Column::make("Note", "notes")->deselected()
+                Column::make("Note", "notes")->deselected(),
+                Column::make("Storico sospensioni", "suspension_history")->deselected()
                 ,
                 Column::make('Actions')->label(function ($row, Column $column){
                     return view('works.works-table-actions')->with('row', Work::find($row->id));
