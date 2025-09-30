@@ -3,7 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Work;
+use Illuminate\Support\Str;
+use App\Exports\WorksExport;
 use Illuminate\Http\Request;
+use Maatwebsite\Excel\Facades\Excel;
 
 class WorkController extends Controller
 {
@@ -27,5 +30,26 @@ class WorkController extends Controller
          $work->delete();
 
         return redirect()->back()->with('success','');
+    }
+
+     public function download(Request $request)
+    {
+        $validated = $request->validate([
+            // Se vuoi fissare un solo campo, cambia qui (es. 'completion_date')
+            'date_field' => 'required',
+            'start'      => 'required|date',
+            'end'        => 'required|date|after_or_equal:start',
+        ]);
+
+        $export = new WorksExport($validated['date_field'], $validated['start'], $validated['end']);
+
+        $filename = sprintf(
+            'works_%s_%s_%s.xlsx',
+            $validated['date_field'],
+            Str::of($validated['start'])->replace([' ',':'], '-'),
+            Str::of($validated['end'])->replace([' ',':'], '-')
+        );
+
+        return Excel::download($export, $filename);
     }
 }

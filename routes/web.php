@@ -26,6 +26,7 @@ Route::group(['middleware' => ['role:admin|supervisor']], function (){
     Route::get('/works/edit/{id}', [WorkController::class,'edit'])->name('editWork');
     Route::delete('/works/delete/{work}', [WorkController::class, 'delete'])->name('deleteWork');
 });
+Route::get('/exports/works', [WorkController::class, 'download'])->name('exports.works');
 
 Route::group(['middleware' => ['permission:get works']], function (){
     Route::get('/operator/table', [OperatorController::class, 'index'])->name('operator-table');
