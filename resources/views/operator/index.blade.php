@@ -17,7 +17,7 @@
     <!-- edit Modal -->
 <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-xl">
-    <livewire:operator-edit-work></livewire:operator-edit-work>
+    <livewire:edit-work></livewire:edit-work>
   </div>
 </div>
 </x-layout>

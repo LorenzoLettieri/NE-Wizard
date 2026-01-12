@@ -32,7 +32,15 @@
                     <label for="password" class="form-label">Ripeti Password</label>
                     <input type="password" class="form-control" id="password" name="password_confirmation">
                 </div>
-
+                <div class="mb-3">
+                    <label for="role" class="form-label">Ruolo</label>
+                    <select class="form-select tom-select" id="role" name="role">
+                        <option value="">-- Seleziona --</option>
+                        @foreach($roles as $role)
+                            <option value="{{$role->name}}">{{$role->name}}</option>
+                        @endforeach
+                    </select>
+                </div>
                 <button type="submit" class="btn btn-primary">Crea Account</button>
               </form>
         </div>

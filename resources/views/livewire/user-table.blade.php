@@ -24,11 +24,11 @@
                             </a>
                             <ul class="dropdown-menu">
                                     <li><a class="dropdown-item" href="{{route('editUser', ['id' => $user->id])}}">Modifica Dati utente</a></li>
-                                @if($user->hasRole('supervisor'))
+                                {{-- @if($user->hasRole('supervisor'))
                                     <li><a class="dropdown-item" wire:click="removeRole({{$user->id}}, 'supervisor')" href="#">Rimuovi Ruolo Supervisor</a></li>
                                 @else
                                     <li><a class="dropdown-item" wire:click="addRole({{$user->id}}, 'supervisor')" href="#">Rendi Supervisor</a></li>
-                                @endif
+                                @endif --}}
 
                                 @if(!$user->hasRole('admin'))
                                     <li><a class="dropdown-item text-danger" wire:click="deleteUser({{$user->id}})" wire:confirm="Sei sicuro di voler eliminare questo account?" href="#">Elimina Account</a></li>

@@ -128,6 +128,22 @@
                     <label for="unica_number" class="form-label">UNICA Number:</label>
                     <input type="unica_number" class="form-control" id="unica_number" wire:model="unica_number" placeholder="">
                 </div>
+                <div class="col-4 col-md-4 mb-4">
+                    <label for="go_live" class="form-label">Go Live:</label>
+                    <select wire:model="go_live" class="form-select tom-select">
+                        <option value="">-- Seleziona --</option>
+                        <option value="1">SI</option>
+                        <option value="0">NO</option>
+                    </select>
+                </div>
+                <div class="col-4 col-md-4 mb-4">
+                    <label for="date_in" class="form-label">Data In:</label>
+                    <input type="date" class="form-control" id="date_in" wire:model="date_in">
+                </div>
+                 <div class="col-4 col-md-4 mb-4">
+                    <label for="date_out" class="form-label">Data Out:</label>
+                    <input type="date" class="form-control" id="date_out" wire:model="date_out">
+                </div>
                 <div class="col-12 col-md-12 mb-4">
                     <label for="notes" class="form-label">Note:</label>
                     <textarea class="form-control" id="notes" rows="5" wire:model="notes"></textarea>

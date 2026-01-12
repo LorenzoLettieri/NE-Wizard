@@ -17,9 +17,11 @@ class RoleSeeder extends Seeder
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
         Permission::create(["name"=> "get works"]);
+        Permission::create(["name"=> "get permessi ente"]);
 
         Role::create(['name' => 'admin']);
         Role::create(['name' => 'supervisor'])->givePermissionTo('get works');
         Role::create(['name'=> 'operator'])->givePermissionTo('get works');
+        Role::create(['name'=> 'permessi ente'])->givePermissionTo('get permessi ente');
     }
 }

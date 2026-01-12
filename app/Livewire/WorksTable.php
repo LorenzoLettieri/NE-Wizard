@@ -186,7 +186,19 @@ class WorksTable extends DataTableComponent
 
             }),
                 
-
+        SelectFilter::make('Daphne', 'daphne')
+            ->options([
+                ''  => 'Tutti',
+                '1' => 'Si',
+                '0' => 'No',
+            ])
+            ->filter(function (Builder $builder, string $value) {
+                if ($value === '1') {
+                    $builder->where('daphne', 1);
+                } elseif ($value === '0') {
+                    $builder->where('daphne', 0);
+                }
+            }),
         ];
     }
 
@@ -252,10 +264,9 @@ class WorksTable extends DataTableComponent
                 ->sortable()->searchable()->secondaryHeaderFilter('unica_number'),
             Column::make("AO/CNO", "ao_cno")->setCustomSlug('AO CNO')
                 ->sortable()->searchable()->secondaryHeaderFilter('ao_cno'),
-            Column::make('DAPHNE','daphne')->format(function ($value){
-                $daphne = $value ? 'SI' : 'NO';
-                return $daphne;
-            }),
+            Column::make('Daphne', 'daphne')
+                ->format(fn($value) => $value ? 'SI' : 'NO')
+                ->secondaryHeaderFilter('daphne'),
             Column::make('Operatori Assegnati', "assigned_operators")
                 ->label(function ($row, Column $column){
                     $work = Work::find($row->id);

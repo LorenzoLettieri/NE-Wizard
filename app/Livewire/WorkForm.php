@@ -16,6 +16,8 @@ class WorkForm extends Component
 
     public $company_id, $central_id, $operator_id, $status, $network, $ao_cno, $ntw_scope, $description, $type, $phase, $company_assistant, $nroe, $wo_number,$unica_number, $notes;
 
+    public $go_live, $date_in, $date_out;
+
     public bool $daphne;
 
     public function store(){

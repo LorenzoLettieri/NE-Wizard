@@ -29,6 +29,15 @@
                   <label for="password" class="form-label">Password</label>
                   <input type="password" class="form-control" id="password" name="password" >
                 </div>
+                <div class="mb-3">
+                    <label for="role" class="form-label">Ruolo</label>
+                    <select class="form-select tom-select" id="role" name="role">
+                        <option value="">-- Seleziona --</option>
+                        @foreach($roles as $role)
+                            <option value="{{$role->name}}" {{ $user->hasRole($role->name) ? 'selected' : '' }}>{{$role->name}}</option>
+                        @endforeach
+                    </select>
+                </div>
                 <button type="submit" class="btn btn-primary">Modifica Account</button>
               </form>
         </div>
