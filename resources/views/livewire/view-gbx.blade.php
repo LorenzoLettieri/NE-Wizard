@@ -27,6 +27,9 @@
                         <li class="list-group-item d-flex justify-content-between"><span>Cliente</span>
                             <strong>{{ $gbx->client ?? '-' }}</strong>
                         </li>
+                        <li class="list-group-item d-flex justify-content-between"><span>Coordinate</span>
+                            <strong>{{ $gbx->coordinates ?? '-' }}</strong>
+                        </li>
                     </ul>
                 </div>
                 <div class="col-md-6">
@@ -46,6 +49,21 @@
                         </li>
                         <li class="list-group-item d-flex justify-content-between"><span>Rilascio</span>
                             <strong>{{ $gbx->release_date ? \Carbon\Carbon::parse($gbx->release_date)->format('d/m/Y') : '-' }}</strong>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between"><span>Progetto</span>
+                            <strong>{{ $gbx->project_date ? \Carbon\Carbon::parse($gbx->project_date)->format('d/m/Y') : '-' }}</strong>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between"><span>Speedark</span>
+                            <strong>{{ $gbx->speedark_date ? \Carbon\Carbon::parse($gbx->speedark_date)->format('d/m/Y') : '-' }}</strong>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between"><span>Agg. Cart</span>
+                            <strong>{{ $gbx->cart_update_date ? \Carbon\Carbon::parse($gbx->cart_update_date)->format('d/m/Y') : '-' }}</strong>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between"><span>Richiesta Permessi</span>
+                            <strong>{{ $gbx->permission_request_date ? \Carbon\Carbon::parse($gbx->permission_request_date)->format('d/m/Y') : '-' }}</strong>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between"><span>Ottenimento Permessi</span>
+                            <strong>{{ $gbx->permission_obtain_date ? \Carbon\Carbon::parse($gbx->permission_obtain_date)->format('d/m/Y') : '-' }}</strong>
                         </li>
                     </ul>
                 </div>
@@ -95,48 +113,48 @@
                         </div>
                     </div>
                     <div class="col-12">
-                            <div class="d-flex gap-3">
-                                <div class="badge {{ $gbx->is_adeguate ? 'bg-success' : 'bg-danger' }} p-2">Adeguato:
-                                    {{ $gbx->is_adeguate ? 'SI' : 'NO' }}
-                                </div>
-                                <div class="badge {{ $gbx->permissions ? 'bg-success' : 'bg-danger' }} p-2">Permessi:
-                                    {{ $gbx->permissions ? 'SI' : 'NO' }}
-                                </div>
-                                <div class="badge {{ $gbx->CO_advancement ? 'bg-success' : 'bg-secondary' }} p-2">
-                                    Avanzamento CO:
-                                    {{ $gbx->CO_advancement ? 'SI' : 'NO' }}
-                                </div>
+                        <div class="d-flex gap-3">
+                            <div class="badge {{ $gbx->is_adeguate ? 'bg-success' : 'bg-danger' }} p-2">Adeguato:
+                                {{ $gbx->is_adeguate ? 'SI' : 'NO' }}
+                            </div>
+                            <div class="badge {{ $gbx->permissions ? 'bg-success' : 'bg-danger' }} p-2">Permessi:
+                                {{ $gbx->permissions ? 'SI' : 'NO' }}
+                            </div>
+                            <div class="badge {{ $gbx->CO_advancement ? 'bg-success' : 'bg-secondary' }} p-2">
+                                Avanzamento CO:
+                                {{ $gbx->CO_advancement ? 'SI' : 'NO' }}
                             </div>
                         </div>
-                        @role('admin')
-                        <div class="col-12">
-                            <h6 class="text-muted text-uppercase small fw-bold">Contabilità</h6>
-                            <div class="row text-center mt-2">
-                                <div class="col-md-4 border-end">
-                                    <div class="small text-muted">Valore</div>
-                                    <div class="fw-bold fs-5">{{ number_format($gbx->value, 2, ',', '.') }} €</div>
-                                </div>
-                                <div class="col-md-2 border-end">
-                                    <div class="small text-muted">Pagato Impresa</div>
-                                    <div class="fw-bold">{{ number_format($gbx->company_paid, 2, ',', '.') }} €</div>
-                                </div>
-                                <div class="col-md-2 border-end">
-                                    <div class="small text-muted">Pagato Bezzi</div>
-                                    <div class="fw-bold">{{ number_format($gbx->bezzi_paid, 2, ',', '.') }} €</div>
-                                </div>
-                                <div class="col-md-2 border-end">
-                                    <div class="small text-muted">Pagato Progetto</div>
-                                    <div class="fw-bold">{{ number_format($gbx->project_paid, 2, ',', '.') }} €</div>
-                                </div>
-                                <div class="col-md-2">
-                                    <div class="small text-muted">Pagato DL</div>
-                                    <div class="fw-bold">{{ number_format($gbx->dl_paid, 2, ',', '.') }} €</div>
-                                </div>
+                    </div>
+                    @role('admin')
+                    <div class="col-12">
+                        <h6 class="text-muted text-uppercase small fw-bold">Contabilità</h6>
+                        <div class="row text-center mt-2">
+                            <div class="col-md-4 border-end">
+                                <div class="small text-muted">Valore</div>
+                                <div class="fw-bold fs-5">{{ number_format($gbx->value, 2, ',', '.') }} €</div>
+                            </div>
+                            <div class="col-md-2 border-end">
+                                <div class="small text-muted">Pagato Impresa</div>
+                                <div class="fw-bold">{{ number_format($gbx->company_paid, 2, ',', '.') }} €</div>
+                            </div>
+                            <div class="col-md-2 border-end">
+                                <div class="small text-muted">Pagato Bezzi</div>
+                                <div class="fw-bold">{{ number_format($gbx->bezzi_paid, 2, ',', '.') }} €</div>
+                            </div>
+                            <div class="col-md-2 border-end">
+                                <div class="small text-muted">Pagato Progetto</div>
+                                <div class="fw-bold">{{ number_format($gbx->project_paid, 2, ',', '.') }} €</div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="small text-muted">Pagato DL</div>
+                                <div class="fw-bold">{{ number_format($gbx->dl_paid, 2, ',', '.') }} €</div>
                             </div>
                         </div>
-                        @endrole
-                        
-                    @else
+                    </div>
+                    @endrole
+
+        @else
                     <div class="text-center p-5">
                         <div class="spinner-border text-primary" role="status">
                             <span class="visually-hidden">Loading...</span>

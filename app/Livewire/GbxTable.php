@@ -131,6 +131,38 @@ class GbxTable extends DataTableComponent
                         ->whereDate('release_date', '<=', $dateRange['maxDate']);
                 }),
 
+            DateRangeFilter::make('Rich. Permessi', 'permission_request_date')
+                ->config(['locale' => 'it'])
+                ->filter(function (Builder $builder, array $dateRange) {
+                    $builder->whereDate('permission_request_date', '>=', $dateRange['minDate'])
+                        ->whereDate('permission_request_date', '<=', $dateRange['maxDate']);
+                }),
+
+            DateRangeFilter::make('Ott. Permessi', 'permission_obtain_date')
+                ->config(['locale' => 'it'])
+                ->filter(function (Builder $builder, array $dateRange) {
+                    $builder->whereDate('permission_obtain_date', '>=', $dateRange['minDate'])
+                        ->whereDate('permission_obtain_date', '<=', $dateRange['maxDate']);
+                }),
+
+            SelectFilter::make('Permessi', 'permissions')
+                ->options(['' => 'Tutti', '1' => 'SI', '0' => 'NO'])
+                ->filter(function (Builder $builder, string $value) {
+                    $builder->where('permissions', $value);
+                }),
+
+            SelectFilter::make('Avanz. CO', 'CO_advancement')
+                ->options(['' => 'Tutti', '1' => 'SI', '0' => 'NO'])
+                ->filter(function (Builder $builder, string $value) {
+                    $builder->where('CO_advancement', $value);
+                }),
+
+            TextFilter::make('Coordinate', 'coordinates')
+                ->config(['placeholder' => 'Coordinate'])
+                ->filter(function (Builder $builder, string $value) {
+                    $builder->where('coordinates', 'like', "%$value%");
+                }),
+
             DateRangeFilter::make('Data Progetto', 'project_date')
                 ->config(['locale' => 'it'])
                 ->filter(function (Builder $builder, array $dateRange) {
@@ -172,6 +204,11 @@ class GbxTable extends DataTableComponent
             Column::make("Infr. Adeguata", "is_adeguate")->format(fn($v) => $v ? 'SI' : 'NO')->sortable()->secondaryHeaderFilter('is_adeguate'),
             Column::make("Data Vincolo", "obligation_date")->format(fn($v) => $v ? Carbon::parse($v)->format('d/m/Y') : '-')->sortable()->secondaryHeaderFilter('obligation_date'),
             Column::make("Data Rilascio", "release_date")->format(fn($v) => $v ? Carbon::parse($v)->format('d/m/Y') : '-')->sortable()->secondaryHeaderFilter('release_date'),
+            Column::make("Rich. Permessi", "permission_request_date")->format(fn($v) => $v ? Carbon::parse($v)->format('d/m/Y') : '-')->sortable()->secondaryHeaderFilter('permission_request_date'),
+            Column::make("Ott. Permessi", "permission_obtain_date")->format(fn($v) => $v ? Carbon::parse($v)->format('d/m/Y') : '-')->sortable()->secondaryHeaderFilter('permission_obtain_date'),
+            Column::make("Permessi", "permissions")->format(fn($v) => $v ? 'SI' : 'NO')->sortable()->secondaryHeaderFilter('permissions'),
+            Column::make("Avanz. CO", "CO_advancement")->format(fn($v) => $v ? 'SI' : 'NO')->sortable()->secondaryHeaderFilter('CO_advancement'),
+            Column::make("Coordinate", "coordinates")->sortable()->searchable()->secondaryHeaderFilter('coordinates'),
             Column::make("Data Progetto", "project_date")->format(fn($v) => $v ? Carbon::parse($v)->format('d/m/Y') : '-')->sortable()->secondaryHeaderFilter('project_date'),
             Column::make("Data Speedark", "speedark_date")->format(fn($v) => $v ? Carbon::parse($v)->format('d/m/Y') : '-')->sortable()->secondaryHeaderFilter('speedark_date'),
             Column::make("Data Agg. Cart", "cart_update_date")->format(fn($v) => $v ? Carbon::parse($v)->format('d/m/Y') : '-')->sortable()->secondaryHeaderFilter('cart_update_date'),
