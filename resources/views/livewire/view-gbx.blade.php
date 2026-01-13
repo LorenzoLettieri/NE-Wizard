@@ -64,45 +64,18 @@
                         <textarea readonly class="form-control" rows="3">{{ $gbx->project_notes }}</textarea>
                     </div>
                     <div class="col-md-6">
-                        @role('admin')
-                        <div class="col-12">
-                            <h6 class="text-muted text-uppercase small fw-bold">Note</h6>
-                            <div class="row g-3 mt-1">
-                                <div class="col-md-6">
-                                    <div class="p-3 border rounded bg-light h-100">
-                                        <div class="small fw-bold text-muted mb-1">Sopralluogo</div>
-                                        <div>{{ $gbx->inspection_notes ?: '-' }}</div>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="p-3 border rounded bg-light h-100">
-                                        <div class="small fw-bold text-muted mb-1">Permessi</div>
-                                        <div>{{ $gbx->permission_notes ?: '-' }}</div>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="p-3 border rounded bg-light h-100">
-                                        <div class="small fw-bold text-muted mb-1">Progetto</div>
-                                        <div>{{ $gbx->project_notes ?: '-' }}</div>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="p-3 border rounded bg-light h-100">
-                                        <div class="small fw-bold text-muted mb-1">Cliente</div>
-                                        <div>{{ $gbx->client_notes ?: '-' }}</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-12 mt-4">
+                        <label class="form-label">Note Cliente</label>
+                        <textarea readonly class="form-control" rows="3">{{ $gbx->client_notes }}</textarea>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="col-12 mt-4 mb-4">
                             <h6 class="text-muted text-uppercase small fw-bold">Documentazione Media</h6>
                             <div class="mt-2">
                                 @if($gbx->media->count() > 0)
                                     <div class="row g-2">
                                         @foreach($gbx->media as $m)
                                             <div class="col-md-4">
-                                                <div class="d-flex align-items-center p-2 border rounded bg-white shadow-sm">
+                                                <div class="d-flex align-items-center p-2 border rounded shadow-sm">
                                                     <i class="bi bi-file-earmark-pdf-fill text-danger fs-4 me-2"></i>
                                                     <div class="flex-grow-1 text-truncate small" title="{{ $m->file_name }}">
                                                         {{ $m->file_name }}
@@ -120,6 +93,7 @@
                                 @endif
                             </div>
                         </div>
+                        @role('admin')
                         <div class="col-12">
                             <h6 class="text-muted text-uppercase small fw-bold">Contabilità</h6>
                             <div class="row text-center mt-2">
