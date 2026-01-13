@@ -93,11 +93,26 @@
                                 @endif
                             </div>
                         </div>
+                    </div>
+                    <div class="col-12">
+                            <div class="d-flex gap-3">
+                                <div class="badge {{ $gbx->is_adeguate ? 'bg-success' : 'bg-danger' }} p-2">Adeguato:
+                                    {{ $gbx->is_adeguate ? 'SI' : 'NO' }}
+                                </div>
+                                <div class="badge {{ $gbx->permissions ? 'bg-success' : 'bg-danger' }} p-2">Permessi:
+                                    {{ $gbx->permissions ? 'SI' : 'NO' }}
+                                </div>
+                                <div class="badge {{ $gbx->CO_advancement ? 'bg-success' : 'bg-secondary' }} p-2">
+                                    Avanzamento CO:
+                                    {{ $gbx->CO_advancement ? 'SI' : 'NO' }}
+                                </div>
+                            </div>
+                        </div>
                         @role('admin')
                         <div class="col-12">
                             <h6 class="text-muted text-uppercase small fw-bold">Contabilità</h6>
                             <div class="row text-center mt-2">
-                                <div class="col-md-2 border-end">
+                                <div class="col-md-4 border-end">
                                     <div class="small text-muted">Valore</div>
                                     <div class="fw-bold fs-5">{{ number_format($gbx->value, 2, ',', '.') }} €</div>
                                 </div>
@@ -120,22 +135,8 @@
                             </div>
                         </div>
                         @endrole
-                        <div class="col-12">
-                            <div class="d-flex gap-3">
-                                <div class="badge {{ $gbx->is_adeguate ? 'bg-success' : 'bg-danger' }} p-2">Adeguato:
-                                    {{ $gbx->is_adeguate ? 'SI' : 'NO' }}
-                                </div>
-                                <div class="badge {{ $gbx->permissions ? 'bg-success' : 'bg-danger' }} p-2">Permessi:
-                                    {{ $gbx->permissions ? 'SI' : 'NO' }}
-                                </div>
-                                <div class="badge {{ $gbx->CO_advancement ? 'bg-success' : 'bg-secondary' }} p-2">
-                                    Avanzamento CO:
-                                    {{ $gbx->CO_advancement ? 'SI' : 'NO' }}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-        @else
+                        
+                    @else
                     <div class="text-center p-5">
                         <div class="spinner-border text-primary" role="status">
                             <span class="visually-hidden">Loading...</span>
