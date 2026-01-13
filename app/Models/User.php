@@ -22,6 +22,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'company_id',
     ];
 
     /**
@@ -47,7 +48,13 @@ class User extends Authenticatable
         ];
     }
 
-    public function works(){
+    public function works()
+    {
         return $this->belongsToMany(Work::class);
+    }
+
+    public function company()
+    {
+        return $this->belongsTo(Company::class);
     }
 }

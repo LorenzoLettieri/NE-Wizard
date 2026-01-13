@@ -11,23 +11,29 @@ Route::get('/', function () {
 })->name('welcome');
 
 
-Route::group(['middleware' => ['role:admin']], function (){
+Route::group(['middleware' => ['role:admin']], function () {
     Route::get("/users/table", [UsersController::class, "index"])->name("users-table");
     Route::get("/users/accounts/table", [UsersController::class, "accountsTable"])->name("accounts-table");
     Route::get("/users/create", [UsersController::class, "create"])->name("addUser");
-    Route::post('/users/store', [UsersController::class,'store'])->name('registerUser');
-    Route::get('/users/edit/{id}', [UsersController::class,'edit'])->name('editUser');
-    Route::put('/users/update/{id}', [UsersController::class,'update'])->name('updateUser');
+    Route::post('/users/store', [UsersController::class, 'store'])->name('registerUser');
+    Route::get('/users/edit/{id}', [UsersController::class, 'edit'])->name('editUser');
+    Route::put('/users/update/{id}', [UsersController::class, 'update'])->name('updateUser');
 });
 
-Route::group(['middleware' => ['role:admin|supervisor']], function (){
-    Route::get('/works/table', [WorkController::class,'index'])->name('works-table');
+Route::group(['middleware' => ['role:admin|supervisor']], function () {
+    Route::get('/works/table', [WorkController::class, 'index'])->name('works-table');
     Route::get('/works/create', [WorkController::class, 'create'])->name('addWork');
-    Route::get('/works/edit/{id}', [WorkController::class,'edit'])->name('editWork');
+    Route::get('/works/edit/{id}', [WorkController::class, 'edit'])->name('editWork');
     Route::delete('/works/delete/{work}', [WorkController::class, 'delete'])->name('deleteWork');
 });
 Route::get('/exports/works', [WorkController::class, 'download'])->name('exports.works');
 
-Route::group(['middleware' => ['permission:get works']], function (){
+Route::group(['middleware' => ['permission:get works']], function () {
     Route::get('/operator/table', [OperatorController::class, 'index'])->name('operator-table');
+});
+
+Route::group(['middleware' => ['role:admin|GBX']], function () {
+    Route::get('/gbxes/table', [\App\Http\Controllers\GbxController::class, 'index'])->name('gbxes-table');
+    Route::get('/gbxes/create', [\App\Http\Controllers\GbxController::class, 'create'])->name('addGbx');
+    Route::delete('/gbxes/delete/{gbx}', [\App\Http\Controllers\GbxController::class, 'delete'])->name('deleteGbx');
 });

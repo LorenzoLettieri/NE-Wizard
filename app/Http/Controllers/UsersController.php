@@ -3,66 +3,79 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\Company;
 use Illuminate\Http\Request;
 use Spatie\Permission\Models\Role;
 use Illuminate\Support\Facades\Hash;
 
 class UsersController extends Controller
 {
-    public function index(){
+    public function index()
+    {
         return view('users.index');
     }
 
-    public function accountsTable(){
+    public function accountsTable()
+    {
         return view('users.accounts-table');
     }
 
-    public function create(){
+    public function create()
+    {
         $roles = Role::all();
-        return view('users.create', compact('roles'));
+        $companies = Company::all();
+        return view('users.create', compact('roles', 'companies'));
     }
 
-    public function store(Request $request){
+    public function store(Request $request)
+    {
         $validated = $request->validate([
             'name' => 'required | string | max:255',
-            'email' => 
+            'email' =>
                 'required | string | email | max:255 | unique:users',
-            'password' => 'required | string | min:8 | confirmed'
+            'password' => 'required | string | min:8 | confirmed',
+            'company_id' => 'nullable | exists:companies,id'
         ]);
 
         $user = User::create([
-            'name'=> $validated['name'],
-            'email'=> $validated['email'],
-            'password'=> Hash::make($validated['password'])
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
+            'company_id' => $validated['company_id']
         ]);
 
         $user->assignRole($request->role);
 
-        return redirect()->route('accounts-table')->with('message','Utente creato con successo!');
+        return redirect()->route('accounts-table')->with('message', 'Utente creato con successo!');
     }
 
-    public function edit($id){
+    public function edit($id)
+    {
         $user = User::find($id);
         $roles = Role::all();
-        return view('users.edit', compact('user', 'roles'));
+        $companies = Company::all();
+        return view('users.edit', compact('user', 'roles', 'companies'));
     }
 
-    public function update(Request $request, $id){
+    public function update(Request $request, $id)
+    {
         $validated = $request->validate([
             'name' => 'required | string | max:255',
             'email' => 'required | string | email | max:255',
-            'password'=> 'sometimes | nullable | string | min:8'
-            ]);
+            'password' => 'sometimes | nullable | string | min:8',
+            'company_id' => 'nullable | exists:companies,id'
+        ]);
         $user = User::find($id);
         $user->update([
-            'name'=> $validated['name'],
-            'email'=> $validated['email'],
-            'password'=> !empty($validated["password"]) ? $validated['password'] : $user->password,
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => !empty($validated["password"]) ? $validated['password'] : $user->password,
+            'company_id' => $validated['company_id']
         ]);
 
         $user->syncRoles($request->role);
 
-        return redirect()->route('accounts-table')->with('message','Utente modificato con successo!');
+        return redirect()->route('accounts-table')->with('message', 'Utente modificato con successo!');
 
     }
 

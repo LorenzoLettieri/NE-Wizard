@@ -16,12 +16,14 @@ class RoleSeeder extends Seeder
     {
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
-        Permission::create(["name"=> "get works"]);
-        Permission::create(["name"=> "get permessi ente"]);
+        Permission::firstOrCreate(["name" => "get works"]);
+        Permission::firstOrCreate(["name" => "get permessi ente"]);
+        Permission::firstOrCreate(["name" => "get gbx"]);
 
-        Role::create(['name' => 'admin']);
-        Role::create(['name' => 'supervisor'])->givePermissionTo('get works');
-        Role::create(['name'=> 'operator'])->givePermissionTo('get works');
-        Role::create(['name'=> 'permessi ente'])->givePermissionTo('get permessi ente');
+        Role::firstOrCreate(['name' => 'admin'])->givePermissionTo('get gbx');
+        Role::firstOrCreate(['name' => 'supervisor'])->givePermissionTo('get works');
+        Role::firstOrCreate(['name' => 'operator'])->givePermissionTo('get works');
+        // Role::firstOrCreate(['name' => 'permessi ente'])->givePermissionTo('get permessi ente');
+        Role::firstOrCreate(['name' => 'GBX'])->givePermissionTo('get gbx');
     }
 }

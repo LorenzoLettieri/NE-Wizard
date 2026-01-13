@@ -79,6 +79,15 @@
                         </a>
                     </div>
                 @endcan 
+                @can('get gbx')
+                    <div class="col-12 col-md-4">
+                        <a href="{{route('gbxes-table')}}" class="text-decoration-none">
+                        <div class="border border-black rounded-4 p-4 d-flex justify-content-between hover-lighten">
+                            <h3 class="display-5">GBX</h3>
+                        </div>
+                        </a>
+                    </div>
+                @endcan 
                 </div>
             </div>
             @endauth

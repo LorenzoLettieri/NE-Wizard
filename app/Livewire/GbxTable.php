@@ -1,0 +1,192 @@
+<?php
+namespace App\Livewire;
+
+use Carbon\Carbon;
+use App\Models\Gbx;
+use App\Models\Central;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Database\Eloquent\Builder;
+use Rappasoft\LaravelLivewireTables\Views\Column;
+use Rappasoft\LaravelLivewireTables\DataTableComponent;
+use Rappasoft\LaravelLivewireTables\Views\Filters\TextFilter;
+use Rappasoft\LaravelLivewireTables\Views\Filters\SelectFilter;
+use Rappasoft\LaravelLivewireTables\Views\Filters\DateRangeFilter;
+use App\Models\Company;
+
+class GbxTable extends DataTableComponent
+{
+    // protected $model = Gbx::class;
+    public function builder(): Builder
+    {
+        return Gbx::query()
+            ->with(['company', 'central'])
+            ->when(!auth()->user()->hasRole('admin'), function ($query) {
+                $query->whereHas('company', fn($q) => $q->where('name', auth()->user()->company->name));
+            });
+    }
+    protected $listeners = [
+        'gbxUpdated' => '$refresh',
+    ];
+
+    public function configure(): void
+    {
+        $this->setPrimaryKey('id');
+        $this->setSearchLive();
+        $this->setDefaultSort('created_at', 'desc');
+        $this->setPerPageAccepted([10, 25, 50, 100]);
+        $this->setTableAttributes(['class' => 'table-hover']);
+        $this->setSecondaryHeaderStatus(true);
+    }
+
+    public function filters(): array
+    {
+        $companies = ['' => 'Tutte'];
+        $companies = array_merge($companies, Company::pluck('name', 'name')->toArray());
+
+        $centrals = ['' => 'Tutte'];
+        $centrals = array_merge($centrals, Central::pluck('central', 'central')->toArray());
+
+        return [
+            SelectFilter::make('Impresa', 'company')
+                ->options($companies)
+                ->filter(function (Builder $builder, string $value) {
+                    $builder->whereHas('company', fn($q) => $q->where('name', $value));
+                }),
+
+            TextFilter::make('Network', 'network')
+                ->config(['placeholder' => 'Network'])
+                ->filter(function (Builder $builder, string $value) {
+                    $builder->where('network', 'like', "%$value%");
+                }),
+
+            TextFilter::make('SDF', 'sdf')
+                ->config(['placeholder' => 'SDF'])
+                ->filter(function (Builder $builder, string $value) {
+                    $builder->where('SDF', 'like', "%$value%");
+                }),
+
+            SelectFilter::make('Centrale', 'central')
+                ->options($centrals)
+                ->filter(function (Builder $builder, string $value) {
+                    $builder->whereHas('central', fn($q) => $q->where('central', $value));
+                }),
+
+            TextFilter::make('Comune', 'comune')
+                ->config(['placeholder' => 'Comune'])
+                ->filter(function (Builder $builder, string $value) {
+                    $builder->where('comune', 'like', "%$value%");
+                }),
+
+            TextFilter::make('Cliente', 'client')
+                ->config(['placeholder' => 'Cliente'])
+                ->filter(function (Builder $builder, string $value) {
+                    $builder->where('client', 'like', "%$value%");
+                }),
+
+            SelectFilter::make('Adeguato', 'is_adeguate')
+                ->options(['' => 'Tutti', '1' => 'SI', '0' => 'NO'])
+                ->filter(function (Builder $builder, string $value) {
+                    $builder->where('is_adeguate', $value);
+                }),
+
+            DateRangeFilter::make('Data Creazione', 'created_at')
+                ->config(['locale' => 'it'])
+                ->filter(function (Builder $builder, array $dateRange) {
+                    $builder->whereDate('gbxes.created_at', '>=', $dateRange['minDate'])
+                        ->whereDate('gbxes.created_at', '<=', $dateRange['maxDate']);
+                }),
+
+            DateRangeFilter::make('Data Appuntamento', 'appointment_date')
+                ->config(['locale' => 'it'])
+                ->filter(function (Builder $builder, array $dateRange) {
+                    $builder->whereDate('appointment_date', '>=', $dateRange['minDate'])
+                        ->whereDate('appointment_date', '<=', $dateRange['maxDate']);
+                }),
+
+            DateRangeFilter::make('Data Ispezione', 'inspection_date')
+                ->config(['locale' => 'it'])
+                ->filter(function (Builder $builder, array $dateRange) {
+                    $builder->whereDate('inspection_date', '>=', $dateRange['minDate'])
+                        ->whereDate('inspection_date', '<=', $dateRange['maxDate']);
+                }),
+
+            DateRangeFilter::make('Data Verbale', 'verbal_date')
+                ->config(['locale' => 'it'])
+                ->filter(function (Builder $builder, array $dateRange) {
+                    $builder->whereDate('verbal_date', '>=', $dateRange['minDate'])
+                        ->whereDate('verbal_date', '<=', $dateRange['maxDate']);
+                }),
+
+            DateRangeFilter::make('Data Obbligo', 'obligation_date')
+                ->config(['locale' => 'it'])
+                ->filter(function (Builder $builder, array $dateRange) {
+                    $builder->whereDate('obligation_date', '>=', $dateRange['minDate'])
+                        ->whereDate('obligation_date', '<=', $dateRange['maxDate']);
+                }),
+
+            DateRangeFilter::make('Data Rilascio', 'release_date')
+                ->config(['locale' => 'it'])
+                ->filter(function (Builder $builder, array $dateRange) {
+                    $builder->whereDate('release_date', '>=', $dateRange['minDate'])
+                        ->whereDate('release_date', '<=', $dateRange['maxDate']);
+                }),
+
+            DateRangeFilter::make('Data Progetto', 'project_date')
+                ->config(['locale' => 'it'])
+                ->filter(function (Builder $builder, array $dateRange) {
+                    $builder->whereDate('project_date', '>=', $dateRange['minDate'])
+                        ->whereDate('project_date', '<=', $dateRange['maxDate']);
+                }),
+
+            DateRangeFilter::make('Data Speedark', 'speedark_date')
+                ->config(['locale' => 'it'])
+                ->filter(function (Builder $builder, array $dateRange) {
+                    $builder->whereDate('speedark_date', '>=', $dateRange['minDate'])
+                        ->whereDate('speedark_date', '<=', $dateRange['maxDate']);
+                }),
+
+            DateRangeFilter::make('Data Agg. Cart', 'cart_update_date')
+                ->config(['locale' => 'it'])
+                ->filter(function (Builder $builder, array $dateRange) {
+                    $builder->whereDate('cart_update_date', '>=', $dateRange['minDate'])
+                        ->whereDate('cart_update_date', '<=', $dateRange['maxDate']);
+                }),
+        ];
+    }
+
+    public function columns(): array
+    {
+        $columns = [
+            Column::make("ID", "id")->sortable()->secondaryHeaderFilter('created_at'),
+            Column::make("Impresa", "company.name")->sortable()->searchable()->secondaryHeaderFilter('company'),
+            Column::make("Network", "network")->sortable()->searchable()->secondaryHeaderFilter('network'),
+            Column::make("SDF", "SDF")->sortable()->searchable()->secondaryHeaderFilter('sdf'),
+            Column::make("Centrale", "central.central")->sortable()->searchable()->secondaryHeaderFilter('central'),
+            Column::make("Comune", "comune")->sortable()->searchable()->secondaryHeaderFilter('comune'),
+            Column::make("Cliente", "client")->sortable()->searchable()->secondaryHeaderFilter('client'),
+            Column::make("Data Appunt.", "appointment_date")->format(fn($v) => $v ? Carbon::parse($v)->format('d/m/Y') :
+                '-')->sortable()->secondaryHeaderFilter('appointment_date'),
+            Column::make("Data Soprall.", "inspection_date")->format(fn($v) => $v ? Carbon::parse($v)->format('d/m/Y') :
+                '-')->sortable()->secondaryHeaderFilter('inspection_date'),
+            Column::make("Data Verbale", "verbal_date")->format(fn($v) => $v ? Carbon::parse($v)->format('d/m/Y') : '-')->sortable()->secondaryHeaderFilter('verbal_date'),
+            Column::make("Infr. Adeguata", "is_adeguate")->format(fn($v) => $v ? 'SI' : 'NO')->sortable()->secondaryHeaderFilter('is_adeguate'),
+            Column::make("Data Vincolo", "obligation_date")->format(fn($v) => $v ? Carbon::parse($v)->format('d/m/Y') : '-')->sortable()->secondaryHeaderFilter('obligation_date'),
+            Column::make("Data Rilascio", "release_date")->format(fn($v) => $v ? Carbon::parse($v)->format('d/m/Y') : '-')->sortable()->secondaryHeaderFilter('release_date'),
+            Column::make("Data Progetto", "project_date")->format(fn($v) => $v ? Carbon::parse($v)->format('d/m/Y') : '-')->sortable()->secondaryHeaderFilter('project_date'),
+            Column::make("Data Speedark", "speedark_date")->format(fn($v) => $v ? Carbon::parse($v)->format('d/m/Y') : '-')->sortable()->secondaryHeaderFilter('speedark_date'),
+            Column::make("Data Agg. Cart", "cart_update_date")->format(fn($v) => $v ? Carbon::parse($v)->format('d/m/Y') : '-')->sortable()->secondaryHeaderFilter('cart_update_date'),
+        ];
+
+        if (auth()->user()->hasRole('admin')) {
+            $columns[] = Column::make("Valore", "value")->format(fn($v) => $v ? number_format($v, 2, ',', '.') . ' €' : '-')->sortable();
+            $columns[] = Column::make("Pagato Impresa", "company_paid")->format(fn($v) => $v ? number_format($v, 2, ',', '.') . ' €' : '-')->sortable();
+            $columns[] = Column::make("Pagato Bezzi", "bezzi_paid")->format(fn($v) => $v ? number_format($v, 2, ',', '.') . ' €' : '-')->sortable();
+            $columns[] = Column::make("Pagato Progetto", "project_paid")->format(fn($v) => $v ? number_format($v, 2, ',', '.') . ' €' : '-')->sortable();
+            $columns[] = Column::make("Pagato DL", "dl_paid")->format(fn($v) => $v ? number_format($v, 2, ',', '.') . ' €' : '-')->sortable();
+        }
+
+        $columns[] = Column::make("Azioni")->label(fn($row) => view('gbxes.gbxes-table-actions')->with('row', $row))->html();
+
+        return $columns;
+    }
+}
