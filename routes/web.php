@@ -37,3 +37,10 @@ Route::group(['middleware' => ['role:admin|GBX']], function () {
     Route::get('/gbxes/create', [\App\Http\Controllers\GbxController::class, 'create'])->name('addGbx');
     Route::delete('/gbxes/delete/{gbx}', [\App\Http\Controllers\GbxController::class, 'delete'])->name('deleteGbx');
 });
+
+Route::group(['middleware' => ['role:admin|supervisor|permessi ente']], function () {
+    Route::get('/permessi-ente/table', [\App\Http\Controllers\PermessoEnteController::class, 'index'])->name('permessi-ente.table');
+    Route::get('/permessi-ente/create', [\App\Http\Controllers\PermessoEnteController::class, 'create'])->name('addPermesso');
+    Route::get('/permessi-ente/edit/{id}', [\App\Http\Controllers\PermessoEnteController::class, 'edit'])->name('editPermesso');
+    Route::delete('/permessi-ente/delete/{permesso}', [\App\Http\Controllers\PermessoEnteController::class, 'delete'])->name('deletePermesso');
+});

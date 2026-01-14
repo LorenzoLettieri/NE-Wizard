@@ -23,6 +23,11 @@
                     <a class="nav-link active" href="{{route('works-table')}}">Tabella Lavorazioni</a>
                 </li>
                 @endhasanyrole
+                @hasanyrole('admin|supervisor|permessi ente')
+                <li class="nav-item">
+                    <a class="nav-link active" href="{{route('permessi-ente.table')}}">Tabella Permessi</a>
+                </li>
+                @endhasanyrole
                 @hasanyrole('admin|GBX')
                 <li class="nav-item">
                     <a class="nav-link active" href="{{route('gbxes-table')}}">Tabella GBX</a>

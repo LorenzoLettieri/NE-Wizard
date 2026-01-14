@@ -4,8 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     /**
      * Run the migrations.
      */
@@ -14,13 +13,15 @@ return new class extends Migration
         Schema::create('permessi_ente', function (Blueprint $table) {
             $table->id();
 
+            $table->string('status')->default('Da Lavorare')->index();
+
             // Campi principali
             $table->unsignedBigInteger('network')->nullable();
             $table->date('consegna')->nullable();
             $table->string('progetto')->nullable();
-            $table->foreignId('regione_id')->nullable()->constrained('regioni')->nullOnDelete();
-            $table->foreignId('comune_id')->nullable()->constrained('comuni')->nullOnDelete();
-            $table->foreignId('central_id')->nullable()->constrained('centrals')->nullOnDelete();
+            $table->foreignId('regione_id')->nullable()->index()->constrained('regioni')->nullOnDelete();
+            $table->foreignId('comune_id')->nullable()->index()->constrained('comuni')->nullOnDelete();
+            $table->foreignId('central_id')->nullable()->index()->constrained('centrals')->nullOnDelete();
             $table->string('via')->nullable();
             $table->text('descrizione')->nullable();
 
@@ -32,7 +33,7 @@ return new class extends Migration
             $table->boolean('urgente')->default(false);
             $table->boolean('ordinaria')->default(false);
             $table->boolean('fine_lavori')->default(false);
-            $table->date('data_fl')->nullable();
+            $table->date('data_fl')->nullable()->index();
             $table->boolean('ra')->default(false);
             $table->date('data_ra')->nullable();
             $table->date('evaso_dal_dl')->nullable();
@@ -50,6 +51,7 @@ return new class extends Migration
             $table->integer('vdc4')->nullable();
 
             $table->timestamps(); // contiene created_at = data di apertura record
+            $table->index('created_at');
         });
     }
 

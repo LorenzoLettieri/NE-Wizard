@@ -40,9 +40,13 @@ class PermessoEnte extends Model
         'regione_id',
         'comune_id',
         'central_id',
+        'status',
+        'acception_date',
+        'delivery_date',
+        'completion_date',
     ];
 
-        protected $casts = [
+    protected $casts = [
         'consegna' => 'date',
         'data_fl' => 'date',
         'data_ra' => 'date',
@@ -54,6 +58,9 @@ class PermessoEnte extends Model
         'ordinaria' => 'boolean',
         'fine_lavori' => 'boolean',
         'ra' => 'boolean',
+        'acception_date' => 'datetime',
+        'delivery_date' => 'datetime',
+        'completion_date' => 'datetime',
     ];
     /**
      * RELAZIONI

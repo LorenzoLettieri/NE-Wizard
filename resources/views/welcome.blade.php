@@ -38,7 +38,7 @@
                     </div>
                 </div>
             </header>
-            <div class="container mt-4">
+            <!-- <div class="container mt-4">
                 <div class="row justify-content-center">
                     <div class="col-12 col-md-8">
                         <div class="border border-black rounded-4 p-4 shadow-lg">
@@ -49,7 +49,7 @@
                         </div>
                     </div>
                 </div>
-            </div>
+            </div> -->
             <div class="container">
                 <div class="row my-5">
                 @hasanyrole('admin|supervisor')
@@ -78,9 +78,18 @@
                         </div>
                         </a>
                     </div>
-                @endcan 
-                @can('get gbx')
+                @endcan
+                @hasanyrole('admin|supervisor|permessi ente')
                     <div class="col-12 col-md-4">
+                        <a href="{{route('permessi-ente.table')}}" class="text-decoration-none">
+                        <div class="border border-black rounded-4 p-4 d-flex justify-content-between hover-lighten">
+                            <h3 class="display-5">Permessi</h3>
+                        </div>
+                        </a>
+                    </div>
+                @endhasanyrole
+                @can('get gbx')
+                    <div class="col-12 col-md-4 my-md-5">
                         <a href="{{route('gbxes-table')}}" class="text-decoration-none">
                         <div class="border border-black rounded-4 p-4 d-flex justify-content-between hover-lighten">
                             <h3 class="display-5">GBX</h3>

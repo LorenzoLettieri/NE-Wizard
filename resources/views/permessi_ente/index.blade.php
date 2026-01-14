@@ -5,11 +5,13 @@
                 <h1 class="text-center mx-3">Tabella Permessi Ente</h1>
                 
                 {{-- Pulsante + già presente --}}
+                @unlessrole('permessi ente')
                 <div>
-                    <a type="button" class="btn btn-success mx-2" href="{{ route('addPermessoEnte') }}">
+                    <a type="button" class="btn btn-success mx-2" href="{{ route('addPermesso') }}">
                         <i class="bi bi-plus"></i>
                     </a>
                 </div>
+                @endunlessrole
             </div>
 
             <div class="col-12">

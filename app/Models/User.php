@@ -53,6 +53,11 @@ class User extends Authenticatable
         return $this->belongsToMany(Work::class);
     }
 
+    public function permessiEnte()
+    {
+        return $this->belongsToMany(PermessoEnte::class, 'permesso_ente_user');
+    }
+
     public function company()
     {
         return $this->belongsTo(Company::class);

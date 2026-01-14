@@ -5,15 +5,21 @@
 
     <ul class="dropdown-menu">
         <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#viewGbxModal"
-                onclick="Livewire.dispatch('view-gbx', {id: {{$row->id}}})">Dettaglio</a></li>
+                onclick="Livewire.dispatch('view-gbx', {id: {{$row->id}}})">
+                <i class="bi bi-eye me-2"></i> Dettaglio
+            </a></li>
         <li><a class="dropdown-item text-warning" href="#" data-bs-toggle="modal" data-bs-target="#editGbxModal"
-                onclick="Livewire.dispatch('edit-gbx', {id: {{$row->id}}})">Modifica</a></li>
+                onclick="Livewire.dispatch('edit-gbx', {id: {{$row->id}}})">
+                <i class="bi bi-pencil me-2"></i> Modifica
+            </a></li>
         <li>
             <hr class="dropdown-divider">
         </li>
         @role('admin')
         <li><a class="dropdown-item text-danger" data-bs-toggle="modal" data-bs-target="#deleteGbxModal{{$row->id}}"
-                href="#">Elimina</a></li>
+                href="#">
+                <i class="bi bi-trash me-2"></i> Elimina
+            </a></li>
         @endrole
     </ul>
 
