@@ -18,6 +18,7 @@ class GbxEdit extends Component
     public $appointment_date, $inspection_date, $verbal_date, $obligation_date, $release_date, $project_date,
     $speedark_date;
     public $permission_request_date, $permission_obtain_date, $cart_update_date;
+    public $date;
     public $is_adeguate, $permissions, $CO_advancement;
     public $value, $company_paid, $bezzi_paid, $project_paid, $dl_paid;
     public $inspection_notes, $permission_notes, $project_notes, $client_notes;
@@ -40,6 +41,7 @@ class GbxEdit extends Component
             'bezzi_paid' => 'nullable|numeric',
             'project_paid' => 'nullable|numeric',
             'dl_paid' => 'nullable|numeric',
+            'date' => 'nullable|date',
         ]);
 
         $this->gbx->update($this->except(['centrals', 'companies', 'gbx', 'files']));

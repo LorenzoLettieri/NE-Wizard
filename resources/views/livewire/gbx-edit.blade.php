@@ -52,6 +52,10 @@
                 </div>
 
                 <div class="col-md-3">
+                    <label class="form-label">Data</label>
+                    <input type="date" class="form-control" wire:model="date">
+                </div>
+                <div class="col-md-3">
                     <label class="form-label">Data Appuntamento</label>
                     <input type="date" class="form-control" wire:model="appointment_date">
                 </div>

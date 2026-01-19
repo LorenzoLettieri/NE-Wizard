@@ -25,5 +25,6 @@ class RoleSeeder extends Seeder
         Role::firstOrCreate(['name' => 'operator'])->givePermissionTo('get works');
         Role::firstOrCreate(['name' => 'permessi ente'])->givePermissionTo('get permessi ente');
         Role::firstOrCreate(['name' => 'GBX'])->givePermissionTo('get gbx');
+        Role::firstOrCreate(['name' => 'GBX Supervisor'])->givePermissionTo('get gbx');
     }
 }

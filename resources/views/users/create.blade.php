@@ -32,15 +32,7 @@
                         <label for="password" class="form-label">Ripeti Password</label>
                         <input type="password" class="form-control" id="password" name="password_confirmation">
                     </div>
-                    <div class="mb-3">
-                        <label for="company_id" class="form-label">Impresa</label>
-                        <select class="form-select tom-select" id="company_id" name="company_id">
-                            <option value="">-- Seleziona --</option>
-                            @foreach($companies as $company)
-                                <option value="{{$company->id}}">{{$company->name}}</option>
-                            @endforeach
-                        </select>
-                    </div>
+
                     <div class="mb-3">
                         <label for="role" class="form-label">Ruolo</label>
                         <select class="form-select tom-select" id="role" name="role">
@@ -50,8 +42,33 @@
                             @endforeach
                         </select>
                     </div>
+
+                    <div id="company-field" class="mb-3" style="display: none;">
+                        <label for="company_id" class="form-label">Impresa</label>
+                        <select class="form-select tom-select" id="company_id" name="company_id">
+                            <option value="">-- Seleziona --</option>
+                            @foreach($companies as $company)
+                                <option value="{{$company->id}}">{{$company->name}}</option>
+                            @endforeach
+                        </select>
+                    </div>
                     <button type="submit" class="btn btn-primary">Crea Account</button>
                 </form>
             </div>
         </div>
 </x-layout>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const roleSelect = document.getElementById('role');
+        const companyField = document.getElementById('company-field');
+
+        roleSelect.addEventListener('change', function () {
+            if (this.value === 'GBX') {
+                companyField.style.display = 'block';
+            } else {
+                companyField.style.display = 'none';
+            }
+        });
+    });
+</script>

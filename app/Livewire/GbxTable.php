@@ -20,7 +20,7 @@ class GbxTable extends DataTableComponent
     {
         return Gbx::query()
             ->with(['company', 'central'])
-            ->when(!auth()->user()->hasRole('admin'), function ($query) {
+            ->when(!auth()->user()->hasAnyRole('admin|GBX Supervisor'), function ($query) {
                 $query->whereHas('company', fn($q) => $q->where('name', auth()->user()->company->name));
             });
     }
@@ -47,6 +47,21 @@ class GbxTable extends DataTableComponent
         $centrals = array_merge($centrals, Central::pluck('central', 'central')->toArray());
 
         return [
+            DateRangeFilter::make('Data Creazione', 'date')->config([
+                'allowInput' => true,   // Allow manual input of dates
+                'altFormat' => 'F j, Y', // Date format that will be displayed once selected
+                'ariaDateFormat' => 'F j, Y', // An aria-friendly date format
+                'dateFormat' => 'Y-m-d', // Date format that will be received by the filter
+                'placeholder' => 'Inserisci Data', // A placeholder value
+                'locale' => 'it',
+            ])
+                ->setFilterPillValues([0 => 'minDate', 1 => 'maxDate']) // The values that will be displayed for the Min/Max Date Values
+                ->filter(function (Builder $builder, array $dateRange) { // Expects an array.
+                    $builder
+                        ->whereDate('gbxes.date', '>=', $dateRange['minDate']) // minDate is the start date selected
+                        ->whereDate('gbxes.date', '<=', $dateRange['maxDate']); // maxDate is the end date selected
+                }),
+
             SelectFilter::make('Impresa', 'company')
                 ->options($companies)
                 ->filter(function (Builder $builder, string $value) {
@@ -189,7 +204,18 @@ class GbxTable extends DataTableComponent
     public function columns(): array
     {
         $columns = [
-            Column::make("ID", "id")->sortable()->secondaryHeaderFilter('created_at'),
+            Column::make('Data creazione', 'date')
+                ->format(function ($value, $row, Column $column) {
+                    if (!$value) {
+                        return '-';
+                    }
+                    // $value è un Carbon o stringa a seconda del cast del model
+                    return Carbon::parse($value)
+                        ->setTimezone('Europe/Rome')
+                        ->format('d/m/Y');
+                })
+                ->sortable()->secondaryHeaderFilter(filterKey: 'date'),
+            Column::make("ID", "id")->sortable(),
             Column::make("Impresa", "company.name")->sortable()->searchable()->secondaryHeaderFilter('company'),
             Column::make("Network", "network")->sortable()->searchable()->secondaryHeaderFilter('network'),
             Column::make("SDF", "SDF")->sortable()->searchable()->secondaryHeaderFilter('sdf'),

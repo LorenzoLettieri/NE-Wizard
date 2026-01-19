@@ -32,7 +32,7 @@ Route::group(['middleware' => ['permission:get works']], function () {
     Route::get('/operator/table', [OperatorController::class, 'index'])->name('operator-table');
 });
 
-Route::group(['middleware' => ['role:admin|GBX']], function () {
+Route::group(['middleware' => ['role:admin|GBX|GBX Supervisor']], function () {
     Route::get('/gbxes/table', [\App\Http\Controllers\GbxController::class, 'index'])->name('gbxes-table');
     Route::get('/gbxes/create', [\App\Http\Controllers\GbxController::class, 'create'])->name('addGbx');
     Route::delete('/gbxes/delete/{gbx}', [\App\Http\Controllers\GbxController::class, 'delete'])->name('deleteGbx');

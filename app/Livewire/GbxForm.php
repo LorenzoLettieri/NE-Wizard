@@ -17,6 +17,7 @@ class GbxForm extends Component
     public $appointment_date, $inspection_date, $verbal_date, $obligation_date, $release_date, $project_date,
     $speedark_date;
     public $permission_request_date, $permission_obtain_date, $cart_update_date;
+    public $date;
     public $is_adeguate = 0, $permissions = 0, $CO_advancement = 0;
     public $value, $company_paid, $bezzi_paid, $project_paid, $dl_paid;
     public $inspection_notes, $permission_notes, $project_notes, $client_notes;
@@ -26,6 +27,7 @@ class GbxForm extends Component
     {
         $this->centrals = Central::all();
         $this->companies = Company::all();
+        $this->date = date('Y-m-d');
     }
 
     public function store()
@@ -38,6 +40,7 @@ class GbxForm extends Component
             'bezzi_paid' => 'nullable|numeric',
             'project_paid' => 'nullable|numeric',
             'dl_paid' => 'nullable|numeric',
+            'date' => 'nullable|date',
         ]);
 
         $gbx = Gbx::create($this->except(['centrals', 'companies', 'files']));

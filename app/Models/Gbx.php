@@ -37,6 +37,7 @@ class Gbx extends Model
         'permission_notes',
         'project_notes',
         'client_notes',
+        'date',
     ];
 
     public function media(): MorphMany
