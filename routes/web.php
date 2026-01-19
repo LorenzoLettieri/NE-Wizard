@@ -18,6 +18,8 @@ Route::group(['middleware' => ['role:admin']], function () {
     Route::post('/users/store', [UsersController::class, 'store'])->name('registerUser');
     Route::get('/users/edit/{id}', [UsersController::class, 'edit'])->name('editUser');
     Route::put('/users/update/{id}', [UsersController::class, 'update'])->name('updateUser');
+    Route::get('/timesheets/dashboard', [\App\Http\Controllers\AdminTimesheetController::class, 'index'])->name('admin.timesheets');
+
 });
 
 Route::group(['middleware' => ['role:admin|supervisor']], function () {
@@ -30,6 +32,7 @@ Route::get('/exports/works', [WorkController::class, 'download'])->name('exports
 
 Route::group(['middleware' => ['permission:get works']], function () {
     Route::get('/operator/table', [OperatorController::class, 'index'])->name('operator-table');
+    Route::get('/operator/timesheet', [\App\Http\Controllers\OperatorTimesheetController::class, 'index'])->name('operator-timesheet');
 });
 
 Route::group(['middleware' => ['role:admin|GBX|GBX Supervisor']], function () {

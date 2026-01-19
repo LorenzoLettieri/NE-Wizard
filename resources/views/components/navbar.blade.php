@@ -27,6 +27,9 @@
                 <li class="nav-item">
                     <a class="nav-link active" href="{{route('permessi-ente.table')}}">Tabella Permessi</a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link active" href="{{route('admin.timesheets')}}">Gestione Presenze</a>
+                </li>
                 @endhasanyrole
                 @hasanyrole('admin|GBX')
                 <li class="nav-item">
@@ -36,6 +39,9 @@
                 @can('get works')
                     <li class="nav-item">
                         <a class="nav-link active" href="{{route('operator-table')}}">Bacheca Operatore</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{{route('operator-timesheet')}}">Timbra Presenza</a>
                     </li>
                 @endcan
                 @auth
