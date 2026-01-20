@@ -265,6 +265,10 @@ class WorksTable extends DataTableComponent
                     // DIRECT ACCESS - No access to DB
                     return $row->users->pluck('name')->join(', ');
                 })->secondaryHeaderFilter(filterKey: 'assigned_operators'),
+            Column::make("Data In", "date_in_str")
+                ->sortable()->searchable(),
+            Column::make("Data Out", "date_out_str")
+                ->sortable()->searchable(),
             Column::make("Data PiC", "acception_date")->format(
                 function ($value, $row, Column $column) {
                     if ($value) {

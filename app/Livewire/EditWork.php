@@ -12,7 +12,7 @@ use Illuminate\Support\Carbon;
 
 class EditWork extends Component
 {
-    
+
     public $work;
     public $operators;
 
@@ -20,11 +20,12 @@ class EditWork extends Component
     public $centrals;
 
     public $suspension_history;
-    public $company_id, $central_id, $operator_id, $status, $network, $ao_cno, $ntw_scope, $description, $type, $phase, $company_assistant, $nroe, $wo_number,$unica_number, $notes;
-    public $go_live, $date_in, $date_out;
+    public $company_id, $central_id, $operator_id, $status, $network, $ao_cno, $ntw_scope, $description, $type, $phase, $company_assistant, $nroe, $wo_number, $unica_number, $notes;
+    public $go_live, $date_in_str, $date_out_str;
     public $daphne;
-    #[On('edit-work')] 
-     public function editWork($id){
+    #[On('edit-work')]
+    public function editWork($id)
+    {
         $this->work = Work::find($id);
 
         $this->company_id = $this->work->company_id;
@@ -44,14 +45,15 @@ class EditWork extends Component
         $this->notes = $this->work->notes;
         $this->daphne = $this->work->daphne;
         $this->go_live = $this->work->go_live;
-        $this->date_in = $this->work->date_in;
-        $this->date_out = $this->work->date_out;
+        $this->date_in_str = $this->work->date_in_str;
+        $this->date_out_str = $this->work->date_out_str;
 
         $this->suspension_history = $this->work->suspension_history;
-     }
+    }
 
-     public function update(){
-        $this->work->update( $this->all());
+    public function update()
+    {
+        $this->work->update($this->all());
         $this->work->users()->detach();
         $this->work->users()->attach($this->operator_id, ['created_at' => Carbon::now()]);
 
@@ -59,11 +61,12 @@ class EditWork extends Component
         $this->dispatch('workUpdated');
     }
 
-     public function mount(){
+    public function mount()
+    {
         $this->companies = Company::all();
         $this->centrals = Central::all();
         $this->operators = User::permission('get works')->get();
-     }
+    }
 
     public function render()
     {

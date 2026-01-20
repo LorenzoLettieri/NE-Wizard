@@ -1,14 +1,13 @@
-
 {{-- Stop trying to control. --}}
 <div class="col-12 col-md-6 my-3">
     @if ($errors->any())
-    <div class="alert alert-danger">
-        <ul>
-            @foreach ($errors->all() as $error)
-            <li>{{ $error }}</li>
-            @endforeach
-        </ul>
-    </div>
+        <div class="alert alert-danger">
+            <ul>
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
     @endif
     @if (session('success'))
 
@@ -53,7 +52,7 @@
                 </div>
             </div>
 
-            <div class="row" >
+            <div class="row">
                 <div class="col-12 col-md-4 mb-4">
                     <label for="network" class="form-label">Codice NTW:</label>
                     <input type="network" class="form-control" id="network" wire:model="network">
@@ -82,7 +81,8 @@
             <div class="row">
                 <div class="col-12 col-md-12 mb-4">
                     <label for="description" class="form-label">Descrizione:</label>
-                    <input type="description" class="form-control" id="description" wire:model="description" placeholder="Appunti Aggiuntivi">
+                    <input type="description" class="form-control" id="description" wire:model="description"
+                        placeholder="Appunti Aggiuntivi">
                 </div>
                 <div class="col-12 col-md-4 mb-4">
                     <label for="type" class="form-label">RAME/OTTICO:</label>
@@ -114,7 +114,8 @@
                 </div>
                 <div class="col-12 col-md-4 mb-4">
                     <label for="company_assistant" class="form-label">Assistente Impresa:</label>
-                    <input type="company_assistant" class="form-control" id="company_assistant" wire:model="company_assistant" placeholder="">
+                    <input type="company_assistant" class="form-control" id="company_assistant"
+                        wire:model="company_assistant" placeholder="">
                 </div>
                 <div class="col-12 col-md-4 mb-4">
                     <label for="nroe" class="form-label">N ROE:</label>
@@ -126,7 +127,8 @@
                 </div>
                 <div class="col-12 col-md-6 mb-4">
                     <label for="unica_number" class="form-label">UNICA Number:</label>
-                    <input type="unica_number" class="form-control" id="unica_number" wire:model="unica_number" placeholder="">
+                    <input type="unica_number" class="form-control" id="unica_number" wire:model="unica_number"
+                        placeholder="">
                 </div>
                 <div class="col-4 col-md-4 mb-4">
                     <label for="go_live" class="form-label">Go Live:</label>
@@ -137,21 +139,21 @@
                     </select>
                 </div>
                 <div class="col-4 col-md-4 mb-4">
-                    <label for="date_in" class="form-label">Data In:</label>
-                    <input type="date" class="form-control" id="date_in" wire:model="date_in">
+                    <label for="date_in_str" class="form-label">Data In:</label>
+                    <input type="text" class="form-control" id="date_in_str" wire:model="date_in_str">
                 </div>
-                 <div class="col-4 col-md-4 mb-4">
-                    <label for="date_out" class="form-label">Data Out:</label>
-                    <input type="date" class="form-control" id="date_out" wire:model="date_out">
+                <div class="col-4 col-md-4 mb-4">
+                    <label for="date_out_str" class="form-label">Data Out:</label>
+                    <input type="text" class="form-control" id="date_out_str" wire:model="date_out_str">
                 </div>
                 <div class="col-12 col-md-12 mb-4">
                     <label for="notes" class="form-label">Note:</label>
                     <textarea class="form-control" id="notes" rows="5" wire:model="notes"></textarea>
-                  </div>
-                  <div class="col-12 col-md-12 mb-4">
+                </div>
+                <div class="col-12 col-md-12 mb-4">
                     <label for="phase" class="form-label">Assegna Lavorazione ad Operatore:</label>
                     <select wire:model="operator_id" class="form-select tom-select-multiple">
-                            <option value="">-- Seleziona --</option>
+                        <option value="">-- Seleziona --</option>
                         @foreach ($operators as $operator)
                             <option value="{{$operator->id}}">{{$operator->name}}</option>
                         @endforeach
@@ -160,6 +162,6 @@
             </div>
             <button type="submit" class="btn btn-primary">Crea Lavorazione</button>
         </div>
-        
+
     </form>
 </div>

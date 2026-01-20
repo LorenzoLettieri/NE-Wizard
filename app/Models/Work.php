@@ -11,19 +11,45 @@ class Work extends Model
 {
     use SoftDeletes;
     protected $fillable = [
-        'company_id','central_id','status','network','ao_cno','description','ntw_scope','type','phase','daphne','company_assistant','completion_date','acception_date','delivery_date','nroe','wo_number','unica_number','suspension_history','notes', 'go_live','date_in','date_out'
+        'company_id',
+        'central_id',
+        'status',
+        'network',
+        'ao_cno',
+        'description',
+        'ntw_scope',
+        'type',
+        'phase',
+        'daphne',
+        'company_assistant',
+        'completion_date',
+        'acception_date',
+        'delivery_date',
+        'nroe',
+        'wo_number',
+        'unica_number',
+        'suspension_history',
+        'notes',
+        'go_live',
+        'date_in',
+        'date_out',
+        'date_in_str',
+        'date_out_str'
     ];
 
-   public function users(){
-    return $this->belongsToMany(User::class);
-   }
-   public function company(){
-    return $this->belongsTo(Company::class);
-   }
+    public function users()
+    {
+        return $this->belongsToMany(User::class);
+    }
+    public function company()
+    {
+        return $this->belongsTo(Company::class);
+    }
 
-   public function central(){
-    return $this->belongsTo(Central::class);
-   }
+    public function central()
+    {
+        return $this->belongsTo(Central::class);
+    }
 
 
 

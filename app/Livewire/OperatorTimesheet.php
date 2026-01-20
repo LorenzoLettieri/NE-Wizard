@@ -19,6 +19,7 @@ class OperatorTimesheet extends Component
     public $leaveType;
     public $leaveHours;
     public $overtimeHours;
+    public $selectedDate;
 
     public function mount()
     {
@@ -57,70 +58,67 @@ class OperatorTimesheet extends Component
     public function openActionModal($action)
     {
         $this->actionType = $action;
+        $this->inputTime = now()->format('H:i');
+        $this->selectedDate = now()->toDateString();
+
         $timesheet = $this->todayTimesheet;
-        $existingTime = null;
 
-        if ($timesheet) {
-            switch ($action) {
-                case 'start_shift':
-                    $existingTime = $timesheet->entry_time;
-                    break;
-                case 'end_shift':
-                    $existingTime = $timesheet->exit_time;
-                    break;
-                case 'start_break':
-                    $existingTime = $timesheet->break_start;
-                    break;
-                case 'end_break':
-                    $existingTime = $timesheet->break_end;
-                    break;
-            }
+        // Reset/pre-fill form fields for leave/overtime
+        if (in_array($action, ['leave', 'overtime'])) {
+            $this->leaveType = ($timesheet && $action == 'leave') ? $timesheet->leave_type : '';
+            $this->leaveHours = ($timesheet && $action == 'leave') ? $timesheet->leave_hours : 0;
+            $this->overtimeHours = ($timesheet && $action == 'overtime') ? $timesheet->overtime_hours : 0;
         }
-
-        $this->inputTime = $existingTime ? $existingTime->format('H:i') : now()->format('H:i');
-
-        // Reset form fields
-        $this->leaveType = ($timesheet && $action == 'leave') ? $timesheet->leave_type : '';
-        $this->leaveHours = ($timesheet && $action == 'leave') ? $timesheet->leave_hours : 0;
-        $this->overtimeHours = ($timesheet && $action == 'overtime') ? $timesheet->overtime_hours : 0;
 
         $this->showModal = true;
     }
 
     public function saveAction()
     {
-        $time = Carbon::createFromFormat('H:i', $this->inputTime);
-        // Combine with today's date for timestamp
-        $timestamp = now()->setTime($time->hour, $time->minute, 0);
+        $date = Carbon::parse($this->selectedDate);
+        $timesheet = Timesheet::where('user_id', Auth::id())
+            ->where('date', $date->toDateString())
+            ->first();
 
-        $timesheet = $this->todayTimesheet;
-
-        if (!$timesheet && in_array($this->actionType, ['start_shift'])) {
-            $timesheet = new Timesheet();
-            $timesheet->user_id = Auth::id();
-            $timesheet->date = Carbon::today();
+        // For shift/break actions, we always use NOW and override selectedDate just in case
+        if (in_array($this->actionType, ['start_shift', 'end_shift', 'start_break', 'end_break'])) {
+            $timestamp = now();
+            $date = Carbon::today();
+        } else {
+            // For leaves/overtime, we use the selectedDate
+            $timestamp = now(); // Timestamp here is less critical, it's the date that matters
         }
 
-        // Safety check if timesheet doesn't exist for other actions (though UI shouldn't allow it)
-        if (!$timesheet && !in_array($this->actionType, ['start_shift'])) {
+        if (!$timesheet && $this->actionType === 'start_shift') {
+            $timesheet = new Timesheet();
+            $timesheet->user_id = Auth::id();
+            $timesheet->date = $date;
+        }
+
+        // Safety check if timesheet doesn't exist for other actions
+        if (!$timesheet) {
             $timesheet = Timesheet::firstOrCreate([
                 'user_id' => Auth::id(),
-                'date' => Carbon::today()
+                'date' => $date
             ]);
         }
 
         switch ($this->actionType) {
             case 'start_shift':
-                $timesheet->entry_time = $timestamp;
+                if (!$timesheet->entry_time)
+                    $timesheet->entry_time = $timestamp;
                 break;
             case 'end_shift':
-                $timesheet->exit_time = $timestamp;
+                if (!$timesheet->exit_time)
+                    $timesheet->exit_time = $timestamp;
                 break;
             case 'start_break':
-                $timesheet->break_start = $timestamp;
+                if (!$timesheet->break_start)
+                    $timesheet->break_start = $timestamp;
                 break;
             case 'end_break':
-                $timesheet->break_end = $timestamp;
+                if (!$timesheet->break_end)
+                    $timesheet->break_end = $timestamp;
                 break;
             case 'leave':
                 $timesheet->leave_type = $this->leaveType;
@@ -133,7 +131,7 @@ class OperatorTimesheet extends Component
 
         $timesheet->save();
         $this->showModal = false;
-        $this->dispatch('timesheet-updated'); // Optional: for UI feedback
+        $this->dispatch('timesheet-updated');
     }
 
     public function render()

@@ -7,25 +7,41 @@
     <div class="card mb-4 shadow-sm">
         <div class="card-body">
             <h5 class="card-title mb-3">Azioni Giornaliere</h5>
+
+            <!-- Mobile Warning -->
+            <div class="alert alert-warning d-md-none mb-0">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                La registrazione delle presenze è disponibile solo da postazione desktop.
+            </div>
+
+            @php
+                $today = $this->todayTimesheet;
+            @endphp
             <div class="d-flex flex-wrap gap-2">
-                <button wire:click="openActionModal('start_shift')" class="btn btn-secondary">
-                    <i class="bi bi-play-circle me-1"></i> Inizio Turno
-                </button>
+                <!-- Shift/Break Actions: Desktop Only -->
+                <div class="d-none d-md-flex flex-wrap gap-2">
+                    <button wire:click="openActionModal('start_shift')" class="btn btn-secondary" @if($today && $today->entry_time) disabled @endif>
+                        <i class="bi bi-play-circle me-1"></i> Inizio Turno
+                    </button>
 
-                <button wire:click="openActionModal('start_break')" class="btn btn-secondary">
-                    <i class="bi bi-pause-circle me-1"></i> Inizio Pausa
-                </button>
+                    <button wire:click="openActionModal('start_break')" class="btn btn-secondary" @if(!$today || ($today && $today->break_start) || ($today && !$today->entry_time) || ($today && $today->exit_time))
+                    disabled @endif>
+                        <i class="bi bi-pause-circle me-1"></i> Inizio Pausa
+                    </button>
 
-                <button wire:click="openActionModal('end_break')" class="btn btn-secondary">
-                    <i class="bi bi-play-circle-fill me-1"></i> Fine Pausa
-                </button>
+                    <button wire:click="openActionModal('end_break')" class="btn btn-secondary" @if(!$today || ($today && $today->break_end) || ($today && !$today->break_start) || ($today && $today->exit_time))
+                    disabled @endif>
+                        <i class="bi bi-play-circle-fill me-1"></i> Fine Pausa
+                    </button>
 
-                <button wire:click="openActionModal('end_shift')" class="btn btn-secondary">
-                    <i class="bi bi-stop-circle me-1"></i> Fine Turno
-                </button>
+                    <button wire:click="openActionModal('end_shift')" class="btn btn-secondary" @if(!$today || ($today && $today->exit_time) || ($today && !$today->entry_time)) disabled @endif>
+                        <i class="bi bi-stop-circle me-1"></i> Fine Turno
+                    </button>
 
-                <div class="vr mx-2"></div>
+                    <div class="vr mx-2"></div>
+                </div>
 
+                <!-- Leave/Overtime Actions: All Devices -->
                 <button wire:click="openActionModal('leave')" class="btn btn-outline-secondary">
                     <i class="bi bi-calendar-event me-1"></i> Inserisci Permesso
                 </button>
@@ -149,9 +165,29 @@
                             aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
+                        @if(in_array($actionType, ['leave', 'overtime']))
+                            <div class="mb-3">
+                                <label class="form-label">Data</label>
+                                <select wire:model="selectedDate" class="form-select">
+                                    <option value="{{ now()->toDateString() }}">Oggi ({{ now()->format('d/m') }})</option>
+                                    <option value="{{ now()->addDay()->toDateString() }}">Domani
+                                        ({{ now()->addDay()->format('d/m') }})</option>
+                                    <option value="{{ now()->addDays(2)->toDateString() }}">Dopodomani
+                                        ({{ now()->addDays(2)->format('d/m') }})</option>
+                                </select>
+                            </div>
+                        @endif
+
                         <div class="mb-3">
                             <label class="form-label">Orario</label>
-                            <input type="time" wire:model="inputTime" class="form-control">
+                            @if(in_array($actionType, ['start_shift', 'end_shift', 'start_break', 'end_break']))
+                                <div class="h4 mb-0 text-primary">
+                                    {{ $inputTime }}
+                                </div>
+                                <small class="text-muted">Verrà registrato l'orario attuale.</small>
+                            @else
+                                <input type="time" wire:model="inputTime" class="form-control">
+                            @endif
                         </div>
 
                         @if($actionType == 'leave')

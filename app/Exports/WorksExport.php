@@ -26,7 +26,7 @@ class WorksExport implements FromQuery, WithMapping, WithHeadings, ShouldAutoSiz
     {
         $this->dateField = $dateField;
         $this->start = Carbon::parse($startDate)->startOfDay();
-        $this->end   = Carbon::parse($endDate)->endOfDay();
+        $this->end = Carbon::parse($endDate)->endOfDay();
     }
 
     public function query()
@@ -64,9 +64,11 @@ class WorksExport implements FromQuery, WithMapping, WithHeadings, ShouldAutoSiz
             'Data PiC',            // Q (acception_date)
             'Data Consegna',       // R (delivery_date)
             'Data FL',             // S (completion_date)
-            'Assistente Impresa',  // T
-            'Note',                // U
-            'Storico sospensioni', // V
+            'Data In',             // T (date_in_str)
+            'Data Out',            // U (date_out_str)
+            'Assistente Impresa',  // V
+            'Note',                // W
+            'Storico sospensioni', // X
         ];
     }
 
@@ -94,6 +96,8 @@ class WorksExport implements FromQuery, WithMapping, WithHeadings, ShouldAutoSiz
             $dt($work->acception_date),             // Data PiC
             $dt($work->delivery_date),              // Data Consegna
             $dt($work->completion_date),            // Data FL
+            $work->date_in_str,                     // Data In
+            $work->date_out_str,                    // Data Out
             $work->company_assistant,               // Assistente Impresa
             $work->notes,                           // Note
             $work->suspension_history,              // Storico sospensioni
