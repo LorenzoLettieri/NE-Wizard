@@ -9,13 +9,17 @@ use App\Models\Regione;
 use Livewire\Component;
 use Livewire\Attributes\On;
 use Livewire\Attributes\Computed;
+use Livewire\WithFileUploads;
 use App\Models\PermessoEnte;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
 
 class PermessoEnteForm extends Component
 {
+    use WithFileUploads;
+
     // Proprietà separate per migliore performance
+    public $files = [];
     public $network;
     public $consegna;
     public $progetto;
@@ -247,6 +251,19 @@ class PermessoEnteForm extends Component
         }
 
         $permesso->users()->sync($this->operator_id);
+
+        if ($this->files) {
+            foreach ($this->files as $file) {
+                $path = $file->store('permessi_ente_media', 'public');
+                $permesso->media()->create([
+                    'file_path' => $path,
+                    'file_name' => $file->getClientOriginalName(),
+                    'mime_type' => $file->getMimeType(),
+                    'size' => $file->getSize(),
+                ]);
+            }
+            $this->files = []; // Clear files after upload
+        }
 
         session()->flash('success', $this->isEdit ? 'Record aggiornato con successo!' : 'Record creato con successo!');
         return redirect()->route('permessi-ente.table');

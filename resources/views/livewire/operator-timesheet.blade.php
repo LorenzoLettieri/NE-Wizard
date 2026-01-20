@@ -1,6 +1,6 @@
 <div class="container-fluid p-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h3">Profilo Operatore - Timbrature</h1>
+        <h1 class="h3">Registro Presenze</h1>
     </div>
 
     <!-- Actions Section -->

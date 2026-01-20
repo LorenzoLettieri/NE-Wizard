@@ -91,6 +91,13 @@
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0">Report Mensile</h5>
 
+            <div class="ms-auto me-3" x-data>
+                <a x-bind:href="'{{ route('admin.timesheets.export') }}?month=' + $wire.reportMonth + '&year=' + $wire.reportYear"
+                    target="_blank" class="btn btn-sm btn-success d-flex align-items-center gap-1">
+                    <i class="bi bi-file-earmark-spreadsheet"></i> Export Excel
+                </a>
+            </div>
+
             <div class="d-flex align-items-center gap-2">
                 <input type="text" wire:model.live.debounce.300ms="reportSearch" class="form-control form-control-sm"
                     placeholder="Cerca operatore...">

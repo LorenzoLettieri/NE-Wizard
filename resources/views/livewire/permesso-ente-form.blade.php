@@ -38,7 +38,7 @@
                         <!-- <li class="list-group-item d-flex justify-content-between"><span>Presa in Carico</span> <strong>{{ $acception_date ? \Carbon\Carbon::parse($acception_date)->format('d/m/Y H:i') : '-' }}</strong></li>
                         <li class="list-group-item d-flex justify-content-between"><span>Consegna Op.</span> <strong>{{ $delivery_date ? \Carbon\Carbon::parse($delivery_date)->format('d/m/Y H:i') : '-' }}</strong></li>
                         <li class="list-group-item d-flex justify-content-between"><span>Fine Lavori (Data)</span> <strong>{{ $completion_date ? \Carbon\Carbon::parse($completion_date)->format('d/m/Y H:i') : '-' }}</strong></li> -->
-                        <li class="list-group-item d-flex justify-content-between"><span>Mese Saldo</span> <strong>{{ $mese_saldo ? \Carbon\Carbon::parse($mese_saldo)->format('m/Y') : '-' }}</strong></li>
+                        @role('admin')<li class="list-group-item d-flex justify-content-between"><span>Mese Saldo</span> <strong>{{ $mese_saldo ? \Carbon\Carbon::parse($mese_saldo)->format('m/Y') : '-' }}</strong></li>@endrole
                     </ul>
                 </div>
 
@@ -60,10 +60,37 @@
                 </div>
 
                 <div class="col-12 mt-4">
+                    <h6 class="text-muted text-uppercase small fw-bold border-bottom pb-2">Documentazione Media</h6>
+                    <div class="mt-2">
+                        @if(\App\Models\PermessoEnte::find($permessoEnteId)->media->count() > 0)
+                            <div class="row g-2">
+                                @foreach(\App\Models\PermessoEnte::find($permessoEnteId)->media as $m)
+                                    <div class="col-md-4">
+                                        <div class="d-flex align-items-center p-2 border rounded shadow-sm">
+                                            <i class="bi bi-file-earmark-pdf-fill text-danger fs-4 me-2"></i>
+                                            <div class="flex-grow-1 text-truncate small" title="{{ $m->file_name }}">
+                                                {{ $m->file_name }}
+                                            </div>
+                                            <a href="{{ Storage::url($m->file_path) }}" target="_blank"
+                                                class="btn btn-sm btn-link text-primary p-0">
+                                                <i class="bi bi-download"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @else
+                            <p class="text-muted small italic">Nessun documento disponibile.</p>
+                        @endif
+                    </div>
+                </div>
+
+                <div class="col-12 mt-4">
                     <h6 class="text-muted text-uppercase small fw-bold">Descrizione</h6>
                     <div class="p-3 rounded shadow-sm border">{{ $descrizione ?? 'Nessuna descrizione.' }}</div>
                 </div>
 
+                @role('admin')
                 <div class="col-md-6 mt-4">
                     <h6 class="text-muted text-uppercase small fw-bold">Operatori Assegnati</h6>
                     <div class="d-flex flex-wrap gap-2 mt-2">
@@ -78,7 +105,6 @@
                     </div>
                 </div>
 
-                @role('admin')
                 <div class="col-12 mt-4">
                     <h6 class="text-muted text-uppercase small fw-bold border-bottom pb-2">Dati Economici (Admin)</h6>
                     <div class="row text-center mt-3">
@@ -193,10 +219,6 @@
                             <label class="form-label">Quote aggiuntive</label>
                             <input type="number" class="form-control shadow-sm" wire:model="quote_aggiuntive">
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Mese Saldo</label>
-                            <input type="month" class="form-control shadow-sm" wire:model="mese_saldo">
-                        </div>
                     </div>
 
                     <div class="row g-3 mb-4">
@@ -240,6 +262,10 @@
                             <label class="form-label">Delta (€)</label>
                             <input type="number" step="0.01" class="form-control shadow-sm" wire:model="delta">
                         </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Mese Saldo</label>
+                            <input type="month" class="form-control shadow-sm" wire:model="mese_saldo">
+                        </div>
                     </div>
 
                     <div class="row g-2">
@@ -251,6 +277,15 @@
                         @endfor
                     </div>
                     @endrole
+                    
+                    <h4 class="mt-5 mb-4 border-bottom pb-2">Media</h4>
+                    <div class="row g-3">
+                        <div class="col-md-12">
+                            <label class="form-label">Documentazione (PDF)</label>
+                            <input type="file" class="form-control" wire:model="files" multiple accept="application/pdf">
+                            <div wire:loading wire:target="files" class="text-primary mt-1">Caricamento in corso...</div>
+                        </div>
+                    </div>
 
                     <div class="mt-5 text-end">
                         @if(!$isShow)

@@ -10,40 +10,57 @@
             <ul class="navbar-nav ms-auto">
                 @auth
                     <li class="nav-item">
-                        <a class="nav-link active" aria-current="page" href="#">Ciao {{Auth::user()->name}}</a>
+                        <a class="nav-link active" aria-current="page" href="{{ route('profile') }}"><i
+                                class="bi bi-person-circle me-1"></i>Ciao {{Auth::user()->name}}</a>
                     </li>
                 @endauth
                 @role('admin')
-                <li class="nav-item">
-                    <a class="nav-link active" href="{{route('users-table')}}">Gestisci Utenti</a>
+                <li class="nav-item dropdown">
+                    <a class="nav-link active dropdown-toggle" href="#" id="navbarDropdown" role="button"
+                        data-bs-toggle="dropdown" aria-expanded="false">
+                        Gestione
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                        <li><a class="dropdown-item" href="{{route('users-table')}}">Gestisci Utenti</a></li>
+                        <li><a class="dropdown-item" href="{{route('admin.timesheets')}}">Gestione Presenze</a></li>
+                    </ul>
                 </li>
                 @endrole
-                @hasanyrole('admin|supervisor')
-                <li class="nav-item">
-                    <a class="nav-link active" href="{{route('works-table')}}">Tabella Lavorazioni</a>
+                @hasanyrole('admin|supervisor|permessi ente|GBX')
+                <li class="nav-item dropdown">
+                    <a class="nav-link active dropdown-toggle" href="#" id="navbarDropdown" role="button"
+                        data-bs-toggle="dropdown" aria-expanded="false">
+                        Tabelle
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                        @hasanyrole('admin|supervisor')
+                        <li class="nav-item">
+                            <a class="dropdown-item" href="{{route('works-table')}}">Tabella Lavorazioni</a>
+                        </li>
+                        @endhasanyrole
+                        @hasanyrole('admin|permessi ente')
+                        <li class="nav-item">
+                            <a class="dropdown-item" href="{{route('permessi-ente.table')}}">Tabella Permessi</a>
+                        </li>
+                        @endhasanyrole
+                        @hasanyrole('admin|GBX')
+                        <li class="nav-item">
+                            <a class="dropdown-item" href="{{route('gbxes-table')}}">Tabella GBX</a>
+                        </li>
+                        @endhasanyrole
+                    </ul>
                 </li>
                 @endhasanyrole
-                @hasanyrole('admin|supervisor|permessi ente')
+                @hasanyrole('operator')
                 <li class="nav-item">
-                    <a class="nav-link active" href="{{route('permessi-ente.table')}}">Tabella Permessi</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link active" href="{{route('admin.timesheets')}}">Gestione Presenze</a>
+                    <a class="nav-link active" href="{{route('operator-table')}}">Bacheca Operatore</a>
                 </li>
                 @endhasanyrole
-                @hasanyrole('admin|GBX')
+                @hasanyrole('operator|supervisor')
                 <li class="nav-item">
-                    <a class="nav-link active" href="{{route('gbxes-table')}}">Tabella GBX</a>
+                    <a class="nav-link active" href="{{route('operator-timesheet')}}">Timbra Presenza</a>
                 </li>
                 @endhasanyrole
-                @can('get works')
-                    <li class="nav-item">
-                        <a class="nav-link active" href="{{route('operator-table')}}">Bacheca Operatore</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link active" href="{{route('operator-timesheet')}}">Timbra Presenza</a>
-                    </li>
-                @endcan
                 @auth
                     <li class="nav-item">
                         <form action="/logout" method="POST">
