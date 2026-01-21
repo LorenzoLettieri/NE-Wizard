@@ -18,7 +18,6 @@ Route::middleware(['auth'])->group(function () {
 
 
 Route::group(['middleware' => ['role:admin']], function () {
-    Route::get("/users/table", [UsersController::class, "index"])->name("users-table");
     Route::get("/users/accounts/table", [UsersController::class, "accountsTable"])->name("accounts-table");
     Route::get("/users/create", [UsersController::class, "create"])->name("addUser");
     Route::post('/users/store', [UsersController::class, 'store'])->name('registerUser');
@@ -30,6 +29,7 @@ Route::group(['middleware' => ['role:admin']], function () {
 });
 
 Route::group(['middleware' => ['role:admin|supervisor']], function () {
+    Route::get("/users/table", [UsersController::class, "index"])->name("users-table");
     Route::get('/works/table', [WorkController::class, 'index'])->name('works-table');
     Route::get('/works/create', [WorkController::class, 'create'])->name('addWork');
     Route::get('/works/edit/{id}', [WorkController::class, 'edit'])->name('editWork');
