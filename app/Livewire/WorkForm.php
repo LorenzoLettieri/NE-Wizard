@@ -14,7 +14,7 @@ class WorkForm extends Component
     public $operators;
     public $companies, $centrals;
 
-    public $company_id, $central_id, $operator_id, $status, $network, $ao_cno, $ntw_scope, $description, $type, $phase, $company_assistant, $nroe, $wo_number, $unica_number, $notes;
+    public $company_id, $central_id, $operator_id, $status, $network, $ao_cno, $ntw_scope, $description, $type, $phase, $company_assistant, $nroe, $wo_number, $unica_number, $notes, $tempo_daphne;
 
     public $go_live, $date_in_str, $date_out_str;
 

@@ -100,6 +100,10 @@
                         <option value="0">NO</option>
                     </select>
                 </div>
+                <div class="col-12 col-md-4 mb-4">
+                    <label for="tempo_daphne" class="form-label">TEMPO DAPHNE:</label>
+                    <input type="text" class="form-control" id="tempo_daphne" wire:model="tempo_daphne" placeholder="">
+                </div>
             </div>
             <div class="row mb-5 pb-2">
                 <div class="col-12 col-md-4 mb-4">

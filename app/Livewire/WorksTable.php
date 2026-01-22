@@ -260,6 +260,9 @@ class WorksTable extends DataTableComponent
             Column::make('Daphne', 'daphne')
                 ->format(fn($value) => $value ? 'SI' : 'NO')
                 ->secondaryHeaderFilter('daphne'),
+            Column::make('Tempo Daphne', 'tempo_daphne')
+                ->sortable()
+                ->searchable(),
             Column::make('Operatori Assegnati', "assigned_operators")
                 ->label(function ($row, Column $column) {
                     // DIRECT ACCESS - No access to DB

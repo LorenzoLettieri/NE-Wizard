@@ -52,6 +52,11 @@
                 </div>
 
                 <div class="col-md-4">
+                    <label class="form-label">TEMPO DAPHNE</label>
+                    <div class="form-control">{{ $work->tempo_daphne ?? '' }}</div>
+                </div>
+
+                <div class="col-md-4">
                     <label class="form-label">Fase Lavoro</label>
                     <div class="form-control">{{ $work->phase ?? '' }}</div>
                 </div>

@@ -34,7 +34,8 @@ class Work extends Model
         'date_in',
         'date_out',
         'date_in_str',
-        'date_out_str'
+        'date_out_str',
+        'tempo_daphne'
     ];
 
     public function users()

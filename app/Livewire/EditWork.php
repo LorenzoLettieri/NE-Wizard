@@ -20,7 +20,7 @@ class EditWork extends Component
     public $centrals;
 
     public $suspension_history;
-    public $company_id, $central_id, $operator_id, $status, $network, $ao_cno, $ntw_scope, $description, $type, $phase, $company_assistant, $nroe, $wo_number, $unica_number, $notes;
+    public $company_id, $central_id, $operator_id, $status, $network, $ao_cno, $ntw_scope, $description, $type, $phase, $company_assistant, $nroe, $wo_number, $unica_number, $notes, $tempo_daphne;
     public $go_live, $date_in_str, $date_out_str;
     public $daphne;
     #[On('edit-work')]
@@ -44,6 +44,7 @@ class EditWork extends Component
         $this->unica_number = $this->work->unica_number;
         $this->notes = $this->work->notes;
         $this->daphne = $this->work->daphne;
+        $this->tempo_daphne = $this->work->tempo_daphne;
         $this->go_live = $this->work->go_live;
         $this->date_in_str = $this->work->date_in_str;
         $this->date_out_str = $this->work->date_out_str;
