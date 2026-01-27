@@ -99,8 +99,8 @@ class TimesheetDetailsSheet implements FromCollection, WithHeadings, WithStyles,
                         $fmtTime($dt($ts->break_start)),
                         $fmtTime($dt($ts->break_end)),
                         $totalFormatted,
-                        $ts->overtime_hours > 0 ? $ts->overtime_hours : '-',
-                        $ts->leave_hours > 0 ? $ts->leave_hours : '-',
+                        $ts->overtime_hours > 0 ? round($ts->overtime_hours, 2) : '-',
+                        $ts->leave_hours > 0 ? round($ts->leave_hours, 2) : '-',
                         $ts->leave_type,
                     ]);
                 } else {

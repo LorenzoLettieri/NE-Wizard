@@ -89,27 +89,28 @@
                             <tr>
                                 <td class="px-4 fw-medium">{{ $ts->date->format('d/m/Y') }}</td>
                                 <td>
-                                    {{ $ts->entry_time ? $ts->entry_time->format('H:i') : '-' }}
+                                    {{ $ts->entry_time ? $ts->entry_time->timezone('Europe/Rome')->format('H:i') : '-' }}
                                 </td>
                                 <td>
-                                    {{ $ts->break_start ? $ts->break_start->format('H:i') : '-' }}
+                                    {{ $ts->break_start ? $ts->break_start->timezone('Europe/Rome')->format('H:i') : '-' }}
                                 </td>
                                 <td>
-                                    {{ $ts->break_end ? $ts->break_end->format('H:i') : '-' }}
+                                    {{ $ts->break_end ? $ts->break_end->timezone('Europe/Rome')->format('H:i') : '-' }}
                                 </td>
                                 <td>
-                                    {{ $ts->exit_time ? $ts->exit_time->format('H:i') : '-' }}
+                                    {{ $ts->exit_time ? $ts->exit_time->timezone('Europe/Rome')->format('H:i') : '-' }}
                                 </td>
                                 <td>
                                     @if($ts->leave_hours > 0)
-                                        {{ $ts->leave_hours }}h <small class="text-muted">({{ $ts->leave_type }})</small>
+                                        {{ round($ts->leave_hours, 2) }}h <small
+                                            class="text-muted">({{ $ts->leave_type }})</small>
                                     @else
                                         -
                                     @endif
                                 </td>
                                 <td>
                                     @if($ts->overtime_hours > 0)
-                                        {{ $ts->overtime_hours }}h
+                                        {{ round($ts->overtime_hours, 2) }}h
                                     @else
                                         -
                                     @endif
@@ -120,7 +121,7 @@
                                         if ($ts->entry_time && $ts->exit_time) {
                                             $totalMinutes = $ts->entry_time->diffInMinutes($ts->exit_time);
                                             if ($ts->break_start && $ts->break_end) {
-                                                $totalMinutes -= $ts->break_start->diffInMinutes($ts->break_end);
+                                                $totalMinutes -= round($ts->break_start->diffInMinutes($ts->break_end));
                                             }
                                         }
                                         if ($ts->overtime_hours) {
@@ -128,7 +129,7 @@
                                         }
 
                                         $hours = floor($totalMinutes / 60);
-                                        $mins = $totalMinutes % 60;
+                                        $mins = round($totalMinutes % 60);
                                     @endphp
                                     {{ sprintf('%02d:%02d', $hours, $mins) }}
                                 </td>

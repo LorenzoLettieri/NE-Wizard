@@ -53,7 +53,7 @@
                     </ul>
                 </li>
                 @endhasanyrole
-                @hasanyrole('operator')
+                @hasanyrole('operator|freelance operator')
                 <li class="nav-item">
                     <a class="nav-link active" href="{{route('operator-table')}}">Bacheca Operatore</a>
                 </li>

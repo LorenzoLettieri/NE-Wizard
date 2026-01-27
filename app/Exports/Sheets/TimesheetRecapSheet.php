@@ -60,7 +60,7 @@ class TimesheetRecapSheet implements FromCollection, WithHeadings, WithMapping, 
             $report->push([
                 'user_name' => $user->name,
                 'days_present' => $daysPresent,
-                'leave_hours' => $leaveHours,
+                'leave_hours' => round($leaveHours, 2),
                 'overtime_hours' => floor($overtimeMinutes / 60) . ':' . sprintf('%02d', $overtimeMinutes % 60),
                 'total_hours' => floor($totalMinutes / 60) . ':' . sprintf('%02d', $totalMinutes % 60),
             ]);
