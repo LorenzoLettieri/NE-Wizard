@@ -34,9 +34,8 @@
                     </div>
 
                     <div class="mb-3">
-                        <label for="role" class="form-label">Ruolo</label>
-                        <select class="form-select tom-select" id="role" name="role">
-                            <option value="">-- Seleziona --</option>
+                        <label for="roles" class="form-label">Ruoli</label>
+                        <select class="form-select tom-select" id="roles" name="roles[]" multiple>
                             @foreach($roles as $role)
                                 <option value="{{$role->name}}">{{$role->name}}</option>
                             @endforeach
@@ -60,11 +59,12 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        const roleSelect = document.getElementById('role');
+        const roleSelect = document.getElementById('roles');
         const companyField = document.getElementById('company-field');
 
         roleSelect.addEventListener('change', function () {
-            if (this.value === 'GBX') {
+            const selectedRoles = Array.from(this.selectedOptions).map(option => option.value);
+            if (selectedRoles.includes('GBX') || selectedRoles.includes('GBX Supervisor')) {
                 companyField.style.display = 'block';
             } else {
                 companyField.style.display = 'none';

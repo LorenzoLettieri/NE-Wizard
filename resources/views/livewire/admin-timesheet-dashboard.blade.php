@@ -43,11 +43,12 @@
                             <tr>
                                 <td class="fw-medium">{{ $ts->user->name }}</td>
                                 <td>{{ $ts->date->format('d/m/Y') }}</td>
-                                <td>{{ $ts->entry_time ? $ts->entry_time->format('H:i') : '-' }}</td>
-                                <td>{{ $ts->exit_time ? $ts->exit_time->format('H:i') : '-' }}</td>
+                                <td>{{ $ts->entry_time ? $ts->entry_time->timezone('Europe/Rome')->format('H:i') : '-' }}
+                                </td>
+                                <td>{{ $ts->exit_time ? $ts->exit_time->timezone('Europe/Rome')->format('H:i') : '-' }}</td>
                                 <td>
                                     @if($ts->break_start && $ts->break_end)
-                                        {{ $ts->break_start->diffInMinutes($ts->break_end) }}m
+                                        {{ round($ts->break_start->diffInMinutes($ts->break_end)) }}m
                                     @elseif($ts->break_start)
                                         In corso
                                     @else
@@ -71,8 +72,8 @@
                                     @endphp
                                     {{ sprintf('%02d:%02d', $hours, $mins) }}
                                 </td>
-                                <td>{{ $ts->leave_hours > 0 ? $ts->leave_hours . 'h' : '-' }}</td>
-                                <td>{{ $ts->overtime_hours > 0 ? $ts->overtime_hours . 'h' : '-' }}</td>
+                                <td>{{ $ts->leave_hours > 0 ? round($ts->leave_hours, 2) . 'h' : '-' }}</td>
+                                <td>{{ $ts->overtime_hours > 0 ? round($ts->overtime_hours, 2) . 'h' : '-' }}</td>
                             </tr>
                         @empty
                             <tr>
@@ -132,7 +133,7 @@
                             <tr>
                                 <td class="fw-medium">{{ $row['user']->name }}</td>
                                 <td>{{ $row['days_present'] }}</td>
-                                <td>{{ $row['leave_hours'] }}h</td>
+                                <td>{{ round($row['leave_hours'], 2) }}h</td>
                                 <td class="text-primary fw-bold">{{ $row['overtime_hours'] }}h</td>
                                 <td class="fw-bold fs-6">{{ $row['total_hours'] }}h</td>
                             </tr>

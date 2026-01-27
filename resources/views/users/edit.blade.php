@@ -35,17 +35,18 @@
                             <option value="">-- Seleziona --</option>
                             @foreach($companies as $company)
                                 <option value="{{$company->id}}" {{ $user->company_id == $company->id ? 'selected' : '' }}>
-                                    {{$company->name}}</option>
+                                    {{$company->name}}
+                                </option>
                             @endforeach
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label for="role" class="form-label">Ruolo</label>
-                        <select class="form-select tom-select" id="role" name="role">
-                            <option value="">-- Seleziona --</option>
+                        <label for="roles" class="form-label">Ruoli</label>
+                        <select class="form-select tom-select" id="roles" name="roles[]" multiple>
                             @foreach($roles as $role)
                                 <option value="{{$role->name}}" {{ $user->hasRole($role->name) ? 'selected' : '' }}>
-                                    {{$role->name}}</option>
+                                    {{$role->name}}
+                                </option>
                             @endforeach
                         </select>
                     </div>

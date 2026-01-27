@@ -47,7 +47,7 @@ class AdminTimesheetDashboard extends Component
     public function getMonthlyReportProperty()
     {
         // Get all users (or filtered)
-        $usersQuery = User::role(['operator', 'supervisor']);
+        $usersQuery = User::role('operator');
         if ($this->reportSearch) {
             $usersQuery->where('name', 'like', '%' . $this->reportSearch . '%');
         }

@@ -34,7 +34,9 @@ class UsersController extends Controller
             'email' =>
                 'required | string | email | max:255 | unique:users',
             'password' => 'required | string | min:8 | confirmed',
-            'company_id' => 'nullable | exists:companies,id'
+            'company_id' => 'nullable | exists:companies,id',
+            'roles' => 'required | array',
+            'roles.*' => 'exists:roles,name'
         ]);
 
         $user = User::create([
@@ -44,7 +46,7 @@ class UsersController extends Controller
             'company_id' => $validated['company_id']
         ]);
 
-        $user->assignRole($request->role);
+        $user->syncRoles($validated['roles']);
 
         return redirect()->route('accounts-table')->with('message', 'Utente creato con successo!');
     }
@@ -63,7 +65,9 @@ class UsersController extends Controller
             'name' => 'required | string | max:255',
             'email' => 'required | string | email | max:255',
             'password' => 'sometimes | nullable | string | min:8',
-            'company_id' => 'nullable | exists:companies,id'
+            'company_id' => 'nullable | exists:companies,id',
+            'roles' => 'required | array',
+            'roles.*' => 'exists:roles,name'
         ]);
         $user = User::find($id);
         $user->update([
@@ -73,7 +77,7 @@ class UsersController extends Controller
             'company_id' => $validated['company_id']
         ]);
 
-        $user->syncRoles($request->role);
+        $user->syncRoles($validated['roles']);
 
         return redirect()->route('accounts-table')->with('message', 'Utente modificato con successo!');
 
