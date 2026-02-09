@@ -20,6 +20,7 @@ class OperatorTimesheet extends Component
     public $leaveHours;
     public $overtimeHours;
     public $selectedDate;
+    public $selectedEndDate;
 
     public function mount()
     {
@@ -60,6 +61,7 @@ class OperatorTimesheet extends Component
         $this->actionType = $action;
         $this->inputTime = now()->format('H:i');
         $this->selectedDate = now()->toDateString();
+        $this->selectedEndDate = now()->toDateString();
 
         $timesheet = $this->todayTimesheet;
 
@@ -75,61 +77,85 @@ class OperatorTimesheet extends Component
 
     public function saveAction()
     {
-        $date = Carbon::parse($this->selectedDate);
-        $timesheet = Timesheet::where('user_id', Auth::id())
-            ->where('date', $date->toDateString())
-            ->first();
+        $startDate = Carbon::parse($this->selectedDate);
+        $endDate = ($this->actionType === 'leave' && $this->leaveType === 'ferie') ? Carbon::parse($this->selectedEndDate) : $startDate;
 
         // For shift/break actions, we always use NOW and override selectedDate just in case
         if (in_array($this->actionType, ['start_shift', 'end_shift', 'start_break', 'end_break'])) {
             $timestamp = now();
-            $date = Carbon::today();
+            $dates = [$startDate]; // Only one day for shifts/breaks
         } else {
-            // For leaves/overtime, we use the selectedDate
-            $timestamp = now(); // Timestamp here is less critical, it's the date that matters
+            // For leaves/overtime, we use the date range (only if leaveType is 'ferie')
+            $timestamp = now();
+
+            $dates = [];
+            $currentDate = $startDate->copy();
+
+            // Loop logic
+            do {
+                if (count($dates) >= 15)
+                    break;
+                $dates[] = $currentDate->copy();
+                $currentDate->addDay();
+            } while ($currentDate->lte($endDate));
         }
 
-        if (!$timesheet && $this->actionType === 'start_shift') {
-            $timesheet = new Timesheet();
-            $timesheet->user_id = Auth::id();
-            $timesheet->date = $date;
+        foreach ($dates as $date) {
+            $timesheet = Timesheet::where('user_id', Auth::id())
+                ->where('date', $date->toDateString())
+                ->first();
+
+            if (!$timesheet && $this->actionType === 'start_shift') {
+                $timesheet = new Timesheet();
+                $timesheet->user_id = Auth::id();
+                $timesheet->date = $date;
+            }
+
+            // Safety check if timesheet doesn't exist for other actions
+            if (!$timesheet) {
+                $timesheet = Timesheet::firstOrCreate([
+                    'user_id' => Auth::id(),
+                    'date' => $date
+                ]);
+            }
+
+            switch ($this->actionType) {
+                case 'start_shift':
+                    if (!$timesheet->entry_time)
+                        $timesheet->entry_time = $timestamp;
+                    break;
+                case 'end_shift':
+                    if (!$timesheet->exit_time)
+                        $timesheet->exit_time = $timestamp;
+                    break;
+                case 'start_break':
+                    if (!$timesheet->break_start)
+                        $timesheet->break_start = $timestamp;
+                    break;
+                case 'end_break':
+                    if (!$timesheet->break_end)
+                        $timesheet->break_end = $timestamp;
+                    break;
+                case 'leave':
+                    $timesheet->leave_type = $this->leaveType;
+                    if ($this->leaveType === 'ferie') {
+                        $timesheet->leave_hours = 8;
+                    } else {
+                        $timesheet->leave_hours = $this->leaveHours;
+                        // Set entry_time from inputTime for permesso/malattia
+                        if ($this->inputTime) {
+                            $timesheet->entry_time = Carbon::parse($date->toDateString() . ' ' . $this->inputTime);
+                        }
+                    }
+                    break;
+                case 'overtime':
+                    $timesheet->overtime_hours = $this->overtimeHours;
+                    break;
+            }
+
+            $timesheet->save();
         }
 
-        // Safety check if timesheet doesn't exist for other actions
-        if (!$timesheet) {
-            $timesheet = Timesheet::firstOrCreate([
-                'user_id' => Auth::id(),
-                'date' => $date
-            ]);
-        }
-
-        switch ($this->actionType) {
-            case 'start_shift':
-                if (!$timesheet->entry_time)
-                    $timesheet->entry_time = $timestamp;
-                break;
-            case 'end_shift':
-                if (!$timesheet->exit_time)
-                    $timesheet->exit_time = $timestamp;
-                break;
-            case 'start_break':
-                if (!$timesheet->break_start)
-                    $timesheet->break_start = $timestamp;
-                break;
-            case 'end_break':
-                if (!$timesheet->break_end)
-                    $timesheet->break_end = $timestamp;
-                break;
-            case 'leave':
-                $timesheet->leave_type = $this->leaveType;
-                $timesheet->leave_hours = $this->leaveHours;
-                break;
-            case 'overtime':
-                $timesheet->overtime_hours = $this->overtimeHours;
-                break;
-        }
-
-        $timesheet->save();
         $this->showModal = false;
         $this->dispatch('timesheet-updated');
     }

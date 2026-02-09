@@ -166,51 +166,75 @@
                             aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        @if(in_array($actionType, ['leave', 'overtime']))
-                            <div class="mb-3">
-                                <label class="form-label">Data</label>
-                                <select wire:model="selectedDate" class="form-select">
-                                    <option value="{{ now()->toDateString() }}">Oggi ({{ now()->format('d/m') }})</option>
-                                    <option value="{{ now()->addDay()->toDateString() }}">Domani
-                                        ({{ now()->addDay()->format('d/m') }})</option>
-                                    <option value="{{ now()->addDays(2)->toDateString() }}">Dopodomani
-                                        ({{ now()->addDays(2)->format('d/m') }})</option>
-                                </select>
-                            </div>
-                        @endif
-
-                        <div class="mb-3">
-                            <label class="form-label">Orario</label>
-                            @if(in_array($actionType, ['start_shift', 'end_shift', 'start_break', 'end_break']))
-                                <div class="h4 mb-0 text-primary">
-                                    {{ $inputTime }}
-                                </div>
-                                <small class="text-muted">Verrà registrato l'orario attuale.</small>
-                            @else
-                                <input type="time" wire:model="inputTime" class="form-control">
-                            @endif
-                        </div>
-
                         @if($actionType == 'leave')
                             <div class="mb-3">
                                 <label class="form-label">Tipo Permesso</label>
-                                <select wire:model="leaveType" class="form-select">
+                                <select wire:model.live="leaveType" class="form-select">
                                     <option value="">Seleziona...</option>
                                     <option value="ferie">Ferie</option>
                                     <option value="permesso">Permesso orario</option>
                                     <option value="malattia">Malattia</option>
                                 </select>
                             </div>
-                            <div class="mb-3">
-                                <label class="form-label">Ore</label>
-                                <input type="number" step="0.5" wire:model="leaveHours" class="form-control">
+
+                            <div class="row mb-3">
+                                <div class="col-@if($leaveType == 'ferie') 6 @else 12 @endif">
+                                    <label class="form-label">@if($leaveType == 'ferie') Data Inizio @else Data @endif</label>
+                                    <input type="date" wire:model.live="selectedDate" class="form-control">
+                                </div>
+                                @if($leaveType == 'ferie')
+                                    <div class="col-6">
+                                        <label class="form-label">Data Fine</label>
+                                        <input type="date" wire:model.live="selectedEndDate" class="form-control"
+                                            min="{{ $selectedDate }}">
+                                        <div class="form-text">
+                                            @php
+                                                $start = \Carbon\Carbon::parse($selectedDate);
+                                                $end = \Carbon\Carbon::parse($selectedEndDate);
+                                                $diff = $start->diffInDays($end) + 1;
+                                            @endphp
+                                            {{ $diff }} @if($diff == 1) giorno @else giorni @endif (max 15)
+                                        </div>
+                                    </div>
+                                @endif
                             </div>
+
+                            @if(in_array($leaveType, ['permesso', 'malattia']))
+                                <div class="row mb-3">
+                                    <div class="col-6">
+                                        <label class="form-label">Orario Inizio</label>
+                                        <input type="time" wire:model="inputTime" class="form-control">
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label">Ore Totali</label>
+                                        <input type="number" step="0.5" wire:model="leaveHours" class="form-control">
+                                    </div>
+                                </div>
+                            @endif
                         @endif
 
                         @if($actionType == 'overtime')
                             <div class="mb-3">
+                                <label class="form-label">Data</label>
+                                <input type="date" wire:model.live="selectedDate" class="form-control">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Orario</label>
+                                <input type="time" wire:model="inputTime" class="form-control">
+                            </div>
+                            <div class="mb-3">
                                 <label class="form-label">Ore Straordinario</label>
                                 <input type="number" step="0.5" wire:model="overtimeHours" class="form-control">
+                            </div>
+                        @endif
+
+                        @if(in_array($actionType, ['start_shift', 'end_shift', 'start_break', 'end_break']))
+                            <div class="mb-3">
+                                <label class="form-label">Orario</label>
+                                <div class="h4 mb-0 text-primary">
+                                    {{ $inputTime }}
+                                </div>
+                                <small class="text-muted">Verrà registrato l'orario attuale.</small>
                             </div>
                         @endif
                     </div>
