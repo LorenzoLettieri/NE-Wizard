@@ -22,7 +22,7 @@ class PermessiEnteTable extends DataTableComponent
 {
     public function builder(): Builder
     {
-        $query = PermessoEnte::query()->with(['regione', 'comune', 'central', 'users']);
+        $query = PermessoEnte::query()->with(['regione', 'comune', 'central', 'users'])->withCount('media');
 
         if (Auth::user()->hasAnyRole('admin', 'supervisor')) {
             return $query;
@@ -422,6 +422,12 @@ class PermessiEnteTable extends DataTableComponent
                 ->sortable()
                 ->deselected()
                 ->secondaryHeaderFilter('completion_filter'),
+
+            Column::make('Allegati')
+                ->label(fn($row) => ($row->media_count ?? 0) > 0
+                    ? '<span class="badge rounded-pill text-bg-success" title="Allegati presenti"><i class="bi bi-check-lg"></i></span>'
+                    : '<span class="badge rounded-pill text-bg-danger" title="Nessun allegato"><i class="bi bi-x-lg"></i></span>')
+                ->html(),
 
             Column::make('Azioni')
                 ->label(fn($row) => view('permessi_ente.permessi-ente-table-actions', ['row' => $row]))

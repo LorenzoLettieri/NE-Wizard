@@ -20,6 +20,7 @@ class GbxTable extends DataTableComponent
     {
         return Gbx::query()
             ->with(['company', 'central'])
+            ->withCount('media')
             ->when(!auth()->user()->hasAnyRole('admin|GBX Supervisor'), function ($query) {
                 $query->whereHas('company', fn($q) => $q->where('name', auth()->user()->company->name));
             });
@@ -238,6 +239,11 @@ class GbxTable extends DataTableComponent
             Column::make("Data Progetto", "project_date")->format(fn($v) => $v ? Carbon::parse($v)->format('d/m/Y') : '-')->sortable()->secondaryHeaderFilter('project_date'),
             Column::make("Data Speedark", "speedark_date")->format(fn($v) => $v ? Carbon::parse($v)->format('d/m/Y') : '-')->sortable()->secondaryHeaderFilter('speedark_date'),
             Column::make("Data Agg. Cart", "cart_update_date")->format(fn($v) => $v ? Carbon::parse($v)->format('d/m/Y') : '-')->sortable()->secondaryHeaderFilter('cart_update_date'),
+            Column::make("Allegati")
+                ->label(fn($row) => ($row->media_count ?? 0) > 0
+                    ? '<span class="badge rounded-pill text-bg-success" title="Allegati presenti"><i class="bi bi-check-lg"></i></span>'
+                    : '<span class="badge rounded-pill text-bg-danger" title="Nessun allegato"><i class="bi bi-x-lg"></i></span>')
+                ->html(),
         ];
 
         if (auth()->user()->hasRole('admin')) {

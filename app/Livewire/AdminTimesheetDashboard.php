@@ -21,6 +21,19 @@ class AdminTimesheetDashboard extends Component
     public $reportYear;
     public $reportSearch = '';
 
+    // Edit modal state
+    public $showEditModal = false;
+    public $editingTimesheetId = null;
+    public $editUserName = '';
+    public $editDate;
+    public $editEntryTime = '';
+    public $editExitTime = '';
+    public $editBreakStart = '';
+    public $editBreakEnd = '';
+    public $editLeaveType = '';
+    public $editLeaveHours = 0;
+    public $editOvertimeHours = 0;
+
     public function mount()
     {
         $this->viewDate = now()->toDateString();
@@ -104,6 +117,152 @@ class AdminTimesheetDashboard extends Component
     public function previousPeriod()
     {
         $this->viewDate = Carbon::parse($this->viewDate)->subDay()->toDateString();
+    }
+
+    public function openEditModal($timesheetId)
+    {
+        $timesheet = Timesheet::with('user')->findOrFail($timesheetId);
+
+        $this->editingTimesheetId = $timesheet->id;
+        $this->editUserName = $timesheet->user->name;
+        $this->editDate = $timesheet->date->toDateString();
+        $this->editEntryTime = $this->formatTimeForInput($timesheet->entry_time);
+        $this->editExitTime = $this->formatTimeForInput($timesheet->exit_time);
+        $this->editBreakStart = $this->formatTimeForInput($timesheet->break_start);
+        $this->editBreakEnd = $this->formatTimeForInput($timesheet->break_end);
+        $this->editLeaveType = $timesheet->leave_type ?? '';
+        $this->editLeaveHours = (float) $timesheet->leave_hours;
+        $this->editOvertimeHours = (float) $timesheet->overtime_hours;
+
+        $this->resetValidation();
+        $this->showEditModal = true;
+    }
+
+    public function closeEditModal()
+    {
+        $this->showEditModal = false;
+        $this->editingTimesheetId = null;
+        $this->editUserName = '';
+        $this->editDate = null;
+        $this->editEntryTime = '';
+        $this->editExitTime = '';
+        $this->editBreakStart = '';
+        $this->editBreakEnd = '';
+        $this->editLeaveType = '';
+        $this->editLeaveHours = 0;
+        $this->editOvertimeHours = 0;
+        $this->resetValidation();
+    }
+
+    public function updatedEditLeaveType($value)
+    {
+        if ($value === 'ferie' && (float) $this->editLeaveHours <= 0) {
+            $this->editLeaveHours = 8;
+        }
+
+        if ($value === '') {
+            $this->editLeaveHours = 0;
+        }
+    }
+
+    public function saveEdit()
+    {
+        $this->validate([
+            'editingTimesheetId' => 'required|integer|exists:timesheets,id',
+            'editDate' => 'required|date',
+            'editEntryTime' => 'nullable|date_format:H:i',
+            'editExitTime' => 'nullable|date_format:H:i',
+            'editBreakStart' => 'nullable|date_format:H:i',
+            'editBreakEnd' => 'nullable|date_format:H:i',
+            'editLeaveType' => 'nullable|in:ferie,permesso,malattia',
+            'editLeaveHours' => 'nullable|numeric|min:0|max:24',
+            'editOvertimeHours' => 'nullable|numeric|min:0|max:24',
+        ]);
+
+        $entryTime = $this->parseEditTime($this->editEntryTime);
+        $exitTime = $this->parseEditTime($this->editExitTime);
+        $breakStart = $this->parseEditTime($this->editBreakStart);
+        $breakEnd = $this->parseEditTime($this->editBreakEnd);
+
+        if ($exitTime && !$entryTime) {
+            $this->addError('editExitTime', 'Per impostare l\'uscita è necessario impostare anche l\'entrata.');
+        }
+
+        if ($entryTime && $exitTime && $exitTime->lt($entryTime)) {
+            $this->addError('editExitTime', 'L\'orario di uscita deve essere successivo all\'entrata.');
+        }
+
+        if ($breakStart && !$entryTime) {
+            $this->addError('editBreakStart', 'Per inserire una pausa è necessario impostare l\'entrata.');
+        }
+
+        if ($breakEnd && !$breakStart) {
+            $this->addError('editBreakEnd', 'Per chiudere la pausa è necessario indicare anche l\'inizio pausa.');
+        }
+
+        if ($breakStart && $entryTime && $breakStart->lt($entryTime)) {
+            $this->addError('editBreakStart', 'L\'inizio pausa non può essere precedente all\'entrata.');
+        }
+
+        if ($breakStart && $breakEnd && $breakEnd->lt($breakStart)) {
+            $this->addError('editBreakEnd', 'La fine pausa deve essere successiva all\'inizio pausa.');
+        }
+
+        if ($breakEnd && $exitTime && $breakEnd->gt($exitTime)) {
+            $this->addError('editBreakEnd', 'La fine pausa non può essere successiva all\'uscita.');
+        }
+
+        if ($this->editLeaveType === '' && (float) $this->editLeaveHours > 0) {
+            $this->addError('editLeaveType', 'Se inserisci ore di permesso devi indicare anche il tipo.');
+        }
+
+        if (in_array($this->editLeaveType, ['permesso', 'malattia'], true) && (float) $this->editLeaveHours <= 0) {
+            $this->addError('editLeaveHours', 'Inserisci un numero di ore maggiore di zero.');
+        }
+
+        if ($this->getErrorBag()->isNotEmpty()) {
+            return;
+        }
+
+        $leaveHours = (float) $this->editLeaveHours;
+        if ($this->editLeaveType === 'ferie' && $leaveHours <= 0) {
+            $leaveHours = 8;
+        }
+        if ($this->editLeaveType === '') {
+            $leaveHours = 0;
+        }
+
+        $timesheet = Timesheet::findOrFail($this->editingTimesheetId);
+        $timesheet->date = $this->editDate;
+        $timesheet->entry_time = $entryTime;
+        $timesheet->exit_time = $exitTime;
+        $timesheet->break_start = $breakStart;
+        $timesheet->break_end = $breakEnd;
+        $timesheet->leave_type = $this->editLeaveType ?: null;
+        $timesheet->leave_hours = $leaveHours;
+        $timesheet->overtime_hours = (float) $this->editOvertimeHours;
+        $timesheet->save();
+
+        $this->closeEditModal();
+        session()->flash('timesheetSuccess', 'Timesheet aggiornato con successo.');
+    }
+
+    private function formatTimeForInput($dateTime): string
+    {
+        if (!$dateTime) {
+            return '';
+        }
+
+        return $dateTime->timezone('Europe/Rome')->format('H:i');
+    }
+
+    private function parseEditTime($time): ?Carbon
+    {
+        if (!$time) {
+            return null;
+        }
+
+        return Carbon::createFromFormat('Y-m-d H:i', $this->editDate . ' ' . $time, 'Europe/Rome')->setTimezone('UTC');
     }
 
     public function render()

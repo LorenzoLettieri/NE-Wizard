@@ -1,6 +1,12 @@
 <div class="container-fluid p-4">
     <h1 class="h3 mb-4">Gestione Presenze</h1>
 
+    @if (session()->has('timesheetSuccess'))
+        <div class="alert alert-success py-2">
+            {{ session('timesheetSuccess') }}
+        </div>
+    @endif
+
     <!-- Detailed View Section -->
     <div class="card shadow-sm mb-5">
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
@@ -36,6 +42,7 @@
                             <th>Totale</th>
                             <th>Permessi</th>
                             <th>Str.</th>
+                            <th class="text-end pe-3">Azioni</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -74,10 +81,15 @@
                                 </td>
                                 <td>{{ $ts->leave_hours > 0 ? round($ts->leave_hours, 2) . 'h' : '-' }}</td>
                                 <td>{{ $ts->overtime_hours > 0 ? round($ts->overtime_hours, 2) . 'h' : '-' }}</td>
+                                <td class="text-end pe-3">
+                                    <button class="btn btn-sm btn-outline-primary" wire:click="openEditModal({{ $ts->id }})">
+                                        Modifica
+                                    </button>
+                                </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="text-center py-3 text-muted">Nessun dato trovato per il periodo
+                                <td colspan="9" class="text-center py-3 text-muted">Nessun dato trovato per il periodo
                                     selezionato.</td>
                             </tr>
                         @endforelse
@@ -143,4 +155,76 @@
             </div>
         </div>
     </div>
+
+    @if($showEditModal)
+        <div class="modal fade show d-block" style="background-color: rgba(0,0,0,0.5);" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Modifica Presenza - {{ $editUserName }}</h5>
+                        <button type="button" class="btn-close" wire:click="closeEditModal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label">Data</label>
+                                <input type="date" class="form-control" wire:model="editDate">
+                                @error('editDate') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                            </div>
+
+                            <div class="col-6">
+                                <label class="form-label">Entrata</label>
+                                <input type="time" class="form-control" wire:model="editEntryTime">
+                                @error('editEntryTime') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Uscita</label>
+                                <input type="time" class="form-control" wire:model="editExitTime">
+                                @error('editExitTime') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                            </div>
+
+                            <div class="col-6">
+                                <label class="form-label">Inizio Pausa</label>
+                                <input type="time" class="form-control" wire:model="editBreakStart">
+                                @error('editBreakStart') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Fine Pausa</label>
+                                <input type="time" class="form-control" wire:model="editBreakEnd">
+                                @error('editBreakEnd') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                            </div>
+
+                            <div class="col-7">
+                                <label class="form-label">Tipo Permesso/Ferie</label>
+                                <select class="form-select" wire:model.live="editLeaveType">
+                                    <option value="">Nessuno</option>
+                                    <option value="ferie">Ferie</option>
+                                    <option value="permesso">Permesso orario</option>
+                                    <option value="malattia">Malattia</option>
+                                </select>
+                                @error('editLeaveType') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                            </div>
+                            <div class="col-5">
+                                <label class="form-label">Ore Permesso</label>
+                                <input type="number" step="0.5" min="0" class="form-control" wire:model="editLeaveHours">
+                                @error('editLeaveHours') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label">Ore Straordinario</label>
+                                <input type="number" step="0.5" min="0" class="form-control"
+                                    wire:model="editOvertimeHours">
+                                @error('editOvertimeHours') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                            </div>
+                        </div>
+                        <div class="form-text mt-2">Orari in fuso Europe/Rome.</div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" wire:click="closeEditModal">Annulla</button>
+                        <button type="button" class="btn btn-primary" wire:click="saveEdit">Salva modifiche</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
 </div>

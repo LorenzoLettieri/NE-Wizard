@@ -36,7 +36,9 @@ class TimesheetRecapSheet implements FromCollection, WithHeadings, WithMapping, 
 
             $totalMinutes = 0;
             $overtimeMinutes = 0;
-            $leaveHours = 0;
+            $permessoHours = 0;
+            $ferieHours = 0;
+            $malattiaHours = 0;
             $daysPresent = $timesheets->count();
 
             foreach ($timesheets as $ts) {
@@ -53,14 +55,29 @@ class TimesheetRecapSheet implements FromCollection, WithHeadings, WithMapping, 
                     $totalMinutes += ($ts->overtime_hours * 60);
                 }
 
-                $leaveHours += $ts->leave_hours;
+                if ($ts->leave_hours > 0) {
+                    switch ($ts->leave_type) {
+                        case 'ferie':
+                            $ferieHours += $ts->leave_hours;
+                            break;
+                        case 'malattia':
+                            $malattiaHours += $ts->leave_hours;
+                            break;
+                        case 'permesso':
+                        default:
+                            $permessoHours += $ts->leave_hours;
+                            break;
+                    }
+                }
             }
 
             // Only add if there is activity or if needed (here adding all operators)
             $report->push([
                 'user_name' => $user->name,
                 'days_present' => $daysPresent,
-                'leave_hours' => round($leaveHours, 2),
+                'permesso_hours' => round($permessoHours, 2),
+                'ferie_hours' => round($ferieHours, 2),
+                'malattia_hours' => round($malattiaHours, 2),
                 'overtime_hours' => floor($overtimeMinutes / 60) . ':' . sprintf('%02d', $overtimeMinutes % 60),
                 'total_hours' => floor($totalMinutes / 60) . ':' . sprintf('%02d', $totalMinutes % 60),
             ]);
@@ -75,6 +92,8 @@ class TimesheetRecapSheet implements FromCollection, WithHeadings, WithMapping, 
             'Operatore',
             'Giorni Presenza',
             'Ore Permesso',
+            'Ore Ferie',
+            'Ore Malattia',
             'Ore Straordinario',
             'Totale Ore Lavorate',
         ];
@@ -85,7 +104,9 @@ class TimesheetRecapSheet implements FromCollection, WithHeadings, WithMapping, 
         return [
             $row['user_name'],
             $row['days_present'],
-            $row['leave_hours'],
+            $row['permesso_hours'],
+            $row['ferie_hours'],
+            $row['malattia_hours'],
             $row['overtime_hours'],
             $row['total_hours'],
         ];
