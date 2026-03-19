@@ -3,15 +3,14 @@
     <div class="row justify-content-center">
       <div class="col-12 mt-3 d-flex justify-content-center align-items-center">
         <h1 class="text-center mx-3">Tabella Permessi Ente</h1>
-
-        {{-- Pulsante + già presente --}}
-        {{-- Pulsante + già presente --}}
-        @role('admin')
+        @hasanyrole('admin|permessi ente')
         <div>
           <a type="button" class="btn btn-success mx-2" href="{{ route('addPermesso') }}">
             <i class="bi bi-plus"></i>
           </a>
         </div>
+        @endhasanyrole
+        @role('admin')
         <div>
           <button type="button" class="btn btn-outline-primary mx-2" data-bs-toggle="modal"
             data-bs-target="#exportPermessiModal">
