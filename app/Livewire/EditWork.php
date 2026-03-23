@@ -55,11 +55,37 @@ class EditWork extends Component
     public function update()
     {
         $this->work->update($this->all());
-        $this->work->users()->detach();
-        $this->work->users()->attach($this->operator_id, ['created_at' => Carbon::now()]);
+        $this->syncOperatorsPreservingAssignmentDates();
 
         session()->flash('success', 'Lavorazione aggiornata con successo!');
         $this->dispatch('workUpdated');
+    }
+
+    protected function syncOperatorsPreservingAssignmentDates(): void
+    {
+        $operatorIds = collect($this->operator_id)
+            ->filter(fn ($id) => filled($id))
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values();
+
+        $existingAssignments = $this->work->users()
+            ->newPivotStatement()
+            ->where('work_id', $this->work->id)
+            ->pluck('created_at', 'user_id');
+
+        $now = Carbon::now();
+
+        $syncData = $operatorIds
+            ->mapWithKeys(fn (int $operatorId) => [
+                $operatorId => [
+                    'created_at' => $existingAssignments->get($operatorId, $now),
+                    'updated_at' => $now,
+                ],
+            ])
+            ->all();
+
+        $this->work->users()->sync($syncData);
     }
 
     public function mount()

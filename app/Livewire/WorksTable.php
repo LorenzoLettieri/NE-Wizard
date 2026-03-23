@@ -80,6 +80,23 @@ class WorksTable extends DataTableComponent
                         ->whereDate('works.created_at', '<=', $dateRange['maxDate']); // maxDate is the end date selected
                 }),
 
+            DateRangeFilter::make('Data Assegnazione', 'assignment_date')->config([
+                'allowInput' => true,
+                'altFormat' => 'F j, Y',
+                'ariaDateFormat' => 'F j, Y',
+                'dateFormat' => 'Y-m-d',
+                'placeholder' => 'Inserisci Data',
+                'locale' => 'it',
+            ])
+                ->setFilterPillValues([0 => 'minDate', 1 => 'maxDate'])
+                ->filter(function (Builder $builder, array $dateRange) {
+                    $this->applyAssignedOperatorsConstraint(
+                        $builder,
+                        $this->getAppliedFilterWithValue('assigned_operators'),
+                        $dateRange
+                    );
+                }),
+
             DateRangeFilter::make('Data FL', 'completion_date')->config([
                 'allowInput' => true,   // Allow manual input of dates
                 'altFormat' => 'F j, Y', // Date format that will be displayed once selected
@@ -179,10 +196,11 @@ class WorksTable extends DataTableComponent
                     'placeholder' => 'Operatore',
                 ])
                 ->filter(function (Builder $builder, string $value) {
-                    $builder->whereHas('users', function ($query) use ($value) {
-                        $query->where('name', 'like', "%$value%");
-                    })->get();
-
+                    $this->applyAssignedOperatorsConstraint(
+                        $builder,
+                        $value,
+                        $this->getAppliedFilterWithValue('assignment_date')
+                    );
                 }),
 
             SelectFilter::make('Daphne', 'daphne')
@@ -199,6 +217,24 @@ class WorksTable extends DataTableComponent
                     }
                 }),
         ];
+    }
+
+    protected function applyAssignedOperatorsConstraint(Builder $builder, ?string $operatorName = null, ?array $assignmentDateRange = null): void
+    {
+        $builder->whereHas('users', function (Builder $query) use ($operatorName, $assignmentDateRange) {
+            if (filled($operatorName)) {
+                $query->where('name', 'like', "%{$operatorName}%");
+            }
+
+            if (is_array($assignmentDateRange)
+                && ! empty($assignmentDateRange['minDate'])
+                && ! empty($assignmentDateRange['maxDate'])) {
+                $query->whereBetween('user_work.created_at', [
+                    Carbon::parse($assignmentDateRange['minDate'])->startOfDay(),
+                    Carbon::parse($assignmentDateRange['maxDate'])->endOfDay(),
+                ]);
+            }
+        });
     }
 
 

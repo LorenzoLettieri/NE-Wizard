@@ -23,15 +23,18 @@
   <tbody>
     @foreach ($operators as $op)
         @php
-            $avgTime = $op->works->where('status', "Consegnato")->map(fn($w) => \Carbon\Carbon::parse($w->acception_date)->diffInHours($w->delivery_date))
-                        ->avg();
+            $avgTime = $op->works
+                ->whereIn('status', ['Consegnato', 'Fine Lavori'])
+                ->filter(fn($w) => $w->acception_date && $w->delivery_date)
+                ->map(fn($w) => \Carbon\Carbon::parse($w->acception_date)->diffInHours($w->delivery_date))
+                ->avg();
         @endphp
         <tr>
         <td>{{$op->name}}</th>
         <td>{{$op->works->count()}}</td>
         <td>{{$op->works->where('status', 'In Lavorazione')->count()}}</td>
         <td>{{$op->works->whereIn('status', ['Consegnato', 'Fine Lavori'])->count()}}</td>
-        <td>{{round($avgTime, 1) <= 1 ? "<1 " : round($avgTime, 1)}} h</td>
+        <td>{{ is_null($avgTime) ? '-' : ((round($avgTime, 1) <= 1 ? '<1' : round($avgTime, 1)) . ' h') }}</td>
         </tr>
     @endforeach
     
