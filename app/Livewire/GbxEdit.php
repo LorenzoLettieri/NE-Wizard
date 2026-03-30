@@ -42,6 +42,8 @@ class GbxEdit extends Component
             'project_paid' => 'nullable|numeric',
             'dl_paid' => 'nullable|numeric',
             'date' => 'nullable|date',
+            'files' => 'nullable|array',
+            'files.*' => 'file|mimes:pdf|max:10240',
         ]);
 
         $this->gbx->update($this->except(['centrals', 'companies', 'gbx', 'files']));

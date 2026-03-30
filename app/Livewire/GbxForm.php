@@ -41,6 +41,8 @@ class GbxForm extends Component
             'project_paid' => 'nullable|numeric',
             'dl_paid' => 'nullable|numeric',
             'date' => 'nullable|date',
+            'files' => 'nullable|array',
+            'files.*' => 'file|mimes:pdf|max:10240',
         ]);
 
         $gbx = Gbx::create($this->except(['centrals', 'companies', 'files']));

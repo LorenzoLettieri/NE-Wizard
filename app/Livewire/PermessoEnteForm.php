@@ -202,6 +202,8 @@ class PermessoEnteForm extends Component
             'acception_date' => 'nullable|date',
             'delivery_date' => 'nullable|date',
             'completion_date' => 'nullable|date',
+            'files' => 'nullable|array',
+            'files.*' => 'file|mimes:pdf|max:10240',
         ];
     }
 
