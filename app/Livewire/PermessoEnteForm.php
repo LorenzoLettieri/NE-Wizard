@@ -13,13 +13,14 @@ use Livewire\WithFileUploads;
 use App\Models\PermessoEnte;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
+use App\Livewire\Concerns\HandlesPdfUploads;
 
 class PermessoEnteForm extends Component
 {
     use WithFileUploads;
+    use HandlesPdfUploads;
 
     // Proprietà separate per migliore performance
-    public $files = [];
     public $network;
     public $consegna;
     public $progetto;
@@ -57,6 +58,7 @@ class PermessoEnteForm extends Component
     public $isEdit = false;
     public $isShow = false;
     public $permessoEnteId = null;
+    public $existingMedia = [];
 
     #[Computed]
     public function regioni()
@@ -151,6 +153,10 @@ class PermessoEnteForm extends Component
 
         // Carica gli operatori assegnati
         $this->operator_id = $permesso->users->pluck('id')->toArray();
+        $this->refreshExistingMedia();
+        $this->files = [];
+        $this->clearUploadFeedback();
+        $this->clearPendingMediaRemovals();
     }
 
     private function boolToString($value)
@@ -202,9 +208,7 @@ class PermessoEnteForm extends Component
             'acception_date' => 'nullable|date',
             'delivery_date' => 'nullable|date',
             'completion_date' => 'nullable|date',
-            'files' => 'nullable|array',
-            'files.*' => 'file|mimes:pdf|max:10240',
-        ];
+        ] + $this->pdfUploadValidationRules();
     }
 
     public function save()
@@ -254,21 +258,51 @@ class PermessoEnteForm extends Component
 
         $permesso->users()->sync($this->operator_id);
 
+        $uploadedCount = 0;
         if ($this->files) {
-            foreach ($this->files as $file) {
-                $path = $file->store('permessi_ente_media', 'public');
-                $permesso->media()->create([
-                    'file_path' => $path,
-                    'file_name' => $file->getClientOriginalName(),
-                    'mime_type' => $file->getMimeType(),
-                    'size' => $file->getSize(),
-                ]);
-            }
-            $this->files = []; // Clear files after upload
+            $uploadedCount = $this->persistUploadedFiles($permesso, 'permessi_ente_media');
         }
 
-        session()->flash('success', $this->isEdit ? 'Record aggiornato con successo!' : 'Record creato con successo!');
+        $removedCount = $this->commitPendingMediaRemovals($permesso);
+        $this->refreshExistingMedia();
+        $message = $this->isEdit ? 'Record aggiornato con successo!' : 'Record creato con successo!';
+
+        if ($this->isEdit && ($uploadedCount > 0 || $removedCount > 0)) {
+            $details = [];
+
+            if ($uploadedCount > 0) {
+                $details[] = $uploadedCount === 1 ? '1 allegato caricato' : "{$uploadedCount} allegati caricati";
+            }
+
+            if ($removedCount > 0) {
+                $details[] = $removedCount === 1 ? '1 allegato rimosso' : "{$removedCount} allegati rimossi";
+            }
+
+            $message .= ' ' . implode(', ', $details) . '.';
+        }
+
+        session()->flash('success', $message);
         return redirect()->route('permessi-ente.table');
+    }
+
+    private function refreshExistingMedia(): void
+    {
+        if (! $this->permessoEnteId) {
+            $this->existingMedia = [];
+
+            return;
+        }
+
+        $this->existingMedia = PermessoEnte::findOrFail($this->permessoEnteId)
+            ->media()
+            ->latest()
+            ->get(['id', 'file_name', 'file_path'])
+            ->map(fn ($media) => [
+                'id' => $media->id,
+                'file_name' => $media->file_name,
+                'file_path' => $media->file_path,
+            ])
+            ->all();
     }
 
     public function render()

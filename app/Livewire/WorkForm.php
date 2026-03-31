@@ -8,9 +8,14 @@ use App\Models\Central;
 use App\Models\Company;
 use Carbon\Carbon;
 use Livewire\Component;
+use Livewire\WithFileUploads;
+use App\Livewire\Concerns\HandlesPdfUploads;
 
 class WorkForm extends Component
 {
+    use WithFileUploads;
+    use HandlesPdfUploads;
+
     public $operators;
     public $companies, $centrals;
 
@@ -22,9 +27,22 @@ class WorkForm extends Component
 
     public function store()
     {
+        $this->validate($this->pdfUploadValidationRules());
 
-        $work = Work::create($this->except(['companies']));
+        $work = Work::create($this->except([
+            'companies',
+            'centrals',
+            'operators',
+            'files',
+            'uploadMessage',
+            'uploadMessageType',
+        ]));
         $work->users()->attach($this->operator_id, ['created_at' => Carbon::now()]);
+
+        if ($this->files) {
+            $this->persistUploadedFiles($work, 'works_media');
+        }
+
         session()->flash('success', 'Lavorazione Aggiunta con successo!');
 
         $this->redirect(route('addWork'));

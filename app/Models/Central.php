@@ -19,4 +19,9 @@ class Central extends Model
     public function permessiEnte(){
         return $this->hasMany(PermessoEnte::class, 'central_id');
     }
+
+    public function decommissionings()
+    {
+        return $this->hasMany(Decommissioning::class, 'central_id');
+    }
 }

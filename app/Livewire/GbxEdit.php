@@ -8,10 +8,13 @@ use App\Models\Company;
 use Livewire\Component;
 use Livewire\Attributes\On;
 use Livewire\WithFileUploads;
+use App\Livewire\Concerns\HandlesPdfUploads;
 
 class GbxEdit extends Component
 {
     use WithFileUploads;
+    use HandlesPdfUploads;
+
     public $gbx;
     public $centrals, $companies;
     public $company_id, $network, $SDF, $central_id, $comune, $client, $coordinates;
@@ -22,13 +25,15 @@ class GbxEdit extends Component
     public $is_adeguate, $permissions, $CO_advancement;
     public $value, $company_paid, $bezzi_paid, $project_paid, $dl_paid;
     public $inspection_notes, $permission_notes, $project_notes, $client_notes;
-    public $files = [];
 
     #[On('edit-gbx')]
     public function editGbx($id)
     {
-        $this->gbx = Gbx::find($id);
+        $this->gbx = Gbx::with('media')->find($id);
         $this->fill($this->gbx->toArray());
+        $this->files = [];
+        $this->clearUploadFeedback();
+        $this->clearPendingMediaRemovals();
     }
 
     public function update()
@@ -42,26 +47,41 @@ class GbxEdit extends Component
             'project_paid' => 'nullable|numeric',
             'dl_paid' => 'nullable|numeric',
             'date' => 'nullable|date',
-            'files' => 'nullable|array',
-            'files.*' => 'file|mimes:pdf|max:10240',
-        ]);
+        ] + $this->pdfUploadValidationRules());
 
-        $this->gbx->update($this->except(['centrals', 'companies', 'gbx', 'files']));
+        $this->gbx->update($this->except([
+            'centrals',
+            'companies',
+            'gbx',
+            'files',
+            'uploadMessage',
+            'uploadMessageType',
+        ]));
 
+        $uploadedCount = 0;
         if ($this->files) {
-            foreach ($this->files as $file) {
-                $path = $file->store('gbx_media', 'public');
-                $this->gbx->media()->create([
-                    'file_path' => $path,
-                    'file_name' => $file->getClientOriginalName(),
-                    'mime_type' => $file->getMimeType(),
-                    'size' => $file->getSize(),
-                ]);
-            }
-            $this->files = []; // Clear files after upload
+            $uploadedCount = $this->persistUploadedFiles($this->gbx, 'gbx_media');
         }
 
-        session()->flash('success', 'GBX aggiornato con successo!');
+        $removedCount = $this->commitPendingMediaRemovals($this->gbx);
+        $this->gbx->refresh();
+        $message = 'GBX aggiornato con successo!';
+
+        if ($uploadedCount > 0 || $removedCount > 0) {
+            $details = [];
+
+            if ($uploadedCount > 0) {
+                $details[] = $uploadedCount === 1 ? '1 allegato caricato' : "{$uploadedCount} allegati caricati";
+            }
+
+            if ($removedCount > 0) {
+                $details[] = $removedCount === 1 ? '1 allegato rimosso' : "{$removedCount} allegati rimossi";
+            }
+
+            $message .= ' ' . implode(', ', $details) . '.';
+        }
+
+        session()->flash('success', $message);
         $this->dispatch('gbxUpdated');
     }
 

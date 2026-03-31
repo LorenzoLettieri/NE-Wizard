@@ -19,13 +19,15 @@ class RoleSeeder extends Seeder
         Permission::firstOrCreate(["name" => "get works"]);
         Permission::firstOrCreate(["name" => "get permessi ente"]);
         Permission::firstOrCreate(["name" => "get gbx"]);
+        Permission::firstOrCreate(["name" => "get decommissioning"]);
 
-        Role::firstOrCreate(['name' => 'admin'])->givePermissionTo('get gbx');
+        Role::firstOrCreate(['name' => 'admin'])->givePermissionTo(['get gbx', 'get decommissioning']);
         Role::firstOrCreate(['name' => 'supervisor'])->givePermissionTo('get works');
         Role::firstOrCreate(['name' => 'operator'])->givePermissionTo('get works');
         Role::firstOrCreate(['name' => 'freelance operator'])->givePermissionTo('get works');
         Role::firstOrCreate(['name' => 'permessi ente'])->givePermissionTo('get permessi ente');
         Role::firstOrCreate(['name' => 'GBX'])->givePermissionTo('get gbx');
         Role::firstOrCreate(['name' => 'GBX Supervisor'])->givePermissionTo('get gbx');
+        Role::firstOrCreate(['name' => 'Deco'])->givePermissionTo('get decommissioning');
     }
 }

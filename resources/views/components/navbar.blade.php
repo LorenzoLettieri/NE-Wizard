@@ -28,7 +28,7 @@
                     </ul>
                 </li>
                 @endrole
-                @hasanyrole('admin|supervisor|permessi ente|GBX')
+                @hasanyrole('admin|supervisor|permessi ente|GBX|Deco')
                 <li class="nav-item dropdown">
                     <a class="nav-link active dropdown-toggle" href="#" id="navbarDropdown" role="button"
                         data-bs-toggle="dropdown" aria-expanded="false">
@@ -48,6 +48,11 @@
                         @hasanyrole('admin|GBX')
                         <li class="nav-item">
                             <a class="dropdown-item" href="{{route('gbxes-table')}}">Tabella GBX</a>
+                        </li>
+                        @endhasanyrole
+                        @hasanyrole('admin|Deco')
+                        <li class="nav-item">
+                            <a class="dropdown-item" href="{{route('decommissionings.table')}}">Tabella Decommissioning</a>
                         </li>
                         @endhasanyrole
                     </ul>

@@ -62,4 +62,9 @@ class User extends Authenticatable
     {
         return $this->belongsTo(Company::class);
     }
+
+    public function decommissionings()
+    {
+        return $this->hasMany(Decommissioning::class, 'progettista_id');
+    }
 }

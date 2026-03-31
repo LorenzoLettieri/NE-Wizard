@@ -8,9 +8,14 @@ use App\Models\Central;
 use App\Models\Company;
 use Livewire\Component;
 use Illuminate\Support\Carbon;
+use Livewire\WithFileUploads;
+use App\Livewire\Concerns\HandlesPdfUploads;
 
 class WorkEdit extends Component
 {
+    use WithFileUploads;
+    use HandlesPdfUploads;
+
     public $work;
     public $operators;
     public $companies, $centrals;
@@ -19,10 +24,43 @@ class WorkEdit extends Component
     public $company_id, $central_id, $operator_id, $status, $network, $ao_cno, $ntw_scope, $description, $type, $phase, $company_assistant, $nroe, $wo_number,$unica_number, $notes;
 
     public function update(){
-        $this->work->update( $this->all());
+        $this->validate($this->pdfUploadValidationRules());
+
+        $this->work->update($this->except([
+            'work',
+            'operators',
+            'companies',
+            'centrals',
+            'files',
+            'uploadMessage',
+            'uploadMessageType',
+        ]));
         $this->syncOperatorsPreservingAssignmentDates();
 
-        session()->flash('success', 'Lavorazione aggiornata con successo!');
+        $uploadedCount = 0;
+        if ($this->files) {
+            $uploadedCount = $this->persistUploadedFiles($this->work, 'works_media');
+        }
+
+        $removedCount = $this->commitPendingMediaRemovals($this->work);
+        $this->work->refresh();
+        $message = 'Lavorazione aggiornata con successo!';
+
+        if ($uploadedCount > 0 || $removedCount > 0) {
+            $details = [];
+
+            if ($uploadedCount > 0) {
+                $details[] = $uploadedCount === 1 ? '1 allegato caricato' : "{$uploadedCount} allegati caricati";
+            }
+
+            if ($removedCount > 0) {
+                $details[] = $removedCount === 1 ? '1 allegato rimosso' : "{$removedCount} allegati rimossi";
+            }
+
+            $message .= ' ' . implode(', ', $details) . '.';
+        }
+
+        session()->flash('success', $message);
         $this->redirect(route('works-table'));
     }
 
@@ -54,7 +92,7 @@ class WorkEdit extends Component
     }
 
     public function mount(Work $work){
-        $this->work = $work;
+        $this->work = $work->load('media');
 
         $this->companies = Company::all();
         $this->centrals = Central::all();
@@ -77,6 +115,9 @@ class WorkEdit extends Component
         $this->notes = $work->notes;
 
         $this->suspension_history = $work->suspension_history;
+        $this->files = [];
+        $this->clearUploadFeedback();
+        $this->clearPendingMediaRemovals();
 
     }
     public function render()

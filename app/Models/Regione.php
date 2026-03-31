@@ -25,4 +25,9 @@ class Regione extends Model
     {
         return $this->hasMany(PermessoEnte::class, 'regione_id');
     }
+
+    public function decommissionings()
+    {
+        return $this->hasMany(Decommissioning::class, 'regione_id');
+    }
 }

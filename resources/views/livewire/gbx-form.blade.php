@@ -182,7 +182,36 @@
                     <label class="form-label">Documentazione (PDF)</label>
                     <input type="file" class="form-control" wire:model="files" multiple accept="application/pdf">
                     <div wire:loading wire:target="files" class="text-primary mt-1">Caricamento in corso...</div>
+
+                    @if($uploadMessage)
+                        <div class="alert alert-{{ $uploadMessageType }} mt-3 mb-0">
+                            {{ $uploadMessage }}
+                        </div>
+                    @endif
+
+                    @error('files')
+                        <div class="text-danger small mt-2">{{ $message }}</div>
+                    @enderror
+                    @error('files.*')
+                        <div class="text-danger small mt-2">{{ $message }}</div>
+                    @enderror
                 </div>
+
+                @if(count($files) > 0)
+                    <div class="col-md-12">
+                        <label class="form-label fw-bold">Allegati Da Salvare</label>
+                        <ul class="list-group">
+                            @foreach($files as $index => $file)
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span class="text-truncate me-3">{{ $file->getClientOriginalName() }}</span>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" wire:click="removePendingFile({{ $index }})">
+                                        <i class="bi bi-x-circle"></i> Rimuovi
+                                    </button>
+                                </li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
             </div>
 
             <div class="mt-5 text-end">

@@ -8,10 +8,14 @@ use App\Models\Central;
 use App\Models\Company;
 use Livewire\Component;
 use Livewire\Attributes\On;
+use Livewire\WithFileUploads;
 use Illuminate\Support\Carbon;
+use App\Livewire\Concerns\HandlesPdfUploads;
 
 class EditWork extends Component
 {
+    use WithFileUploads;
+    use HandlesPdfUploads;
 
     public $work;
     public $operators;
@@ -23,10 +27,11 @@ class EditWork extends Component
     public $company_id, $central_id, $operator_id, $status, $network, $ao_cno, $ntw_scope, $description, $type, $phase, $company_assistant, $nroe, $wo_number, $unica_number, $notes, $tempo_daphne;
     public $go_live, $date_in_str, $date_out_str;
     public $daphne;
+
     #[On('edit-work')]
     public function editWork($id)
     {
-        $this->work = Work::find($id);
+        $this->work = Work::with('media')->find($id);
 
         $this->company_id = $this->work->company_id;
         $this->central_id = $this->work->central_id;
@@ -50,14 +55,50 @@ class EditWork extends Component
         $this->date_out_str = $this->work->date_out_str;
 
         $this->suspension_history = $this->work->suspension_history;
+        $this->files = [];
+        $this->clearUploadFeedback();
+        $this->clearPendingMediaRemovals();
     }
 
     public function update()
     {
-        $this->work->update($this->all());
+        $this->validate($this->pdfUploadValidationRules());
+
+        $this->work->update($this->except([
+            'work',
+            'operators',
+            'companies',
+            'centrals',
+            'files',
+            'uploadMessage',
+            'uploadMessageType',
+        ]));
         $this->syncOperatorsPreservingAssignmentDates();
 
-        session()->flash('success', 'Lavorazione aggiornata con successo!');
+        $uploadedCount = 0;
+        if ($this->files) {
+            $uploadedCount = $this->persistUploadedFiles($this->work, 'works_media');
+        }
+
+        $removedCount = $this->commitPendingMediaRemovals($this->work);
+        $this->work->refresh();
+        $message = 'Lavorazione aggiornata con successo!';
+
+        if ($uploadedCount > 0 || $removedCount > 0) {
+            $details = [];
+
+            if ($uploadedCount > 0) {
+                $details[] = $uploadedCount === 1 ? '1 allegato caricato' : "{$uploadedCount} allegati caricati";
+            }
+
+            if ($removedCount > 0) {
+                $details[] = $removedCount === 1 ? '1 allegato rimosso' : "{$removedCount} allegati rimossi";
+            }
+
+            $message .= ' ' . implode(', ', $details) . '.';
+        }
+
+        session()->flash('success', $message);
         $this->dispatch('workUpdated');
     }
 

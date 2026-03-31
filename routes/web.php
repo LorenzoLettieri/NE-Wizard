@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\OperatorController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\DecommissioningController;
 use App\Http\Controllers\UsersController;
 use App\Http\Controllers\WorkController;
 use Illuminate\Routing\RouteGroup;
@@ -56,4 +57,12 @@ Route::group(['middleware' => ['role:admin|permessi ente']], function () {
     Route::get('/permessi-ente/edit/{id}', [\App\Http\Controllers\PermessoEnteController::class, 'edit'])->name('editPermesso');
     Route::delete('/permessi-ente/delete/{permesso}', [\App\Http\Controllers\PermessoEnteController::class, 'delete'])->name('deletePermesso');
     Route::get('/exports/permessi-ente', [\App\Http\Controllers\PermessoEnteController::class, 'download'])->name('exports.permessi-ente')->middleware('role:admin');
+});
+
+Route::group(['middleware' => ['role:admin|Deco']], function () {
+    Route::get('/decommissionings/table', [DecommissioningController::class, 'index'])->name('decommissionings.table');
+    Route::get('/decommissionings/create', [DecommissioningController::class, 'create'])->name('addDecommissioning');
+    Route::get('/decommissionings/edit/{id}', [DecommissioningController::class, 'edit'])->name('editDecommissioning');
+    Route::delete('/decommissionings/delete/{decommissioning}', [DecommissioningController::class, 'delete'])->name('deleteDecommissioning');
+    Route::get('/exports/decommissionings', [DecommissioningController::class, 'download'])->name('exports.decommissionings')->middleware('role:admin');
 });

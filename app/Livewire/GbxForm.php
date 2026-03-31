@@ -7,10 +7,12 @@ use App\Models\Central;
 use App\Models\Company;
 use Livewire\Component;
 use Livewire\WithFileUploads;
+use App\Livewire\Concerns\HandlesPdfUploads;
 
 class GbxForm extends Component
 {
     use WithFileUploads;
+    use HandlesPdfUploads;
 
     public $centrals, $companies;
     public $company_id, $network, $SDF, $central_id, $comune, $client, $coordinates;
@@ -21,7 +23,6 @@ class GbxForm extends Component
     public $is_adeguate = 0, $permissions = 0, $CO_advancement = 0;
     public $value, $company_paid, $bezzi_paid, $project_paid, $dl_paid;
     public $inspection_notes, $permission_notes, $project_notes, $client_notes;
-    public $files = [];
 
     public function mount()
     {
@@ -41,22 +42,18 @@ class GbxForm extends Component
             'project_paid' => 'nullable|numeric',
             'dl_paid' => 'nullable|numeric',
             'date' => 'nullable|date',
-            'files' => 'nullable|array',
-            'files.*' => 'file|mimes:pdf|max:10240',
-        ]);
+        ] + $this->pdfUploadValidationRules());
 
-        $gbx = Gbx::create($this->except(['centrals', 'companies', 'files']));
+        $gbx = Gbx::create($this->except([
+            'centrals',
+            'companies',
+            'files',
+            'uploadMessage',
+            'uploadMessageType',
+        ]));
 
         if ($this->files) {
-            foreach ($this->files as $file) {
-                $path = $file->store('gbx_media', 'public');
-                $gbx->media()->create([
-                    'file_path' => $path,
-                    'file_name' => $file->getClientOriginalName(),
-                    'mime_type' => $file->getMimeType(),
-                    'size' => $file->getSize(),
-                ]);
-            }
+            $this->persistUploadedFiles($gbx, 'gbx_media');
         }
 
         session()->flash('success', 'GBX aggiunto con successo!');

@@ -25,7 +25,14 @@ class Comune extends Model
     public function permessiEnte()
     {
         return $this->hasMany(PermessoEnte::class, 'comune_id');
-    }    protected $casts = [
+    }
+
+    public function decommissionings()
+    {
+        return $this->hasMany(Decommissioning::class, 'comune_id');
+    }
+
+    protected $casts = [
         'consegna' => 'date:Y-m-d',
         'data_fl' => 'date:Y-m-d',
         'data_ra' => 'date:Y-m-d',

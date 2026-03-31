@@ -5,6 +5,7 @@ namespace App\Models;
 use Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Casts\Attribute as CastsAttribute;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Work extends Model
@@ -52,6 +53,9 @@ class Work extends Model
         return $this->belongsTo(Central::class);
     }
 
-
+    public function media(): MorphMany
+    {
+        return $this->morphMany(Media::class, 'mediable');
+    }
 
 }

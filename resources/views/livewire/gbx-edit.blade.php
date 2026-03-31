@@ -160,19 +160,59 @@
                         <label class="form-label">Aggiungi Documentazione (PDF)</label>
                         <input type="file" class="form-control" wire:model="files" multiple accept="application/pdf">
                         <div wire:loading wire:target="files" class="text-primary mt-1">Caricamento in corso...</div>
+
+                        @if($uploadMessage)
+                            <div class="alert alert-{{ $uploadMessageType }} mt-3 mb-0">
+                                {{ $uploadMessage }}
+                            </div>
+                        @endif
+
+                        @error('files')
+                            <div class="text-danger small mt-2">{{ $message }}</div>
+                        @enderror
+                        @error('files.*')
+                            <div class="text-danger small mt-2">{{ $message }}</div>
+                        @enderror
                     </div>
+
+                    @if(count($files) > 0)
+                        <div class="col-md-12">
+                            <label class="form-label fw-bold">Allegati Da Salvare</label>
+                            <ul class="list-group">
+                                @foreach($files as $index => $file)
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <span class="text-truncate me-3">{{ $file->getClientOriginalName() }}</span>
+                                        <button type="button" class="btn btn-sm btn-outline-danger" wire:click="removePendingFile({{ $index }})">
+                                            <i class="bi bi-x-circle"></i> Rimuovi
+                                        </button>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
 
                     @if($gbx && $gbx->media->count() > 0)
                         <div class="col-md-12 mt-3">
                             <label class="form-label fw-bold">Documenti Esistenti</label>
+                            @if(count($pendingMediaRemovalIds) > 0)
+                                <div class="alert alert-warning mt-2 mb-3">
+                                    Gli allegati segnati verranno eliminati solo dopo il salvataggio.
+                                </div>
+                            @endif
                             <ul class="list-group">
                                 @foreach($gbx->media as $m)
-                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <li class="list-group-item d-flex justify-content-between align-items-center {{ in_array($m->id, $pendingMediaRemovalIds, true) ? 'list-group-item-warning' : '' }}">
                                         <span><i class="bi bi-file-earmark-pdf text-danger me-2"></i>{{ $m->file_name }}</span>
-                                        <a href="{{ Storage::url($m->file_path) }}" target="_blank"
-                                            class="btn btn-sm btn-outline-primary">
-                                            <i class="bi bi-download"></i> Scarica
-                                        </a>
+                                        <div class="d-flex gap-2">
+                                            <a href="{{ Storage::url($m->file_path) }}" target="_blank"
+                                                class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-download"></i> Scarica
+                                            </a>
+                                            <button type="button" class="btn btn-sm {{ in_array($m->id, $pendingMediaRemovalIds, true) ? 'btn-outline-secondary' : 'btn-outline-danger' }}" wire:click="toggleMediaRemoval({{ $m->id }})">
+                                                <i class="bi {{ in_array($m->id, $pendingMediaRemovalIds, true) ? 'bi-arrow-counterclockwise' : 'bi-trash' }}"></i>
+                                                {{ in_array($m->id, $pendingMediaRemovalIds, true) ? 'Annulla' : 'Segna Per Eliminazione' }}
+                                            </button>
+                                        </div>
                                     </li>
                                 @endforeach
                             </ul>
