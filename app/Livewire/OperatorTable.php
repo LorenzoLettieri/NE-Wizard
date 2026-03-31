@@ -4,6 +4,7 @@ namespace App\Livewire;
 
 use Carbon\Carbon;
 use App\Models\Work;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Builder;
 use Rappasoft\LaravelLivewireTables\Views\Column;
@@ -194,32 +195,47 @@ class OperatorTable extends DataTableComponent
     }
 
     public function takeWork($id){
-        $acceptedWork = Work::find($id);
-        $acceptedWork->status = 'In Lavorazione';
-        $acceptedWork->acception_date = Carbon::now();
-        $acceptedWork->save();
+        DB::transaction(function () use ($id): void {
+            $acceptedWork = Work::query()->lockForUpdate()->findOrFail($id);
+            $acceptedWork->status = 'In Lavorazione';
+            $acceptedWork->acception_date = Carbon::now();
+            $acceptedWork->save();
+        });
     }
 
     public function deliveryWork($id){
-        $acceptedWork = Work::find($id);
-        $acceptedWork->status = 'Consegnato';
-        $acceptedWork->delivery_date = Carbon::now();
-        $acceptedWork->save();
+        DB::transaction(function () use ($id): void {
+            $acceptedWork = Work::query()->lockForUpdate()->findOrFail($id);
+            $deliveryAt = Carbon::now();
+
+            $acceptedWork->closeOpenSuspension($deliveryAt);
+            $acceptedWork->status = 'Consegnato';
+            $acceptedWork->delivery_date = $deliveryAt;
+            $acceptedWork->save();
+        });
     }
 
     public function suspendWork($id){
-        $acceptedWork = Work::find($id);
-        $acceptedWork->status = 'Sospeso';
-        $acceptedWork->save();
+        DB::transaction(function () use ($id): void {
+            $acceptedWork = Work::query()->lockForUpdate()->findOrFail($id);
+            $acceptedWork->openSuspension(Carbon::now());
+            $acceptedWork->status = 'Sospeso';
+            $acceptedWork->save();
+        });
     }
 
     public function unsuspendWork($id){
-        $acceptedWork = Work::find($id);
-        $acceptedWork->status = 'In Lavorazione';
-        if(!$acceptedWork->acception_date){
-            $acceptedWork->acception_date = Carbon::now();
-        }
+        DB::transaction(function () use ($id): void {
+            $acceptedWork = Work::query()->lockForUpdate()->findOrFail($id);
+            $resumeAt = Carbon::now();
 
-        $acceptedWork->save();
+            $acceptedWork->closeOpenSuspension($resumeAt);
+            $acceptedWork->status = 'In Lavorazione';
+            if(!$acceptedWork->acception_date){
+                $acceptedWork->acception_date = $resumeAt;
+            }
+
+            $acceptedWork->save();
+        });
     }
 }

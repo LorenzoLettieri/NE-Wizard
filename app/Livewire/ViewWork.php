@@ -14,7 +14,7 @@ class ViewWork extends Component
 
      #[On('view-work')] 
      public function viewWork($id){
-        $this->work = Work::find($id);
+        $this->work = Work::with(['users', 'media', 'workSuspensions'])->find($id);
         $this->operators = $this->work->users->pluck('name')->join(' | ');
      }
 
@@ -23,8 +23,22 @@ class ViewWork extends Component
         $work = Work::find($id);
         $assOperators = $work->users->pluck('id');
         $newWork = $work->replicate();
+        $newWork->status = 'Da Lavorare';
+        $newWork->acception_date = null;
+        $newWork->delivery_date = null;
+        $newWork->completion_date = null;
+        $newWork->suspension_history = null;
         $newWork->save();
-        $newWork->users()->attach($assOperators);
+
+        if ($assOperators->isNotEmpty()) {
+            $now = Carbon::now();
+            $newWork->users()->attach($assOperators->mapWithKeys(fn (int $operatorId): array => [
+                $operatorId => [
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ],
+            ])->all());
+        }
 
 
         return redirect(route("editWork", $newWork->id))->with('message', 'Hai duplicato la lavorazione, puoi modificarla da qui:');

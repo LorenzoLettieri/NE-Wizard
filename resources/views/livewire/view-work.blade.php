@@ -5,6 +5,7 @@
     </div>
     <div class="modal-body">
         <div class="container mt-4">
+            @if($work)
             <div class="row g-3">
 
                 <div class="col-md-4">
@@ -85,7 +86,7 @@
                     <label class="form-label">Note</label>
                     <div class="form-control" style="min-height: 80px;">{{ $work->notes ?? '' }}</div>
                 </div>
-
+{{-- 
                 <div class="col-md-4">
                     <label class="form-label">Data In</label>
                     <div class="form-control">{{ $work->date_in_str ?? '' }}</div>
@@ -94,11 +95,16 @@
                 <div class="col-md-4">
                     <label class="form-label">Data Out</label>
                     <div class="form-control">{{ $work->date_out_str ?? '' }}</div>
-                </div>
+                </div> --}}
 
                 <div class="col-md-12">
                     <label class="form-label">Storico Sospensioni</label>
                     <div class="form-control" style="min-height: 80px;">{{ $work->suspension_history ?? '' }}</div>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Tempo effettivo di lavorazione</label>
+                    <div class="form-control">{{ $work->effective_processing_label ?? '-' }}</div>
                 </div>
 
                 <div class="col-md-12">
@@ -108,7 +114,28 @@
                     </div>
                 </div>
 
+                <div class="col-md-12">
+                    <label class="form-label">Allegati</label>
+                    @if($work->media->count() > 0)
+                        <ul class="list-group">
+                            @foreach($work->media as $media)
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span><i class="bi bi-file-earmark-pdf text-danger me-2"></i>{{ $media->file_name }}</span>
+                                    <a href="{{ Storage::url($media->file_path) }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-download"></i> Scarica
+                                    </a>
+                                </li>
+                            @endforeach
+                        </ul>
+                    @else
+                        <div class="form-control text-muted">Nessun allegato presente.</div>
+                    @endif
+                </div>
+
             </div>
+            @else
+            <div class="text-muted">Nessuna lavorazione selezionata.</div>
+            @endif
         </div>
 
     </div>

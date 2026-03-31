@@ -36,7 +36,7 @@ class WorkController extends Controller
     {
         $validated = $request->validate([
             // Se vuoi fissare un solo campo, cambia qui (es. 'completion_date')
-            'date_field' => 'required',
+            'date_field' => 'required|in:created_at,acception_date,completion_date',
             'start'      => 'required|date',
             'end'        => 'required|date|after_or_equal:start',
         ]);

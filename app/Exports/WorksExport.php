@@ -37,6 +37,7 @@ class WorksExport implements FromQuery, WithMapping, WithHeadings, ShouldAutoSiz
                 'company:id,name',
                 'central:id,central,region',
                 'users:id,name',
+                'workSuspensions:id,work_id,started_at,ended_at',
             ])
             ->whereBetween($this->dateField, [$this->start, $this->end])
             ->orderBy('id');
@@ -63,12 +64,13 @@ class WorksExport implements FromQuery, WithMapping, WithHeadings, ShouldAutoSiz
             'Operatori Assegnati', // P
             'Data PiC',            // Q (acception_date)
             'Data Consegna',       // R (delivery_date)
-            'Data FL',             // S (completion_date)
-            'Data In',             // T (date_in_str)
-            'Data Out',            // U (date_out_str)
-            'Assistente Impresa',  // V
-            'Note',                // W
-            'Storico sospensioni', // X
+            'Tempo effettivo di lavorazione', // S
+            'Data FL',             // T (completion_date)
+            'Data In',             // U (date_in_str)
+            'Data Out',            // V (date_out_str)
+            'Assistente Impresa',  // W
+            'Note',                // X
+            'Storico sospensioni', // Y
         ];
     }
 
@@ -95,6 +97,7 @@ class WorksExport implements FromQuery, WithMapping, WithHeadings, ShouldAutoSiz
             $work->users->pluck('name')->implode(', '), // Operatori Assegnati
             $dt($work->acception_date),             // Data PiC
             $dt($work->delivery_date),              // Data Consegna
+            $work->effective_processing_label ?? '-', // Tempo effettivo di lavorazione
             $dt($work->completion_date),            // Data FL
             $work->date_in_str,                     // Data In
             $work->date_out_str,                    // Data Out
@@ -106,12 +109,12 @@ class WorksExport implements FromQuery, WithMapping, WithHeadings, ShouldAutoSiz
 
     public function columnFormats(): array
     {
-        // Colonne date: A (creazione), Q (PiC), R (Consegna), S (FL)
+        // Colonne date: A (creazione), Q (PiC), R (Consegna), T (FL)
         return [
             'A' => NumberFormat::FORMAT_DATE_DDMMYYYY,
             'Q' => NumberFormat::FORMAT_DATE_DDMMYYYY,
             'R' => NumberFormat::FORMAT_DATE_DDMMYYYY,
-            'S' => NumberFormat::FORMAT_DATE_DDMMYYYY,
+            'T' => NumberFormat::FORMAT_DATE_DDMMYYYY,
         ];
     }
 

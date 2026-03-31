@@ -128,6 +128,9 @@
                     <label for="suspension_history" class="form-label">Storico Sospensioni:</label>
                     <textarea class="form-control" id="suspension_history" rows="5" wire:model="suspension_history"></textarea>
                 </div>
+                @role('admin|supervisor')
+                    @include('livewire.partials.work-suspensions-editor')
+                @endrole
                   <div class="col-12 col-md-12 mb-4">
                     <label for="phase" class="form-label">Assegna Lavorazione ad Operatore:</label>
                     <select wire:model="operator_id" class="form-select tom-select-multiple" multiple>

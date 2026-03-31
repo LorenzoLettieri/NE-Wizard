@@ -8,13 +8,16 @@ use App\Models\Central;
 use App\Models\Company;
 use Livewire\Component;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Livewire\WithFileUploads;
 use App\Livewire\Concerns\HandlesPdfUploads;
+use App\Livewire\Concerns\HandlesWorkSuspensions;
 
 class WorkEdit extends Component
 {
     use WithFileUploads;
     use HandlesPdfUploads;
+    use HandlesWorkSuspensions;
 
     public $work;
     public $operators;
@@ -25,17 +28,22 @@ class WorkEdit extends Component
 
     public function update(){
         $this->validate($this->pdfUploadValidationRules());
+        $validatedSuspensions = $this->validateStructuredSuspensions($this->work);
 
-        $this->work->update($this->except([
-            'work',
-            'operators',
-            'companies',
-            'centrals',
-            'files',
-            'uploadMessage',
-            'uploadMessageType',
-        ]));
-        $this->syncOperatorsPreservingAssignmentDates();
+        DB::transaction(function () use ($validatedSuspensions): void {
+            $this->work->update($this->except([
+                'work',
+                'operators',
+                'companies',
+                'centrals',
+                'files',
+                'uploadMessage',
+                'uploadMessageType',
+                'suspensions',
+            ]));
+            $this->syncOperatorsPreservingAssignmentDates();
+            $this->syncStructuredSuspensions($this->work, $validatedSuspensions);
+        });
 
         $uploadedCount = 0;
         if ($this->files) {
@@ -115,6 +123,7 @@ class WorkEdit extends Component
         $this->notes = $work->notes;
 
         $this->suspension_history = $work->suspension_history;
+        $this->loadStructuredSuspensions($this->work);
         $this->files = [];
         $this->clearUploadFeedback();
         $this->clearPendingMediaRemovals();

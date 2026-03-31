@@ -155,14 +155,14 @@
                                         <option value="0">NO</option>
                                     </select>
                                 </div>
-                                <div class="col-4 col-md-4 mb-4">
+                                {{-- <div class="col-4 col-md-4 mb-4">
                                     <label for="date_in_str" class="form-label">Data In:</label>
                                     <input type="text" class="form-control" id="date_in_str" wire:model="date_in_str">
                                 </div>
                                 <div class="col-4 col-md-4 mb-4">
                                     <label for="date_out_str" class="form-label">Data Out:</label>
                                     <input type="text" class="form-control" id="date_out_str" wire:model="date_out_str">
-                                </div>
+                                </div> --}}
                                 <div class="col-12 col-md-12 mb-4">
                                     <label for="notes" class="form-label">Note:</label>
                                     <textarea class="form-control" id="notes" rows="5" wire:model="notes"></textarea>
@@ -173,6 +173,7 @@
                                         wire:model="suspension_history"></textarea>
                                 </div>
                                 @role('admin|supervisor')
+                                @include('livewire.partials.work-suspensions-editor')
                                 <div class="col-12 col-md-12 mb-4">
                                     <label for="phase" class="form-label">Assegna Lavorazione ad Operatore:</label>
                                     <select wire:model="operator_id" class="form-select tom-select-multiple" multiple>

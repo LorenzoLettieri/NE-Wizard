@@ -24,7 +24,8 @@ class OperatorStats extends Component
 
         $operators = User::permission('get works')
             ->with(['works' => function ($query) use ($startDate, $endDate) {
-                $query->whereBetween('user_work.created_at', [$startDate, $endDate]);
+                $query->whereBetween('user_work.created_at', [$startDate, $endDate])
+                    ->with('workSuspensions');
             }])
             ->get();
 

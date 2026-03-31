@@ -22,11 +22,13 @@ class WorksTable extends DataTableComponent
 {
     protected $model = Work::class;
 
-    // public function builder(): Builder
-    // {
-    //     return Work::query()->orderByDesc('created_at')
+    public function builder(): Builder
+    {
+        return Work::query()
+            ->with(['company', 'central', 'users', 'workSuspensions'])
+            ->withCount('media');
+    }
 
-    // }
     protected $listeners = [
         'workUpdated' => '$refresh',
     ];
@@ -304,10 +306,10 @@ class WorksTable extends DataTableComponent
                     // DIRECT ACCESS - No access to DB
                     return $row->users->pluck('name')->join(', ');
                 })->secondaryHeaderFilter(filterKey: 'assigned_operators'),
-            Column::make("Data In", "date_in_str")
-                ->sortable()->searchable(),
-            Column::make("Data Out", "date_out_str")
-                ->sortable()->searchable(),
+            // Column::make("Data In", "date_in_str")
+            //     ->sortable()->searchable(),
+            // Column::make("Data Out", "date_out_str")
+            //     ->sortable()->searchable(),
             Column::make("Data PiC", "acception_date")->format(
                 function ($value, $row, Column $column) {
                     if ($value) {
@@ -328,6 +330,8 @@ class WorksTable extends DataTableComponent
                 }
             )
                 ->sortable(),
+            Column::make('Tempo effettivo di lavorazione')
+                ->label(fn ($row) => $row->effective_processing_label ?? '-'),
             Column::make("Data FL", "completion_date")->format(
                 function ($value, $row, Column $column) {
                     if ($value) {
@@ -338,6 +342,11 @@ class WorksTable extends DataTableComponent
                 }
             )
                 ->sortable()->secondaryHeaderFilter(filterKey: 'completion_date'),
+            Column::make('Allegati')
+                ->label(fn($row) => ($row->media_count ?? 0) > 0
+                    ? '<span class="badge rounded-pill text-bg-success" title="Allegati presenti"><i class="bi bi-paperclip"></i></span>'
+                    : '<span class="badge rounded-pill text-bg-danger" title="Nessun allegato"><i class="bi bi-x-lg"></i></span>')
+                ->html(),
             Column::make("Assistente Impresa", "company_assistant")->deselected()
             ,
             Column::make("Note", "notes")->deselected(),

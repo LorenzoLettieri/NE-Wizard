@@ -6,16 +6,19 @@ use App\Models\User;
 use App\Models\Work;
 use App\Models\Central;
 use App\Models\Company;
+use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 use Livewire\Attributes\On;
 use Livewire\WithFileUploads;
 use Illuminate\Support\Carbon;
 use App\Livewire\Concerns\HandlesPdfUploads;
+use App\Livewire\Concerns\HandlesWorkSuspensions;
 
 class EditWork extends Component
 {
     use WithFileUploads;
     use HandlesPdfUploads;
+    use HandlesWorkSuspensions;
 
     public $work;
     public $operators;
@@ -55,6 +58,7 @@ class EditWork extends Component
         $this->date_out_str = $this->work->date_out_str;
 
         $this->suspension_history = $this->work->suspension_history;
+        $this->loadStructuredSuspensions($this->work);
         $this->files = [];
         $this->clearUploadFeedback();
         $this->clearPendingMediaRemovals();
@@ -63,17 +67,22 @@ class EditWork extends Component
     public function update()
     {
         $this->validate($this->pdfUploadValidationRules());
+        $validatedSuspensions = $this->validateStructuredSuspensions($this->work);
 
-        $this->work->update($this->except([
-            'work',
-            'operators',
-            'companies',
-            'centrals',
-            'files',
-            'uploadMessage',
-            'uploadMessageType',
-        ]));
-        $this->syncOperatorsPreservingAssignmentDates();
+        DB::transaction(function () use ($validatedSuspensions): void {
+            $this->work->update($this->except([
+                'work',
+                'operators',
+                'companies',
+                'centrals',
+                'files',
+                'uploadMessage',
+                'uploadMessageType',
+                'suspensions',
+            ]));
+            $this->syncOperatorsPreservingAssignmentDates();
+            $this->syncStructuredSuspensions($this->work, $validatedSuspensions);
+        });
 
         $uploadedCount = 0;
         if ($this->files) {

@@ -97,6 +97,15 @@
                             </a>
                         </div>
                         @endhasanyrole
+                        @can('get decommissioning')
+                        <div class="col-12 col-md-4 mt-3">
+                            <a href="{{route('decommissionings.table')}}" class="text-decoration-none">
+                                <div class="border border-black rounded-4 p-4 d-flex justify-content-between hover-lighten">
+                                    <h3 class="display-5">Decommissioning</h3>
+                                </div>
+                            </a>
+                        </div>
+                        @endcan
                     </div>
                     <div class="row my-3">
                         @role('admin')

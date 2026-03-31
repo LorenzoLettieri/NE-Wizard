@@ -25,8 +25,8 @@
         @php
             $avgTime = $op->works
                 ->whereIn('status', ['Consegnato', 'Fine Lavori'])
-                ->filter(fn($w) => $w->acception_date && $w->delivery_date)
-                ->map(fn($w) => \Carbon\Carbon::parse($w->acception_date)->diffInHours($w->delivery_date))
+                ->filter(fn($w) => ! is_null($w->effective_processing_seconds))
+                ->map(fn($w) => $w->effective_processing_seconds / 3600)
                 ->avg();
         @endphp
         <tr>
