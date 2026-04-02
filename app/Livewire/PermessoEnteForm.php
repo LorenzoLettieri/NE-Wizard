@@ -13,12 +13,12 @@ use Livewire\WithFileUploads;
 use App\Models\PermessoEnte;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
-use App\Livewire\Concerns\HandlesPdfUploads;
+use App\Livewire\Concerns\HandlesMediaUploads;
 
 class PermessoEnteForm extends Component
 {
     use WithFileUploads;
-    use HandlesPdfUploads;
+    use HandlesMediaUploads;
 
     // Proprietà separate per migliore performance
     public $network;
@@ -208,7 +208,7 @@ class PermessoEnteForm extends Component
             'acception_date' => 'nullable|date',
             'delivery_date' => 'nullable|date',
             'completion_date' => 'nullable|date',
-        ] + $this->pdfUploadValidationRules();
+        ] + $this->mediaUploadValidationRules();
     }
 
     public function save()

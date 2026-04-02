@@ -11,13 +11,13 @@ use Livewire\Component;
 use Livewire\Attributes\On;
 use Livewire\WithFileUploads;
 use Illuminate\Support\Carbon;
-use App\Livewire\Concerns\HandlesPdfUploads;
+use App\Livewire\Concerns\HandlesMediaUploads;
 use App\Livewire\Concerns\HandlesWorkSuspensions;
 
 class EditWork extends Component
 {
     use WithFileUploads;
-    use HandlesPdfUploads;
+    use HandlesMediaUploads;
     use HandlesWorkSuspensions;
 
     public $work;
@@ -66,7 +66,7 @@ class EditWork extends Component
 
     public function update()
     {
-        $this->validate($this->pdfUploadValidationRules());
+        $this->validate($this->mediaUploadValidationRules());
         $validatedSuspensions = $this->validateStructuredSuspensions($this->work);
 
         DB::transaction(function () use ($validatedSuspensions): void {

@@ -10,13 +10,13 @@ use Livewire\Component;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Livewire\WithFileUploads;
-use App\Livewire\Concerns\HandlesPdfUploads;
+use App\Livewire\Concerns\HandlesMediaUploads;
 use App\Livewire\Concerns\HandlesWorkSuspensions;
 
 class WorkEdit extends Component
 {
     use WithFileUploads;
-    use HandlesPdfUploads;
+    use HandlesMediaUploads;
     use HandlesWorkSuspensions;
 
     public $work;
@@ -27,7 +27,7 @@ class WorkEdit extends Component
     public $company_id, $central_id, $operator_id, $status, $network, $ao_cno, $ntw_scope, $description, $type, $phase, $company_assistant, $nroe, $wo_number,$unica_number, $notes;
 
     public function update(){
-        $this->validate($this->pdfUploadValidationRules());
+        $this->validate($this->mediaUploadValidationRules());
         $validatedSuspensions = $this->validateStructuredSuspensions($this->work);
 
         DB::transaction(function () use ($validatedSuspensions): void {

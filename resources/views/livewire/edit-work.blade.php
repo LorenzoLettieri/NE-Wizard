@@ -189,8 +189,8 @@
                             <h4 class="mt-4 mb-4 border-bottom pb-2">Media</h4>
                             <div class="row g-3 mb-4">
                                 <div class="col-12">
-                                    <label class="form-label">Documentazione (PDF)</label>
-                                    <input type="file" class="form-control" wire:model="files" multiple accept="application/pdf">
+                                    <label class="form-label">Allegati</label>
+                                    <input type="file" class="form-control" wire:model="files" multiple>
                                     <div wire:loading wire:target="files" class="text-primary mt-1">Caricamento in corso...</div>
 
                                     @if($uploadMessage)
@@ -225,7 +225,7 @@
 
                                 @if($work && $work->media->count() > 0)
                                     <div class="col-12">
-                                        <label class="form-label fw-bold">Documenti Esistenti</label>
+                                        <label class="form-label fw-bold">Allegati Esistenti</label>
                                         @if(count($pendingMediaRemovalIds) > 0)
                                             <div class="alert alert-warning mt-2 mb-3">
                                                 Gli allegati segnati verranno eliminati solo dopo il salvataggio.
@@ -234,7 +234,7 @@
                                         <ul class="list-group">
                                             @foreach($work->media as $media)
                                                 <li class="list-group-item d-flex justify-content-between align-items-center {{ in_array($media->id, $pendingMediaRemovalIds, true) ? 'list-group-item-warning' : '' }}">
-                                                    <span><i class="bi bi-file-earmark-pdf text-danger me-2"></i>{{ $media->file_name }}</span>
+                                                    <span><i class="bi bi-file-earmark text-secondary me-2"></i>{{ $media->file_name }}</span>
                                                     <div class="d-flex gap-2">
                                                         <a href="{{ Storage::url($media->file_path) }}" target="_blank" class="btn btn-sm btn-outline-primary">
                                                             <i class="bi bi-download"></i> Scarica

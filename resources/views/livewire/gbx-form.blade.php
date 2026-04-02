@@ -179,8 +179,8 @@
             <h4 class="mt-5 mb-4 border-bottom pb-2">Media</h4>
             <div class="row g-3">
                 <div class="col-md-12">
-                    <label class="form-label">Documentazione (PDF)</label>
-                    <input type="file" class="form-control" wire:model="files" multiple accept="application/pdf">
+                    <label class="form-label">Allegati</label>
+                    <input type="file" class="form-control" wire:model="files" multiple>
                     <div wire:loading wire:target="files" class="text-primary mt-1">Caricamento in corso...</div>
 
                     @if($uploadMessage)

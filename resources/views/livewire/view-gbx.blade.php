@@ -87,14 +87,14 @@
                     </div>
                     <div class="col-md-6">
                         <div class="col-12 mt-4 mb-4">
-                            <h6 class="text-muted text-uppercase small fw-bold">Documentazione Media</h6>
+                            <h6 class="text-muted text-uppercase small fw-bold">Allegati</h6>
                             <div class="mt-2">
                                 @if($gbx->media->count() > 0)
                                     <div class="row g-2">
                                         @foreach($gbx->media as $m)
                                             <div class="col-md-4">
                                                 <div class="d-flex align-items-center p-2 border rounded shadow-sm">
-                                                    <i class="bi bi-file-earmark-pdf-fill text-danger fs-4 me-2"></i>
+                                                    <i class="bi bi-file-earmark-fill text-secondary fs-4 me-2"></i>
                                                     <div class="flex-grow-1 text-truncate small" title="{{ $m->file_name }}">
                                                         {{ $m->file_name }}
                                                     </div>
@@ -107,7 +107,7 @@
                                         @endforeach
                                     </div>
                                 @else
-                                    <p class="text-muted small italic">Nessun documento disponibile.</p>
+                                    <p class="text-muted small italic">Nessun allegato disponibile.</p>
                                 @endif
                             </div>
                         </div>

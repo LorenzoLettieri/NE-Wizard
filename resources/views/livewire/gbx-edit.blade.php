@@ -157,8 +157,8 @@
                 <h4 class="mt-5 mb-4 border-bottom pb-2">Media</h4>
                 <div class="row g-3">
                     <div class="col-md-12">
-                        <label class="form-label">Aggiungi Documentazione (PDF)</label>
-                        <input type="file" class="form-control" wire:model="files" multiple accept="application/pdf">
+                        <label class="form-label">Aggiungi Allegati</label>
+                        <input type="file" class="form-control" wire:model="files" multiple>
                         <div wire:loading wire:target="files" class="text-primary mt-1">Caricamento in corso...</div>
 
                         @if($uploadMessage)
@@ -193,7 +193,7 @@
 
                     @if($gbx && $gbx->media->count() > 0)
                         <div class="col-md-12 mt-3">
-                            <label class="form-label fw-bold">Documenti Esistenti</label>
+                            <label class="form-label fw-bold">Allegati Esistenti</label>
                             @if(count($pendingMediaRemovalIds) > 0)
                                 <div class="alert alert-warning mt-2 mb-3">
                                     Gli allegati segnati verranno eliminati solo dopo il salvataggio.
@@ -202,7 +202,7 @@
                             <ul class="list-group">
                                 @foreach($gbx->media as $m)
                                     <li class="list-group-item d-flex justify-content-between align-items-center {{ in_array($m->id, $pendingMediaRemovalIds, true) ? 'list-group-item-warning' : '' }}">
-                                        <span><i class="bi bi-file-earmark-pdf text-danger me-2"></i>{{ $m->file_name }}</span>
+                                        <span><i class="bi bi-file-earmark text-secondary me-2"></i>{{ $m->file_name }}</span>
                                         <div class="d-flex gap-2">
                                             <a href="{{ Storage::url($m->file_path) }}" target="_blank"
                                                 class="btn btn-sm btn-outline-primary">
@@ -219,7 +219,7 @@
                         </div>
                     @else
                         <div class="col-md-12 mt-3">
-                            <p class="text-muted small">Nessun documento caricato.</p>
+                            <p class="text-muted small">Nessun allegato caricato.</p>
                         </div>
                     @endif
                 </div>

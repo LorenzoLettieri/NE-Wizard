@@ -2,7 +2,7 @@
 
 namespace App\Livewire;
 
-use App\Livewire\Concerns\HandlesPdfUploads;
+use App\Livewire\Concerns\HandlesMediaUploads;
 use App\Models\Central;
 use App\Models\Comune;
 use App\Models\Decommissioning;
@@ -17,7 +17,7 @@ use Livewire\WithFileUploads;
 
 class DecommissioningForm extends Component
 {
-    use HandlesPdfUploads;
+    use HandlesMediaUploads;
     use WithFileUploads;
 
     private const PROG_RATES = [
@@ -196,7 +196,7 @@ class DecommissioningForm extends Component
             'ne_amount_6' => 'nullable|numeric|min:0',
             'pagata_prog' => 'nullable|in:0,1',
             'pagata_ne' => 'nullable|in:0,1',
-        ] + $this->pdfUploadValidationRules();
+        ] + $this->mediaUploadValidationRules();
     }
 
     public function save()

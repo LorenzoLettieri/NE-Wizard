@@ -7,12 +7,12 @@ use App\Models\Central;
 use App\Models\Company;
 use Livewire\Component;
 use Livewire\WithFileUploads;
-use App\Livewire\Concerns\HandlesPdfUploads;
+use App\Livewire\Concerns\HandlesMediaUploads;
 
 class GbxForm extends Component
 {
     use WithFileUploads;
-    use HandlesPdfUploads;
+    use HandlesMediaUploads;
 
     public $centrals, $companies;
     public $company_id, $network, $SDF, $central_id, $comune, $client, $coordinates;
@@ -42,7 +42,7 @@ class GbxForm extends Component
             'project_paid' => 'nullable|numeric',
             'dl_paid' => 'nullable|numeric',
             'date' => 'nullable|date',
-        ] + $this->pdfUploadValidationRules());
+        ] + $this->mediaUploadValidationRules());
 
         $gbx = Gbx::create($this->except([
             'centrals',

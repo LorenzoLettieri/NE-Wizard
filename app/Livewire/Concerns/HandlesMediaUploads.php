@@ -6,29 +6,29 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
-trait HandlesPdfUploads
+trait HandlesMediaUploads
 {
     public $files = [];
     public $uploadMessage = null;
     public $uploadMessageType = 'info';
     public $pendingMediaRemovalIds = [];
 
-    protected function pdfUploadValidationRules(): array
+    protected function mediaUploadValidationRules(): array
     {
         return [
             'files' => 'nullable|array',
-            'files.*' => 'file|mimes:pdf|max:10240',
+            'files.*' => 'file|max:25600',
         ];
     }
 
     public function updatedFiles(): void
     {
         try {
-            $this->validate($this->pdfUploadValidationRules());
+            $this->validate($this->mediaUploadValidationRules());
             $this->setPendingUploadMessage();
         } catch (ValidationException $exception) {
             $this->files = [];
-            $this->uploadMessage = 'Upload non valido: sono ammessi solo file PDF fino a 10 MB.';
+            $this->uploadMessage = 'Upload non valido: sono ammessi file fino a 25 MB.';
             $this->uploadMessageType = 'danger';
 
             throw $exception;

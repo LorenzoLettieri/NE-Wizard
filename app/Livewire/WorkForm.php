@@ -9,12 +9,12 @@ use App\Models\Company;
 use Carbon\Carbon;
 use Livewire\Component;
 use Livewire\WithFileUploads;
-use App\Livewire\Concerns\HandlesPdfUploads;
+use App\Livewire\Concerns\HandlesMediaUploads;
 
 class WorkForm extends Component
 {
     use WithFileUploads;
-    use HandlesPdfUploads;
+    use HandlesMediaUploads;
 
     public $operators;
     public $companies, $centrals;
@@ -27,7 +27,7 @@ class WorkForm extends Component
 
     public function store()
     {
-        $this->validate($this->pdfUploadValidationRules());
+        $this->validate($this->mediaUploadValidationRules());
 
         $work = Work::create($this->except([
             'companies',

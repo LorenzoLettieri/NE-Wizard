@@ -62,13 +62,13 @@
                 </div>
 
                 <div class="col-12">
-                    <h6 class="text-muted text-uppercase small fw-bold border-bottom pb-2">Documentazione Media</h6>
+                    <h6 class="text-muted text-uppercase small fw-bold border-bottom pb-2">Allegati</h6>
                     @if (count($existingMedia) > 0)
                         <div class="row g-2 mt-2">
                             @foreach ($existingMedia as $media)
                                 <div class="col-md-4">
                                     <div class="d-flex align-items-center p-2 border rounded shadow-sm">
-                                        <i class="bi bi-file-earmark-pdf-fill text-danger fs-4 me-2"></i>
+                                        <i class="bi bi-file-earmark-fill text-secondary fs-4 me-2"></i>
                                         <div class="flex-grow-1 text-truncate small" title="{{ $media['file_name'] }}">
                                             {{ $media['file_name'] }}
                                         </div>
@@ -80,7 +80,7 @@
                             @endforeach
                         </div>
                     @else
-                        <p class="text-muted small mt-2 mb-0">Nessun documento disponibile.</p>
+                        <p class="text-muted small mt-2 mb-0">Nessun allegato disponibile.</p>
                     @endif
                 </div>
 
@@ -281,8 +281,8 @@
                     <h4 class="mt-5 mb-4 border-bottom pb-2">Media</h4>
                     <div class="row g-3">
                         <div class="col-12">
-                            <label class="form-label">Documentazione (PDF)</label>
-                            <input type="file" class="form-control" wire:model="files" multiple accept="application/pdf">
+                            <label class="form-label">Allegati</label>
+                            <input type="file" class="form-control" wire:model="files" multiple>
                             <div wire:loading wire:target="files" class="text-primary mt-1">Caricamento in corso...</div>
 
                             @if ($uploadMessage)
@@ -317,14 +317,14 @@
 
                         @if ($isEdit && count($existingMedia) > 0)
                             <div class="col-12">
-                                <label class="form-label fw-bold">Documenti Esistenti</label>
+                                <label class="form-label fw-bold">Allegati Esistenti</label>
                                 <div class="row g-2">
                                     @foreach ($existingMedia as $media)
                                         @php $pendingRemoval = in_array($media['id'], $pendingMediaRemovalIds, true); @endphp
                                         <div class="col-md-6">
                                             <div class="d-flex align-items-center justify-content-between p-2 border rounded {{ $pendingRemoval ? 'border-danger bg-danger-subtle' : '' }}">
                                                 <div class="d-flex align-items-center gap-2 text-truncate">
-                                                    <i class="bi bi-file-earmark-pdf-fill text-danger"></i>
+                                                    <i class="bi bi-file-earmark-fill text-secondary"></i>
                                                     <a class="text-decoration-none text-truncate" href="{{ Storage::url($media['file_path']) }}" target="_blank">
                                                         {{ $media['file_name'] }}
                                                     </a>

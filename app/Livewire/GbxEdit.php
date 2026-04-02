@@ -8,12 +8,12 @@ use App\Models\Company;
 use Livewire\Component;
 use Livewire\Attributes\On;
 use Livewire\WithFileUploads;
-use App\Livewire\Concerns\HandlesPdfUploads;
+use App\Livewire\Concerns\HandlesMediaUploads;
 
 class GbxEdit extends Component
 {
     use WithFileUploads;
-    use HandlesPdfUploads;
+    use HandlesMediaUploads;
 
     public $gbx;
     public $centrals, $companies;
@@ -47,7 +47,7 @@ class GbxEdit extends Component
             'project_paid' => 'nullable|numeric',
             'dl_paid' => 'nullable|numeric',
             'date' => 'nullable|date',
-        ] + $this->pdfUploadValidationRules());
+        ] + $this->mediaUploadValidationRules());
 
         $this->gbx->update($this->except([
             'centrals',
