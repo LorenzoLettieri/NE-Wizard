@@ -100,7 +100,15 @@ class PermessiEnteTable extends DataTableComponent
         $this->setDefaultSort('created_at', 'desc');
         $this->setPerPageAccepted([10, 25, 50, 100, 200, 300]);
 
+        $this->setTableWrapperAttributes([
+            'class' => 'table-sticky-head-wrapper',
+        ]);
+
         $this->setTableAttributes(['class' => 'table-hover']);
+
+        $this->setTheadAttributes([
+            'class' => 'table-sticky-head',
+        ]);
 
         $this->setTdAttributes(function (Column $column) {
             if ($column->isField('created_at') || $column->isField('consegna') || $column->isField('data_fl')) {

@@ -88,6 +88,19 @@ ul.dropdown-menu[role="menu"] {
   min-height: 50vh;
 }
 
+/* Sticky header opt-in for selected Rappasoft data tables */
+.table-sticky-head-wrapper {
+  overflow-y: visible;
+}
+
+.table-sticky-head-wrapper .table-sticky-head th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background-color: var(--bs-tertiary-bg);
+  box-shadow: inset 0 -1px 0 var(--bs-border-color);
+}
+
 /* Sulle celle */
 /* .table-responsive td,
 .table-responsive th {

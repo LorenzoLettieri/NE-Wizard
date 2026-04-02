@@ -35,7 +35,9 @@ class GbxTable extends DataTableComponent
         $this->setSearchLive();
         $this->setDefaultSort('created_at', 'desc');
         $this->setPerPageAccepted([10, 25, 50, 100]);
+        $this->setTableWrapperAttributes(['class' => 'table-sticky-head-wrapper']);
         $this->setTableAttributes(['class' => 'table-hover']);
+        $this->setTheadAttributes(['class' => 'table-sticky-head']);
         $this->setSecondaryHeaderStatus(true);
     }
 
