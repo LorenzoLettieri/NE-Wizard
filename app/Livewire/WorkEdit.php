@@ -24,24 +24,17 @@ class WorkEdit extends Component
     public $companies, $centrals;
 
     public $suspension_history;
-    public $company_id, $central_id, $operator_id, $status, $network, $ao_cno, $ntw_scope, $description, $type, $phase, $company_assistant, $nroe, $wo_number,$unica_number, $notes;
+    public $company_id, $central_id, $operator_id, $status, $network, $ao_cno, $ntw_scope, $description, $type, $phase, $company_assistant, $nroe, $wo_number,$unica_number, $notes, $expected_delivery_date;
 
     public function update(){
-        $this->validate($this->mediaUploadValidationRules());
+        $this->validate($this->rules());
         $validatedSuspensions = $this->validateStructuredSuspensions($this->work);
 
         DB::transaction(function () use ($validatedSuspensions): void {
-            $this->work->update($this->except([
-                'work',
-                'operators',
-                'companies',
-                'centrals',
-                'files',
-                'uploadMessage',
-                'uploadMessageType',
-                'suspensions',
-            ]));
-            $this->syncOperatorsPreservingAssignmentDates();
+            $this->work->update($this->workPayload());
+            if ($this->canManageAdministrativeFields()) {
+                $this->syncOperatorsPreservingAssignmentDates();
+            }
             $this->syncStructuredSuspensions($this->work, $validatedSuspensions);
         });
 
@@ -121,6 +114,7 @@ class WorkEdit extends Component
         $this->wo_number = $work->wo_number;
         $this->unica_number = $work->unica_number;
         $this->notes = $work->notes;
+        $this->expected_delivery_date = $work->expected_delivery_date?->format('Y-m-d');
 
         $this->suspension_history = $work->suspension_history;
         $this->loadStructuredSuspensions($this->work);
@@ -129,6 +123,46 @@ class WorkEdit extends Component
         $this->clearPendingMediaRemovals();
 
     }
+
+    protected function rules(): array
+    {
+        return array_merge($this->mediaUploadValidationRules(), [
+            'expected_delivery_date' => 'nullable|date',
+        ]);
+    }
+
+    protected function workPayload(): array
+    {
+        $payload = [
+            'company_id' => $this->company_id,
+            'central_id' => $this->central_id,
+            'network' => $this->network,
+            'ao_cno' => $this->ao_cno,
+            'ntw_scope' => $this->ntw_scope,
+            'description' => $this->description,
+            'type' => $this->type,
+            'phase' => $this->phase,
+            'company_assistant' => $this->company_assistant,
+            'nroe' => $this->nroe,
+            'wo_number' => $this->wo_number,
+            'unica_number' => $this->unica_number,
+            'notes' => $this->notes,
+            'suspension_history' => $this->suspension_history,
+        ];
+
+        if ($this->canManageAdministrativeFields()) {
+            $payload['status'] = $this->status;
+            $payload['expected_delivery_date'] = $this->expected_delivery_date;
+        }
+
+        return $payload;
+    }
+
+    protected function canManageAdministrativeFields(): bool
+    {
+        return auth()->check() && auth()->user()->hasAnyRole(['admin', 'supervisor']);
+    }
+
     public function render()
     {
         return view('livewire.work-edit');

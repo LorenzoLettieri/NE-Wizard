@@ -50,7 +50,7 @@ class WorksTable extends DataTableComponent
         ]);
 
         $this->setTdAttributes(function (Column $column) {
-            if ($column->isField("created_at") || $column->isField("completion_date")) {
+            if ($column->isField("created_at") || $column->isField("completion_date") || $column->isField('expected_delivery_date')) {
                 return [
                     'class' => "text-nowrap "
                 ];
@@ -316,6 +316,16 @@ class WorksTable extends DataTableComponent
                         return Carbon::parse($row->acception_date)
                             ->setTimezone('Europe/Rome')
                             ->format('d/m/Y H:i');
+                    }
+                }
+            )
+                ->sortable(),
+            Column::make("Data prevista consegna", "expected_delivery_date")->format(
+                function ($value, $row, Column $column) {
+                    if ($value) {
+                        return Carbon::parse($row->expected_delivery_date)
+                            ->setTimezone('Europe/Rome')
+                            ->format('d/m/Y');
                     }
                 }
             )

@@ -120,6 +120,10 @@
                     <label for="unica_number" class="form-label">UNICA Number:</label>
                     <input type="unica_number" class="form-control" id="unica_number" wire:model="unica_number" placeholder="">
                 </div>
+                <div class="col-12 col-md-6 mb-4">
+                    <label for="expected_delivery_date" class="form-label">Data prevista consegna:</label>
+                    <input type="date" class="form-control" id="expected_delivery_date" wire:model="expected_delivery_date">
+                </div>
                 <div class="col-12 col-md-12 mb-4">
                     <label for="notes" class="form-label">Note:</label>
                     <textarea class="form-control" id="notes" rows="5" wire:model="notes"></textarea>

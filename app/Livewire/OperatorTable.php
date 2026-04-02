@@ -20,7 +20,7 @@ class OperatorTable extends DataTableComponent
     public function builder(): Builder{
         // return Work::query()->with('users')->where('users.id', $current_user->id);
         return Work::query()
-        ->with('users')
+        ->with(['users', 'company', 'central'])
         ->whereHas('users', function (Builder $query) {
             $query->where('users.id', Auth::id());
         });
@@ -187,6 +187,16 @@ class OperatorTable extends DataTableComponent
                 ->sortable()->searchable()->secondaryHeaderFilter('unica_number'),
             Column::make("AO/CNO", "ao_cno")->setCustomSlug('AO CNO')
                 ->sortable()->searchable()->secondaryHeaderFilter('ao_cno'),
+            Column::make("Data prevista consegna", "expected_delivery_date")->format(
+                function ($value, $row, Column $column) {
+                    if ($value) {
+                        return Carbon::parse($row->expected_delivery_date)
+                            ->setTimezone('Europe/Rome')
+                            ->format('d/m/Y');
+                    }
+                }
+            )
+                ->sortable(),
             Column::make('Actions')->label(function ($row, Column $column){
                 return view('operator.operator-table-actions')->with('row', Work::find($row->id));
             })->html(),

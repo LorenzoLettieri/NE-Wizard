@@ -147,6 +147,12 @@
                                     <input type="unica_number" class="form-control" id="unica_number"
                                         wire:model="unica_number" placeholder="">
                                 </div>
+                                @role('admin|supervisor')
+                                <div class="col-12 col-md-6 mb-4">
+                                    <label for="expected_delivery_date" class="form-label">Data prevista consegna:</label>
+                                    <input type="date" class="form-control" id="expected_delivery_date" wire:model="expected_delivery_date">
+                                </div>
+                                @endrole
                                 <div class="col-4 col-md-4 mb-4">
                                     <label for="go_live" class="form-label">Go Live:</label>
                                     <select wire:model="go_live" class="form-select tom-select">

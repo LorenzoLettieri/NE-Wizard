@@ -82,6 +82,11 @@
                     <div class="form-control">{{ $work->unica_number ?? '' }}</div>
                 </div>
 
+                <div class="col-md-4">
+                    <label class="form-label">Data prevista consegna</label>
+                    <div class="form-control">{{ $work->expected_delivery_date?->format('d/m/Y') ?? '-' }}</div>
+                </div>
+
                 <div class="col-md-12">
                     <label class="form-label">Note</label>
                     <div class="form-control" style="min-height: 80px;">{{ $work->notes ?? '' }}</div>

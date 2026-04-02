@@ -27,6 +27,7 @@ class Work extends Model
         'daphne',
         'company_assistant',
         'completion_date',
+        'expected_delivery_date',
         'acception_date',
         'delivery_date',
         'nroe',
@@ -46,6 +47,7 @@ class Work extends Model
     {
         return [
             'completion_date' => 'date',
+            'expected_delivery_date' => 'date',
             'acception_date' => 'datetime',
             'delivery_date' => 'datetime',
             'go_live' => 'boolean',

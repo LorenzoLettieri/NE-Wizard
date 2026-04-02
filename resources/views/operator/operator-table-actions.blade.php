@@ -4,6 +4,8 @@
   </a>
 
   <ul class="dropdown-menu">
+    <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#viewModal"
+        onclick="Livewire.dispatch('view-work', {id: {{$row->id}}})">Dettaglio</a></li>
     @if ($row->status !== "In Lavorazione")
         <li><a class="dropdown-item" wire:click="takeWork({{$row->id}})">Prendi in carico</a></li>
     @endif

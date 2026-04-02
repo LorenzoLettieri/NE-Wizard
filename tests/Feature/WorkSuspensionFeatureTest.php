@@ -3,10 +3,13 @@
 namespace Tests\Feature;
 
 use App\Exports\WorksExport;
+use App\Livewire\EditWork;
 use App\Livewire\OperatorStats;
 use App\Livewire\OperatorTable;
 use App\Livewire\ViewWork;
+use App\Livewire\WorkForm;
 use App\Livewire\WorkEdit;
+use App\Livewire\WorksTable;
 use App\Models\User;
 use App\Models\Work;
 use App\Models\WorkSuspension;
@@ -225,6 +228,7 @@ class WorkSuspensionFeatureTest extends TestCase
             'acception_date' => Carbon::parse('2026-03-30 08:00:00', 'UTC'),
             'delivery_date' => Carbon::parse('2026-03-31 08:00:00', 'UTC'),
             'completion_date' => Carbon::parse('2026-03-31 09:00:00', 'UTC'),
+            'expected_delivery_date' => Carbon::parse('2026-04-03', 'UTC'),
             'suspension_history' => 'Legacy notes',
         ]);
         $work->workSuspensions()->create([
@@ -243,8 +247,145 @@ class WorkSuspensionFeatureTest extends TestCase
         $this->assertNull($duplicate->acception_date);
         $this->assertNull($duplicate->delivery_date);
         $this->assertNull($duplicate->completion_date);
+        $this->assertNull($duplicate->expected_delivery_date);
         $this->assertNull($duplicate->suspension_history);
         $this->assertSame(0, $duplicate->workSuspensions()->count());
+    }
+
+    public function test_admin_can_create_work_with_expected_delivery_date(): void
+    {
+        $this->seed(RoleSeeder::class);
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $operator = User::factory()->create();
+        $operator->assignRole('operator');
+
+        $this->actingAs($admin);
+
+        Livewire::test(WorkForm::class)
+            ->set('status', 'Da Lavorare')
+            ->set('network', 'NTW-001')
+            ->set('daphne', false)
+            ->set('operator_id', $operator->id)
+            ->set('expected_delivery_date', '2026-04-15')
+            ->call('store');
+
+        $this->assertDatabaseHas('works', [
+            'network' => 'NTW-001',
+            'expected_delivery_date' => '2026-04-15',
+        ]);
+    }
+
+    public function test_supervisor_can_update_expected_delivery_date(): void
+    {
+        $this->seed(RoleSeeder::class);
+
+        $supervisor = User::factory()->create();
+        $supervisor->assignRole('supervisor');
+
+        $work = Work::create([
+            'status' => 'Da Lavorare',
+            'expected_delivery_date' => null,
+        ]);
+
+        $this->actingAs($supervisor);
+
+        Livewire::test(WorkEdit::class, ['work' => $work])
+            ->set('expected_delivery_date', '2026-04-20')
+            ->call('update')
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('works', [
+            'id' => $work->id,
+            'expected_delivery_date' => '2026-04-20',
+        ]);
+    }
+
+    public function test_operator_cannot_force_update_expected_delivery_date_via_livewire_request(): void
+    {
+        $this->seed(RoleSeeder::class);
+
+        $operator = User::factory()->create();
+        $operator->assignRole('operator');
+
+        $work = Work::create([
+            'status' => 'Da Lavorare',
+            'expected_delivery_date' => '2026-04-10',
+        ]);
+        $work->users()->attach($operator->id, [
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->actingAs($operator);
+
+        Livewire::test(EditWork::class)
+            ->call('editWork', $work->id)
+            ->set('expected_delivery_date', '2026-04-22')
+            ->call('update')
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('works', [
+            'id' => $work->id,
+            'expected_delivery_date' => '2026-04-10',
+        ]);
+    }
+
+    public function test_works_table_renders_expected_delivery_date_column_and_value(): void
+    {
+        $this->seed(RoleSeeder::class);
+
+        $supervisor = User::factory()->create();
+        $supervisor->assignRole('supervisor');
+
+        Work::create([
+            'status' => 'Da Lavorare',
+            'expected_delivery_date' => '2026-04-15',
+        ]);
+
+        $this->actingAs($supervisor);
+
+        Livewire::test(WorksTable::class)
+            ->assertSee('Data prevista consegna')
+            ->assertSee('15/04/2026');
+    }
+
+    public function test_operator_table_renders_expected_delivery_date_column_and_value(): void
+    {
+        $this->seed(RoleSeeder::class);
+
+        $operator = User::factory()->create();
+        $operator->assignRole('operator');
+
+        $work = Work::create([
+            'status' => 'Da Lavorare',
+            'expected_delivery_date' => '2026-04-15',
+        ]);
+        $work->users()->attach($operator->id, [
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->actingAs($operator);
+
+        Livewire::test(OperatorTable::class)
+            ->assertSee('Data prevista consegna')
+            ->assertSee('15/04/2026');
+    }
+
+    public function test_view_work_shows_expected_delivery_date(): void
+    {
+        $work = Work::create([
+            'status' => 'Da Lavorare',
+            'expected_delivery_date' => '2026-04-15',
+        ]);
+
+        Livewire::test(ViewWork::class)
+            ->call('viewWork', $work->id)
+            ->assertSee('Data prevista consegna')
+            ->assertSee('15/04/2026');
     }
 
     public function test_export_and_operator_stats_use_effective_processing_time(): void
