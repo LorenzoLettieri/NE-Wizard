@@ -216,37 +216,37 @@ class PermessoEnteForm extends Component
         $this->validate();
 
         $data = [
-            'network' => $this->network,
-            'consegna' => $this->consegna,
+            'network' => $this->emptyToNull($this->network),
+            'consegna' => $this->emptyToNull($this->consegna),
             'progetto' => $this->progetto,
-            'regione_id' => $this->regione_id ?: null,
-            'comune_id' => $this->comune_id ?: null,
-            'central_id' => $this->central_id ?: null,
+            'regione_id' => $this->emptyToNull($this->regione_id),
+            'comune_id' => $this->emptyToNull($this->comune_id),
+            'central_id' => $this->emptyToNull($this->central_id),
             'via' => $this->via,
             'descrizione' => $this->descrizione,
             'ap_chiusini' => $this->ap_chiusini === '' ? null : (bool) $this->ap_chiusini,
-            'num_chiusini' => $this->num_chiusini,
+            'num_chiusini' => $this->emptyToNull($this->num_chiusini),
             'scavo_fino_100m' => $this->scavo_fino_100m === '' ? null : (bool) $this->scavo_fino_100m,
-            'quote_aggiuntive' => $this->quote_aggiuntive,
+            'quote_aggiuntive' => $this->emptyToNull($this->quote_aggiuntive),
             'urgente' => $this->urgente === '' ? null : (bool) $this->urgente,
             'ordinaria' => $this->ordinaria === '' ? null : (bool) $this->ordinaria,
             'fine_lavori' => $this->fine_lavori === '' ? null : (bool) $this->fine_lavori,
-            'data_fl' => $this->data_fl,
+            'data_fl' => $this->emptyToNull($this->data_fl),
             'ra' => $this->ra === '' ? null : (bool) $this->ra,
-            'data_ra' => $this->data_ra,
-            'evaso_dal_dl' => $this->evaso_dal_dl,
-            'mese_saldo' => $this->mese_saldo,
-            'al_dl' => $this->al_dl,
-            'a_ne' => $this->a_ne,
-            'delta' => $this->delta,
-            'vdc1' => $this->vdc1,
-            'vdc2' => $this->vdc2,
-            'vdc3' => $this->vdc3,
-            'vdc4' => $this->vdc4,
+            'data_ra' => $this->emptyToNull($this->data_ra),
+            'evaso_dal_dl' => $this->emptyToNull($this->evaso_dal_dl),
+            'mese_saldo' => $this->emptyToNull($this->mese_saldo),
+            'al_dl' => $this->emptyToNull($this->al_dl),
+            'a_ne' => $this->emptyToNull($this->a_ne),
+            'delta' => $this->emptyToNull($this->delta),
+            'vdc1' => $this->emptyToNull($this->vdc1),
+            'vdc2' => $this->emptyToNull($this->vdc2),
+            'vdc3' => $this->emptyToNull($this->vdc3),
+            'vdc4' => $this->emptyToNull($this->vdc4),
             'status' => $this->status ?: 'Da Lavorare',
-            'acception_date' => $this->acception_date,
-            'delivery_date' => $this->delivery_date,
-            'completion_date' => $this->completion_date,
+            'acception_date' => $this->emptyToNull($this->acception_date),
+            'delivery_date' => $this->emptyToNull($this->delivery_date),
+            'completion_date' => $this->emptyToNull($this->completion_date),
         ];
 
         if ($this->isEdit) {
@@ -303,6 +303,11 @@ class PermessoEnteForm extends Component
                 'file_path' => $media->file_path,
             ])
             ->all();
+    }
+
+    private function emptyToNull($value)
+    {
+        return $value === '' ? null : $value;
     }
 
     public function render()
