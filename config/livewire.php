@@ -2,6 +2,6 @@
 
 return [
     'temporary_file_upload' => [
-        'rules' => ['required', 'file', 'max:10240'],
+        'rules' => ['required', 'file', 'max:60000'],
     ],
 ];
