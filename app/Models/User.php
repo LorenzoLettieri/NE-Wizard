@@ -67,4 +67,18 @@ class User extends Authenticatable
     {
         return $this->hasMany(Decommissioning::class, 'progettista_id');
     }
+
+    public function canManageAllWorks(): bool
+    {
+        return $this->hasAnyRole(['admin', 'supervisor']);
+    }
+
+    public function isAssignedToWork(Work $work): bool
+    {
+        if ($work->relationLoaded('users')) {
+            return $work->users->contains(fn (User $user) => $user->is($this));
+        }
+
+        return $this->works()->whereKey($work->getKey())->exists();
+    }
 }

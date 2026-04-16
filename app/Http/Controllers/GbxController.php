@@ -1,8 +1,12 @@
 <?php
 namespace App\Http\Controllers;
 
+use App\Exports\GbxExport;
 use App\Models\Gbx;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
+use Maatwebsite\Excel\Facades\Excel;
 
 class GbxController extends Controller
 {
@@ -25,20 +29,33 @@ class GbxController extends Controller
     public function download(Request $request)
     {
         $validated = $request->validate([
-            'date_field' => 'required',
-            'start' => 'required|date',
-            'end' => 'required|date|after_or_equal:start',
+            'date_field' => ['required', Rule::in([
+                'date',
+                'created_at',
+                'appointment_date',
+                'inspection_date',
+                'verbal_date',
+                'obligation_date',
+                'release_date',
+                'permission_request_date',
+                'permission_obtain_date',
+                'project_date',
+                'speedark_date',
+                'cart_update_date',
+            ])],
+            'start' => ['required', 'date'],
+            'end' => ['required', 'date', 'after_or_equal:start'],
         ]);
 
-        $export = new \App\Exports\GbxExport($validated['date_field'], $validated['start'], $validated['end']);
+        $export = new GbxExport($validated['date_field'], $validated['start'], $validated['end']);
 
         $filename = sprintf(
             'gbxes_%s_%s_%s.xlsx',
             $validated['date_field'],
-            \Illuminate\Support\Str::of($validated['start'])->replace([' ', ':'], '-'),
-            \Illuminate\Support\Str::of($validated['end'])->replace([' ', ':'], '-')
+            Str::of($validated['start'])->replace([' ', ':'], '-'),
+            Str::of($validated['end'])->replace([' ', ':'], '-')
         );
 
-        return \Maatwebsite\Excel\Facades\Excel::download($export, $filename);
+        return Excel::download($export, $filename);
     }
 }

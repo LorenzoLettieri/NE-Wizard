@@ -3,9 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Work;
-use Illuminate\Support\Str;
 use App\Exports\WorksExport;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Maatwebsite\Excel\Facades\Excel;
 
 class WorkController extends Controller
@@ -32,13 +33,12 @@ class WorkController extends Controller
         return redirect()->back()->with('success','');
     }
 
-     public function download(Request $request)
+    public function download(Request $request)
     {
         $validated = $request->validate([
-            // Se vuoi fissare un solo campo, cambia qui (es. 'completion_date')
-            'date_field' => 'required|in:created_at,acception_date,completion_date',
-            'start'      => 'required|date',
-            'end'        => 'required|date|after_or_equal:start',
+            'date_field' => ['required', Rule::in(['created_at', 'acception_date', 'completion_date'])],
+            'start' => ['required', 'date'],
+            'end' => ['required', 'date', 'after_or_equal:start'],
         ]);
 
         $export = new WorksExport($validated['date_field'], $validated['start'], $validated['end']);

@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use App\Models\Work;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Database\Eloquent\Builder;
 use Rappasoft\LaravelLivewireTables\Views\Column;
 use Rappasoft\LaravelLivewireTables\DataTableComponent;
@@ -16,6 +17,7 @@ use Rappasoft\LaravelLivewireTables\Views\Filters\DateRangeFilter;
 
 class OperatorTable extends DataTableComponent
 {
+    use AuthorizesRequests;
     
     public function builder(): Builder{
         // return Work::query()->with('users')->where('users.id', $current_user->id);
@@ -207,6 +209,7 @@ class OperatorTable extends DataTableComponent
     public function takeWork($id){
         DB::transaction(function () use ($id): void {
             $acceptedWork = Work::query()->lockForUpdate()->findOrFail($id);
+            $this->authorize('operate', $acceptedWork);
             $acceptedWork->status = 'In Lavorazione';
             $acceptedWork->acception_date = Carbon::now();
             $acceptedWork->save();
@@ -216,6 +219,7 @@ class OperatorTable extends DataTableComponent
     public function deliveryWork($id){
         DB::transaction(function () use ($id): void {
             $acceptedWork = Work::query()->lockForUpdate()->findOrFail($id);
+            $this->authorize('operate', $acceptedWork);
             $deliveryAt = Carbon::now();
 
             $acceptedWork->closeOpenSuspension($deliveryAt);
@@ -228,6 +232,7 @@ class OperatorTable extends DataTableComponent
     public function suspendWork($id){
         DB::transaction(function () use ($id): void {
             $acceptedWork = Work::query()->lockForUpdate()->findOrFail($id);
+            $this->authorize('operate', $acceptedWork);
             $acceptedWork->openSuspension(Carbon::now());
             $acceptedWork->status = 'Sospeso';
             $acceptedWork->save();
@@ -237,6 +242,7 @@ class OperatorTable extends DataTableComponent
     public function unsuspendWork($id){
         DB::transaction(function () use ($id): void {
             $acceptedWork = Work::query()->lockForUpdate()->findOrFail($id);
+            $this->authorize('operate', $acceptedWork);
             $resumeAt = Carbon::now();
 
             $acceptedWork->closeOpenSuspension($resumeAt);

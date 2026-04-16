@@ -72,7 +72,7 @@
                                         <div class="flex-grow-1 text-truncate small" title="{{ $media['file_name'] }}">
                                             {{ $media['file_name'] }}
                                         </div>
-                                        <a href="{{ Storage::url($media['file_path']) }}" target="_blank" class="btn btn-sm btn-link text-primary p-0">
+                                        <a href="{{ route('media.download', $media['id']) }}" target="_blank" class="btn btn-sm btn-link text-primary p-0">
                                             <i class="bi bi-download"></i>
                                         </a>
                                     </div>
@@ -325,7 +325,7 @@
                                             <div class="d-flex align-items-center justify-content-between p-2 border rounded {{ $pendingRemoval ? 'border-danger bg-danger-subtle' : '' }}">
                                                 <div class="d-flex align-items-center gap-2 text-truncate">
                                                     <i class="bi bi-file-earmark-fill text-secondary"></i>
-                                                    <a class="text-decoration-none text-truncate" href="{{ Storage::url($media['file_path']) }}" target="_blank">
+                                                    <a class="text-decoration-none text-truncate" href="{{ route('media.download', $media['id']) }}" target="_blank">
                                                         {{ $media['file_name'] }}
                                                     </a>
                                                 </div>

@@ -2,9 +2,14 @@
 
 namespace App\Livewire\Concerns;
 
+use App\Models\Media;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Validation\Rules\File as FileRule;
+use RuntimeException;
+use Throwable;
 
 trait HandlesMediaUploads
 {
@@ -16,8 +21,11 @@ trait HandlesMediaUploads
     protected function mediaUploadValidationRules(): array
     {
         return [
-            'files' => 'nullable|array',
-            'files.*' => 'file|max:25600',
+            'files' => ['nullable', 'array', 'max:10'],
+            'files.*' => [
+                'file',
+                'max:25600'
+            ],
         ];
     }
 
@@ -28,7 +36,7 @@ trait HandlesMediaUploads
             $this->setPendingUploadMessage();
         } catch (ValidationException $exception) {
             $this->files = [];
-            $this->uploadMessage = 'Upload non valido: sono ammessi file fino a 25 MB.';
+            $this->uploadMessage = 'Upload non valido: sono ammessi PDF, immagini JPG/PNG e documenti Office fino a 10 MB, massimo 10 file.';
             $this->uploadMessageType = 'danger';
 
             throw $exception;
@@ -37,7 +45,7 @@ trait HandlesMediaUploads
 
     public function removePendingFile(int $index): void
     {
-        if (! isset($this->files[$index])) {
+        if (!isset($this->files[$index])) {
             return;
         }
 
@@ -58,18 +66,37 @@ trait HandlesMediaUploads
     protected function persistUploadedFiles(Model $model, string $directory): int
     {
         $uploadedCount = 0;
+        $storedPaths = [];
 
-        foreach ($this->files as $file) {
-            $path = $file->store($directory, 'public');
+        try {
+            DB::transaction(function () use ($model, $directory, &$uploadedCount, &$storedPaths): void {
+                foreach ($this->files as $file) {
+                    $path = $file->store($directory, Media::PRIVATE_DISK);
 
-            $model->media()->create([
-                'file_path' => $path,
-                'file_name' => $file->getClientOriginalName(),
-                'mime_type' => $file->getMimeType(),
-                'size' => $file->getSize(),
-            ]);
+                    if (!is_string($path) || $path === '') {
+                        throw new RuntimeException('Unable to store uploaded media.');
+                    }
 
-            $uploadedCount++;
+                    $storedPaths[] = $path;
+
+                    $model->media()->create([
+                        'file_path' => $path,
+                        'file_name' => $file->getClientOriginalName(),
+                        'mime_type' => $file->getMimeType(),
+                        'size' => $file->getSize(),
+                    ]);
+
+                    $uploadedCount++;
+                }
+            });
+        } catch (Throwable $exception) {
+            foreach ($storedPaths as $path) {
+                if (Storage::disk(Media::PRIVATE_DISK)->exists($path)) {
+                    Storage::disk(Media::PRIVATE_DISK)->delete($path);
+                }
+            }
+
+            throw $exception;
         }
 
         $this->files = [];
@@ -82,7 +109,7 @@ trait HandlesMediaUploads
     {
         $media = $model->media()->findOrFail($mediaId);
 
-        Storage::disk('public')->delete($media->file_path);
+        $media->deleteStoredFilesIfPresentOrFail();
         $media->delete();
     }
 
@@ -91,7 +118,7 @@ trait HandlesMediaUploads
         if (in_array($mediaId, $this->pendingMediaRemovalIds, true)) {
             $this->pendingMediaRemovalIds = array_values(array_filter(
                 $this->pendingMediaRemovalIds,
-                fn (int $id) => $id !== $mediaId
+                fn(int $id) => $id !== $mediaId
             ));
 
             return;
@@ -108,11 +135,11 @@ trait HandlesMediaUploads
         foreach ($this->pendingMediaRemovalIds as $mediaId) {
             $media = $model->media()->find($mediaId);
 
-            if (! $media) {
+            if (!$media) {
                 continue;
             }
 
-            Storage::disk('public')->delete($media->file_path);
+            $media->deleteStoredFilesIfPresentOrFail();
             $media->delete();
             $removedCount++;
         }

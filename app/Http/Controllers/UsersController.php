@@ -7,6 +7,7 @@ use App\Models\Company;
 use Illuminate\Http\Request;
 use Spatie\Permission\Models\Role;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 
 class UsersController extends Controller
 {
@@ -63,19 +64,32 @@ class UsersController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required | string | max:255',
-            'email' => 'required | string | email | max:255',
-            'password' => 'sometimes | nullable | string | min:8',
+            'email' => [
+                'required',
+                'string',
+                'email',
+                'max:255',
+                Rule::unique(User::class)->ignore($id),
+            ],
+            'password' => 'sometimes | nullable | string | min:8 | confirmed',
             'company_id' => 'nullable | exists:companies,id',
             'roles' => 'required | array',
             'roles.*' => 'exists:roles,name'
         ]);
-        $user = User::find($id);
-        $user->update([
+
+        $user = User::findOrFail($id);
+
+        $updateData = [
             'name' => $validated['name'],
             'email' => $validated['email'],
-            'password' => !empty($validated["password"]) ? $validated['password'] : $user->password,
-            'company_id' => $validated['company_id']
-        ]);
+            'company_id' => $validated['company_id'] ?? null
+        ];
+
+        if (!empty($validated['password'])) {
+            $updateData['password'] = Hash::make($validated['password']);
+        }
+
+        $user->update($updateData);
 
         $user->syncRoles($validated['roles']);
 

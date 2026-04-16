@@ -7,6 +7,7 @@ use App\Models\Work;
 use App\Models\Central;
 use App\Models\Company;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Livewire\Component;
 use Livewire\Attributes\On;
 use Livewire\WithFileUploads;
@@ -16,6 +17,7 @@ use App\Livewire\Concerns\HandlesWorkSuspensions;
 
 class EditWork extends Component
 {
+    use AuthorizesRequests;
     use WithFileUploads;
     use HandlesMediaUploads;
     use HandlesWorkSuspensions;
@@ -34,7 +36,8 @@ class EditWork extends Component
     #[On('edit-work')]
     public function editWork($id)
     {
-        $this->work = Work::with('media')->find($id);
+        $this->work = Work::with(['media', 'users', 'workSuspensions'])->findOrFail($id);
+        $this->authorize('update', $this->work);
 
         $this->company_id = $this->work->company_id;
         $this->central_id = $this->work->central_id;
@@ -67,6 +70,8 @@ class EditWork extends Component
 
     public function update()
     {
+        $this->work = Work::with(['media', 'users', 'workSuspensions'])->findOrFail($this->work->getKey());
+        $this->authorize('update', $this->work);
         $this->validate($this->rules());
         $validatedSuspensions = $this->validateStructuredSuspensions($this->work);
 

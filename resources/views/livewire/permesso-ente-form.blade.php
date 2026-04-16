@@ -71,7 +71,7 @@
                                             <div class="flex-grow-1 text-truncate small" title="{{ $m['file_name'] }}">
                                                 {{ $m['file_name'] }}
                                             </div>
-                                            <a href="{{ Storage::url($m['file_path']) }}" target="_blank"
+                                            <a href="{{ route('media.download', $m['id']) }}" target="_blank"
                                                 class="btn btn-sm btn-link text-primary p-0">
                                                 <i class="bi bi-download"></i>
                                             </a>
@@ -328,7 +328,7 @@
                                         <li class="list-group-item d-flex justify-content-between align-items-center {{ in_array($media['id'], $pendingMediaRemovalIds, true) ? 'list-group-item-warning' : '' }}">
                                             <span><i class="bi bi-file-earmark text-secondary me-2"></i>{{ $media['file_name'] }}</span>
                                             <div class="d-flex gap-2">
-                                                <a href="{{ Storage::url($media['file_path']) }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                                <a href="{{ route('media.download', $media['id']) }}" target="_blank" class="btn btn-sm btn-outline-primary">
                                                     <i class="bi bi-download"></i> Scarica
                                                 </a>
                                                 <button type="button" class="btn btn-sm {{ in_array($media['id'], $pendingMediaRemovalIds, true) ? 'btn-outline-secondary' : 'btn-outline-danger' }}" wire:click="toggleMediaRemoval({{ $media['id'] }})">

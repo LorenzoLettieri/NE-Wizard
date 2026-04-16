@@ -242,7 +242,7 @@
                                                 <li class="list-group-item d-flex justify-content-between align-items-center {{ in_array($media->id, $pendingMediaRemovalIds, true) ? 'list-group-item-warning' : '' }}">
                                                     <span><i class="bi bi-file-earmark text-secondary me-2"></i>{{ $media->file_name }}</span>
                                                     <div class="d-flex gap-2">
-                                                        <a href="{{ Storage::url($media->file_path) }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                                        <a href="{{ route('media.download', $media) }}" target="_blank" class="btn btn-sm btn-outline-primary">
                                                             <i class="bi bi-download"></i> Scarica
                                                         </a>
                                                         <button type="button" class="btn btn-sm {{ in_array($media->id, $pendingMediaRemovalIds, true) ? 'btn-outline-secondary' : 'btn-outline-danger' }}" wire:click="toggleMediaRemoval({{ $media->id }})">

@@ -4,23 +4,28 @@ namespace App\Livewire;
 
 use App\Models\Work;
 use Carbon\Carbon;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Livewire\Component;
 use Livewire\Attributes\On;
 
 class ViewWork extends Component
 {
+    use AuthorizesRequests;
+
     public $work;
     public $operators;
 
      #[On('view-work')] 
      public function viewWork($id){
-        $this->work = Work::with(['company', 'central', 'users', 'media', 'workSuspensions'])->find($id);
+        $this->work = Work::with(['company', 'central', 'users', 'media', 'workSuspensions'])->findOrFail($id);
+        $this->authorize('view', $this->work);
         $this->operators = $this->work->users->pluck('name')->join(' | ');
      }
 
      #[On('duplicate-work')] 
      public function duplicateWork($id){
-        $work = Work::find($id);
+        $work = Work::with('users')->findOrFail($id);
+        $this->authorize('duplicate', $work);
         $assOperators = $work->users->pluck('id');
         $newWork = $work->replicate();
         $newWork->status = 'Da Lavorare';
@@ -46,7 +51,8 @@ class ViewWork extends Component
      }
      #[On('end-work')] 
      public function endWork($id){
-        $work = Work::find($id);
+        $work = Work::findOrFail($id);
+        $this->authorize('complete', $work);
         $work->status = "Fine Lavori";
         $work->completion_date = Carbon::now();
         $work->save();

@@ -98,7 +98,7 @@
                                                     <div class="flex-grow-1 text-truncate small" title="{{ $m->file_name }}">
                                                         {{ $m->file_name }}
                                                     </div>
-                                                    <a href="{{ Storage::url($m->file_path) }}" target="_blank"
+                                                    <a href="{{ route('media.download', $m) }}" target="_blank"
                                                         class="btn btn-sm btn-link text-primary p-0">
                                                         <i class="bi bi-download"></i>
                                                     </a>

@@ -126,7 +126,7 @@
                             @foreach($work->media as $media)
                                 <li class="list-group-item d-flex justify-content-between align-items-center">
                                     <span><i class="bi bi-file-earmark text-secondary me-2"></i>{{ $media->file_name }}</span>
-                                    <a href="{{ Storage::url($media->file_path) }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                    <a href="{{ route('media.download', $media) }}" target="_blank" class="btn btn-sm btn-outline-primary">
                                         <i class="bi bi-download"></i> Scarica
                                     </a>
                                 </li>

@@ -2,8 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\PermessiEnteExport;
 use App\Models\PermessoEnte;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
+use Maatwebsite\Excel\Facades\Excel;
 
 class PermessoEnteController extends Controller
 {
@@ -32,21 +36,30 @@ class PermessoEnteController extends Controller
     public function download(Request $request)
     {
         $validated = $request->validate([
-            'date_field' => 'required',
-            'start' => 'required|date',
-            'end' => 'required|date|after_or_equal:start',
+            'date_field' => ['required', Rule::in([
+                'created_at',
+                'consegna',
+                'data_fl',
+                'data_ra',
+                'evaso_dal_dl',
+                'mese_saldo',
+                'acception_date',
+                'delivery_date',
+                'completion_date',
+            ])],
+            'start' => ['required', 'date'],
+            'end' => ['required', 'date', 'after_or_equal:start'],
         ]);
 
-        $export = new \App\Exports\PermessiEnteExport($validated['date_field'], $validated['start'], $validated['end']);
+        $export = new PermessiEnteExport($validated['date_field'], $validated['start'], $validated['end']);
 
         $filename = sprintf(
             'permessi_ente_%s_%s_%s.xlsx',
             $validated['date_field'],
-            \Illuminate\Support\Str::of($validated['start'])->replace([' ', ':'], '-'),
-            \Illuminate\Support\Str::of($validated['end'])->replace([' ', ':'], '-')
+            Str::of($validated['start'])->replace([' ', ':'], '-'),
+            Str::of($validated['end'])->replace([' ', ':'], '-')
         );
 
-        return \Maatwebsite\Excel\Facades\Excel::download($export, $filename);
+        return Excel::download($export, $filename);
     }
 }
-
