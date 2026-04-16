@@ -13,7 +13,6 @@ class Regione extends Model
 
     protected $fillable = [
         'nome',
-        'sigla',
     ];
 
     public function comuni()

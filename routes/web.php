@@ -27,6 +27,7 @@ Route::group(['middleware' => ['role:admin']], function () {
     Route::put('/users/update/{id}', [UsersController::class, 'update'])->name('updateUser');
     Route::get('/timesheets/dashboard', [\App\Http\Controllers\AdminTimesheetController::class, 'index'])->name('admin.timesheets');
     Route::get('/admin/timesheets/export', [\App\Http\Controllers\AdminTimesheetController::class, 'export'])->name('admin.timesheets.export');
+    Route::get('/admin/base-tables', [\App\Http\Controllers\Admin\BaseTablesController::class, 'index'])->name('admin.base-tables');
 
 });
 

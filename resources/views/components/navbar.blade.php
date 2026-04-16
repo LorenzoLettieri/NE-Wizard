@@ -24,6 +24,7 @@
                         <li><a class="dropdown-item" href="{{route('users-table')}}">Gestisci Utenti</a></li>
                         @hasanyrole('admin')
                         <li><a class="dropdown-item" href="{{route('admin.timesheets')}}">Gestione Presenze</a></li>
+                        <li><a class="dropdown-item" href="{{route('admin.base-tables')}}">Tabelle di Base</a></li>
                         @endhasanyrole
                     </ul>
                 </li>
