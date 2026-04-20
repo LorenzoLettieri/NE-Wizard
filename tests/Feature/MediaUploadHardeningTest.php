@@ -19,24 +19,6 @@ class MediaUploadHardeningTest extends TestCase
         UsesMysqlTestDatabase::beforeRefreshingDatabase insteadof RefreshDatabase;
     }
 
-    public function test_invalid_file_type_is_rejected(): void
-    {
-        Storage::fake('local');
-
-        $work = Work::create([
-            'status' => 'Da Lavorare',
-            'notes' => 'Upload validation',
-        ]);
-
-        Livewire::test(HandlesMediaUploadsTestComponent::class, ['work' => $work])
-            ->set('files', [
-                UploadedFile::fake()->create('malware.exe', 12, 'application/octet-stream'),
-            ])
-            ->assertHasErrors(['files.0'])
-            ->assertSet('files', [])
-            ->assertSet('uploadMessageType', 'danger');
-    }
-
     public function test_file_count_limit_is_rejected(): void
     {
         Storage::fake('local');

@@ -40,6 +40,56 @@ class Media extends Model
         return Storage::disk(self::LEGACY_PUBLIC_DISK)->exists($this->file_path);
     }
 
+    public function ensurePrivateAvailability(): ?string
+    {
+        $privateDisk = Storage::disk(self::PRIVATE_DISK);
+        $legacyDisk = Storage::disk(self::LEGACY_PUBLIC_DISK);
+        $privateExists = $this->existsOnPrivateDisk();
+        $legacyExists = $this->existsOnLegacyPublicDisk();
+
+        if (! $privateExists && ! $legacyExists) {
+            return null;
+        }
+
+        $copiedToPrivate = false;
+
+        if (! $privateExists && $legacyExists) {
+            $stream = $legacyDisk->readStream($this->file_path);
+
+            if ($stream === false) {
+                throw new RuntimeException("Unable to read legacy media [{$this->id}] from public storage.");
+            }
+
+            try {
+                $written = $privateDisk->writeStream($this->file_path, $stream);
+            } finally {
+                if (is_resource($stream)) {
+                    fclose($stream);
+                }
+            }
+
+            if ($written === false) {
+                throw new RuntimeException("Unable to migrate legacy media [{$this->id}] to private storage.");
+            }
+
+            $copiedToPrivate = true;
+        }
+
+        if ($legacyExists) {
+            $deleted = $legacyDisk->delete($this->file_path);
+
+            if ($deleted === false) {
+                if ($copiedToPrivate && $privateDisk->exists($this->file_path)) {
+                    $privateDisk->delete($this->file_path);
+                }
+
+                throw new RuntimeException("Unable to remove legacy public media [{$this->id}] after migration.");
+            }
+        }
+
+        return self::PRIVATE_DISK;
+    }
+
     public function deleteStoredFilesIfPresentOrFail(): void
     {
         foreach ([self::PRIVATE_DISK, self::LEGACY_PUBLIC_DISK] as $diskName) {

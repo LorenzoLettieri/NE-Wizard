@@ -119,7 +119,7 @@ class MediaAccessTest extends TestCase
             ->assertRedirect('/');
     }
 
-    public function test_authorized_download_does_not_serve_legacy_public_media_before_migration(): void
+    public function test_authorized_download_migrates_legacy_public_media_to_private_storage(): void
     {
         $this->seed(RoleSeeder::class);
         Storage::fake('local');
@@ -150,7 +150,11 @@ class MediaAccessTest extends TestCase
 
         $this->actingAs($operator)
             ->get(route('media.download', $media))
-            ->assertNotFound();
+            ->assertOk()
+            ->assertDownload('legacy-public.txt');
+
+        Storage::disk('local')->assertExists('works_media/legacy-public.txt');
+        Storage::disk('public')->assertMissing('works_media/legacy-public.txt');
     }
 
     public function test_legacy_media_migration_command_moves_tracked_public_media_to_private_storage(): void

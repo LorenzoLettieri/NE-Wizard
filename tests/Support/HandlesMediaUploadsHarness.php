@@ -9,6 +9,11 @@ class HandlesMediaUploadsHarness
 {
     use HandlesMediaUploads;
 
+    public function mediaRulesForTesting(): array
+    {
+        return $this->mediaUploadValidationRules();
+    }
+
     public function persistMediaForModel(Model $model, string $directory): int
     {
         return $this->persistUploadedFiles($model, $directory);

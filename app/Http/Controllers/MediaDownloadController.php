@@ -9,6 +9,7 @@ use App\Models\PermessoEnte;
 use App\Models\Work;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use RuntimeException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class MediaDownloadController extends Controller
@@ -21,7 +22,15 @@ class MediaDownloadController extends Controller
 
         $this->authorizeDownload($request, $mediable);
 
-        abort_unless($media->existsOnPrivateDisk(), 404);
+        try {
+            $disk = $media->ensurePrivateAvailability();
+        } catch (RuntimeException $exception) {
+            report($exception);
+
+            abort(500, 'Unable to prepare media for download.');
+        }
+
+        abort_if($disk === null, 404);
 
         $headers = [];
 
@@ -29,7 +38,7 @@ class MediaDownloadController extends Controller
             $headers['Content-Type'] = $media->mime_type;
         }
 
-        return Storage::disk(Media::PRIVATE_DISK)->download($media->file_path, $media->file_name, $headers);
+        return Storage::disk($disk)->download($media->file_path, $media->file_name, $headers);
     }
 
     private function authorizeDownload(Request $request, mixed $mediable): void
