@@ -75,6 +75,7 @@
                         <option value="NGAN">NGAN</option>
                         <option value="GIUNZIONE">GIUNZIONE</option>
                         <option value="SUB-LOOP">SUB-LOOP</option>
+                        <option value="Altro">Altro</option>
                     </select>
                 </div>
             </div>
@@ -114,6 +115,18 @@
                         <option value="FASE 2">FASE 2</option>
                         <option value="AGGIORNAMENTO">AGGIORNAMENTO</option>
                         <option value="MODIFICA">MODIFICA</option>
+                        <option value="CANCELLAZIONE PTE">CANCELLAZIONE PTE</option>
+                        <option value="CAMBIO PTE ROE">CAMBIO PTE ROE</option>
+                        <option value="BONIFICA PTE">BONIFICA PTE</option>
+                        <option value="INS SPLITTER ARLO">INS SPLITTER ARLO</option>
+                        <option value="ALTRA BONIFICA">ALTRA BONIFICA</option>
+                        <option value="DESA ROE">DESA ROE</option>
+                        <option value="DESA PTE">DESA PTE</option>
+                        <option value="RFOS">RFOS</option>
+                        <option value="COD PRIMARIA">COD PRIMARIA</option>
+                        <option value="NTW CU">NTW CU</option>
+                        <option value="NTW FO">NTW FO</option>
+                        <option value="NET FO 5G">NET FO 5G</option>
                     </select>
                 </div>
                 <div class="col-12 col-md-4 mb-4">

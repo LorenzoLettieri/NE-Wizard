@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 class Decommissioning extends Model
 {
     protected $fillable = [
+        'clli',
         'central_id',
         'comune_id',
         'regione_id',

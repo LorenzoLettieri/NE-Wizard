@@ -46,6 +46,7 @@ class DecommissioningExport implements FromQuery, WithMapping, WithHeadings, Sho
     {
         return [
             'Data inserimento',
+            'CLLI',
             'Centrale',
             'Comune',
             'Regione',
@@ -88,6 +89,7 @@ class DecommissioningExport implements FromQuery, WithMapping, WithHeadings, Sho
 
         return [
             $dt($decommissioning->created_at),
+            $decommissioning->clli,
             optional($decommissioning->central)->central,
             optional($decommissioning->comune)->name,
             optional($decommissioning->regione)->nome,
@@ -128,9 +130,9 @@ class DecommissioningExport implements FromQuery, WithMapping, WithHeadings, Sho
     {
         return [
             'A' => NumberFormat::FORMAT_DATE_DDMMYYYY,
-            'F' => NumberFormat::FORMAT_DATE_DDMMYYYY,
-            'J' => NumberFormat::FORMAT_DATE_DDMMYYYY,
+            'G' => NumberFormat::FORMAT_DATE_DDMMYYYY,
             'K' => NumberFormat::FORMAT_DATE_DDMMYYYY,
+            'L' => NumberFormat::FORMAT_DATE_DDMMYYYY,
         ];
     }
 

@@ -79,10 +79,22 @@ class OperatorTable extends DataTableComponent
         SelectFilter::make('Fase', 'phase')
             ->options([
                 '' => 'Tutti',
-                'Fase 1' => 'Fase 1',
-                'Fase 2' => 'Fase 2',
-                'Aggiornamento' => 'Aggiornamento',
-                'Modifica' => 'Modifica',
+                'FASE 1' => 'FASE 1',
+                'FASE 2' => 'FASE 2',
+                'AGGIORNAMENTO' => 'AGGIORNAMENTO',
+                'MODIFICA' => 'MODIFICA',
+                'CANCELLAZIONE PTE' => 'CANCELLAZIONE PTE',
+                'CAMBIO PTE ROE' => 'CAMBIO PTE ROE',
+                'BONIFICA PTE' => 'BONIFICA PTE',
+                'INS SPLITTER ARLO' => 'INS SPLITTER ARLO',
+                'ALTRA BONIFICA' => 'ALTRA BONIFICA',
+                'DESA ROE' => 'DESA ROE',
+                'DESA PTE' => 'DESA PTE',
+                'RFOS' => 'RFOS',
+                'COD PRIMARIA' => 'COD PRIMARIA',
+                'NTW CU' => 'NTW CU',
+                'NTW FO' => 'NTW FO',
+                'NET FO 5G' => 'NET FO 5G',
             ])->filter(function(Builder $builder, string $value){
                 $builder->where('phase', $value);
             }),

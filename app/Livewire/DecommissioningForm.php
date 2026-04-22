@@ -48,6 +48,7 @@ class DecommissioningForm extends Component
     ];
 
     public $central_id;
+    public $clli;
     public $comune_id;
     public $regione_id;
     public $permesso_ente;
@@ -167,13 +168,14 @@ class DecommissioningForm extends Component
     {
         return [
             'central_id' => ['nullable', Rule::exists('centrals', 'id')],
+            'clli' => 'nullable|string|max:255',
             'comune_id' => ['nullable', Rule::exists('comuni', 'id')],
             'regione_id' => ['nullable', Rule::exists('regioni', 'id')],
             'progettista_id' => ['nullable', Rule::exists('users', 'id')],
             'permesso_ente' => 'nullable|string|max:255',
             'fl_permesso' => 'nullable|date',
             'note_permesso' => 'nullable|string',
-            'status' => ['required', Rule::in(['Da Lavorare', 'In Lavorazione', 'Fine Lavori'])],
+            'status' => ['required', Rule::in(['Da Lavorare', 'In Lavorazione', 'Sospeso', 'Fine Lavori'])],
             'data_il' => 'nullable|date',
             'data_fl' => 'nullable|date',
             'qty_1' => 'nullable|integer|min:0',
@@ -214,6 +216,7 @@ class DecommissioningForm extends Component
             : new Decommissioning();
 
         $data = [
+            'clli' => $this->emptyToNull($this->clli),
             'central_id' => $this->emptyToNull($this->central_id),
             'comune_id' => $this->emptyToNull($this->comune_id),
             'regione_id' => $this->emptyToNull($this->regione_id),
@@ -284,6 +287,7 @@ class DecommissioningForm extends Component
         $decommissioning = Decommissioning::with('media')->findOrFail($id);
 
         $this->decommissioningId = $decommissioning->id;
+        $this->clli = $decommissioning->clli;
         $this->central_id = $decommissioning->central_id;
         $this->comune_id = $decommissioning->comune_id;
         $this->regione_id = $decommissioning->regione_id;

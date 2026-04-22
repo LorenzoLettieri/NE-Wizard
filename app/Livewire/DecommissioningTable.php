@@ -51,9 +51,13 @@ class DecommissioningTable extends DataTableComponent
                     '' => 'Tutti',
                     'Da Lavorare' => 'Da Lavorare',
                     'In Lavorazione' => 'In Lavorazione',
+                    'Sospeso' => 'Sospeso',
                     'Fine Lavori' => 'Fine Lavori',
                 ])
                 ->filter(fn (Builder $builder, string $value) => $builder->where('status', $value)),
+
+            TextFilter::make('CLLI', 'clli')
+                ->filter(fn (Builder $builder, string $value) => $builder->where('clli', 'like', "%{$value}%")),
 
             SelectFilter::make('Centrale', 'central_id')
                 ->options(['' => 'Tutte'] + Central::orderBy('central')->pluck('central', 'id')->toArray())
@@ -124,6 +128,7 @@ class DecommissioningTable extends DataTableComponent
                 ->format(function ($value) {
                     return match ($value) {
                         'In Lavorazione' => "<span class='badge rounded-pill text-bg-primary'>{$value}</span>",
+                        'Sospeso' => "<span class='badge rounded-pill text-bg-warning'>{$value}</span>",
                         'Fine Lavori' => "<span class='badge rounded-pill text-bg-success'>{$value}</span>",
                         default => "<span class='badge rounded-pill text-bg-secondary'>{$value}</span>",
                     };
@@ -131,6 +136,11 @@ class DecommissioningTable extends DataTableComponent
                 ->html()
                 ->sortable()
                 ->secondaryHeaderFilter('status'),
+
+            Column::make('CLLI', 'clli')
+                ->sortable()
+                ->searchable()
+                ->secondaryHeaderFilter('clli'),
 
             Column::make('Centrale', 'central.central')
                 ->sortable()

@@ -24,6 +24,7 @@
                 <div class="col-md-6">
                     <h6 class="text-muted text-uppercase small fw-bold">Informazioni Generali</h6>
                     <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between"><span>CLLI</span><strong>{{ $clli ?? '-' }}</strong></li>
                         <li class="list-group-item d-flex justify-content-between"><span>Centrale</span><strong>{{ $this->centrali[$central_id] ?? '-' }}</strong></li>
                         <li class="list-group-item d-flex justify-content-between"><span>Comune</span><strong>{{ $this->comuni[$comune_id] ?? '-' }}</strong></li>
                         <li class="list-group-item d-flex justify-content-between"><span>Regione</span><strong>{{ $this->regioni[$regione_id] ?? '-' }}</strong></li>
@@ -141,6 +142,10 @@
                     <h4 class="mb-4 border-bottom pb-2">Informazioni Generali</h4>
                     <div class="row g-3 mb-4">
                         <div class="col-md-4">
+                            <label class="form-label">CLLI</label>
+                            <input type="text" class="form-control shadow-sm" wire:model="clli">
+                        </div>
+                        <div class="col-md-4">
                             <label class="form-label">Centrale</label>
                             <select class="form-select tom-select shadow-sm" wire:model="central_id">
                                 <option value="">-- Seleziona --</option>
@@ -158,6 +163,9 @@
                                 @endforeach
                             </select>
                         </div>
+                    </div>
+
+                    <div class="row g-3 mb-4">
                         <div class="col-md-4">
                             <label class="form-label">Regione</label>
                             <select class="form-select tom-select shadow-sm" wire:model="regione_id">
@@ -195,6 +203,7 @@
                             <select class="form-select shadow-sm" wire:model="status">
                                 <option value="Da Lavorare">Da Lavorare</option>
                                 <option value="In Lavorazione">In Lavorazione</option>
+                                <option value="Sospeso">Sospeso</option>
                                 <option value="Fine Lavori">Fine Lavori</option>
                             </select>
                         </div>
