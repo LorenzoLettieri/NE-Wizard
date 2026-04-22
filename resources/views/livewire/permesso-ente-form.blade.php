@@ -191,6 +191,22 @@
 
                     <h4 class="mt-5 mb-4 border-bottom pb-2">Stati e Date</h4>
                     <div class="row g-3 mb-4">
+                        @if($isEdit)
+                            @role('admin')
+                            <div class="col-md-4">
+                                <label class="form-label">Status</label>
+                                <select
+                                    class="form-select shadow-sm"
+                                    wire:model="status"
+                                    wire:key="permesso-ente-admin-status-{{ $permessoEnteId ?? 'new' }}-{{ $status ?? 'default' }}"
+                                >
+                                    @foreach ($adminStatusOptions as $statusOption)
+                                        <option value="{{ $statusOption }}" @selected($status === $statusOption)>{{ $statusOption }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            @endrole
+                        @endif
                         @foreach ([
                             'ap_chiusini' => 'AP Chiusini',
                             'scavo_fino_100m' => 'Scavo fino a 100 metri',

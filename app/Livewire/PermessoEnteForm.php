@@ -20,6 +20,13 @@ class PermessoEnteForm extends Component
     use WithFileUploads;
     use HandlesMediaUploads;
 
+    private const ADMIN_STATUS_OPTIONS = [
+        'Da Lavorare',
+        'In Lavorazione',
+        'Consegnata',
+        'Fine Lavori',
+    ];
+
     // Proprietà separate per migliore performance
     public $network;
     public $consegna;
@@ -176,6 +183,12 @@ class PermessoEnteForm extends Component
 
     protected function rules()
     {
+        $statusRules = ['nullable', 'string'];
+
+        if (auth()->check() && auth()->user()->hasRole('admin')) {
+            $statusRules[] = Rule::in(self::ADMIN_STATUS_OPTIONS);
+        }
+
         return [
             'network' => 'nullable|numeric',
             'consegna' => 'nullable|date',
@@ -204,7 +217,7 @@ class PermessoEnteForm extends Component
             'vdc2' => 'nullable|numeric',
             'vdc3' => 'nullable|numeric',
             'vdc4' => 'nullable|numeric',
-            'status' => 'nullable|string',
+            'status' => $statusRules,
             'acception_date' => 'nullable|date',
             'delivery_date' => 'nullable|date',
             'completion_date' => 'nullable|date',
@@ -243,7 +256,6 @@ class PermessoEnteForm extends Component
             'vdc2' => $this->emptyToNull($this->vdc2),
             'vdc3' => $this->emptyToNull($this->vdc3),
             'vdc4' => $this->emptyToNull($this->vdc4),
-            'status' => $this->status ?: 'Da Lavorare',
             'acception_date' => $this->emptyToNull($this->acception_date),
             'delivery_date' => $this->emptyToNull($this->delivery_date),
             'completion_date' => $this->emptyToNull($this->completion_date),
@@ -251,8 +263,14 @@ class PermessoEnteForm extends Component
 
         if ($this->isEdit) {
             $permesso = PermessoEnte::findOrFail($this->permessoEnteId);
+
+            if (auth()->check() && auth()->user()->hasRole('admin')) {
+                $data['status'] = $this->status ?: 'Da Lavorare';
+            }
+
             $permesso->update($data);
         } else {
+            $data['status'] = 'Da Lavorare';
             $permesso = PermessoEnte::create($data);
         }
 
@@ -312,6 +330,8 @@ class PermessoEnteForm extends Component
 
     public function render()
     {
-        return view('livewire.permesso-ente-form');
+        return view('livewire.permesso-ente-form', [
+            'adminStatusOptions' => self::ADMIN_STATUS_OPTIONS,
+        ]);
     }
 }
