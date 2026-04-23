@@ -8,6 +8,7 @@ use App\Models\Central;
 use App\Models\Comune;
 use App\Models\Regione;
 use App\Models\Company;
+use App\Models\CompanyWorkPhaseRate;
 use App\Models\WorkPhase;
 
 class AdminBaseTables extends Component
@@ -28,6 +29,7 @@ class AdminBaseTables extends Component
 
     // Form data (we use a generic array to hold fields based on active tab)
     public $formData = [];
+    public array $rateValues = [];
 
     // All possible fields across our models for resetting
     protected $defaultForm = [
@@ -54,6 +56,10 @@ class AdminBaseTables extends Component
         $this->search = '';
         $this->resetPage();
         $this->resetModal();
+
+        if ($this->activeTab === 'CompanyWorkPhaseRate') {
+            $this->loadRateValues();
+        }
     }
 
     public function updatedSearch()
@@ -105,6 +111,7 @@ class AdminBaseTables extends Component
             'Regione' => Regione::class,
             'Company' => Company::class,
             'WorkPhase' => WorkPhase::class,
+            'CompanyWorkPhaseRate' => CompanyWorkPhaseRate::class,
             default => null,
         };
     }
@@ -145,6 +152,8 @@ class AdminBaseTables extends Component
             $rules = [
                 'formData.name' => 'required|string|max:255|unique:work_phases,name' . $ignoreId,
             ];
+        } elseif ($this->activeTab === 'CompanyWorkPhaseRate') {
+            return;
         }
 
         $this->validate($rules);
@@ -203,8 +212,54 @@ class AdminBaseTables extends Component
             'Regione' => 'Cerca regione...',
             'Company' => 'Cerca company...',
             'WorkPhase' => 'Cerca fase lavoro...',
+            'CompanyWorkPhaseRate' => 'Cerca company o fase lavoro...',
             default => 'Cerca...',
         };
+    }
+
+    public function saveRate(int $companyId, int $workPhaseId): void
+    {
+        $value = $this->rateValues[$companyId][$workPhaseId] ?? null;
+        $value = is_string($value) ? str_replace(',', '.', trim($value)) : $value;
+
+        validator(
+            ['unit_price' => $value],
+            ['unit_price' => 'nullable|numeric|min:0|max:99999999.99']
+        )->validate();
+
+        if ($value === null || $value === '') {
+            CompanyWorkPhaseRate::query()
+                ->where('company_id', $companyId)
+                ->where('work_phase_id', $workPhaseId)
+                ->delete();
+
+            $this->rateValues[$companyId][$workPhaseId] = '';
+            session()->flash('message', 'Tariffa rimossa.');
+
+            return;
+        }
+
+        $rate = CompanyWorkPhaseRate::updateOrCreate(
+            [
+                'company_id' => $companyId,
+                'work_phase_id' => $workPhaseId,
+            ],
+            ['unit_price' => round((float) $value, 2)]
+        );
+
+        $this->rateValues[$companyId][$workPhaseId] = $rate->unit_price;
+        session()->flash('message', 'Tariffa salvata.');
+    }
+
+    private function loadRateValues(): void
+    {
+        $this->rateValues = [];
+
+        $rates = CompanyWorkPhaseRate::query()->get();
+
+        foreach ($rates as $rate) {
+            $this->rateValues[$rate->company_id][$rate->work_phase_id] = $rate->unit_price;
+        }
     }
 
     private function applySearch($query)
@@ -243,6 +298,16 @@ class AdminBaseTables extends Component
         $modelClass = $this->getModelClass();
         $query = $modelClass ? $modelClass::query() : null;
 
+        if ($this->activeTab === 'CompanyWorkPhaseRate') {
+            return view('livewire.admin-base-tables', [
+                'records' => collect([]),
+                'regioni' => Regione::orderBy('nome')->pluck('nome', 'id'),
+                'searchPlaceholder' => $this->getSearchPlaceholder(),
+                'companiesForRates' => Company::orderBy('name')->get(),
+                'workPhasesForRates' => WorkPhase::orderBy('name')->get(),
+            ]);
+        }
+
         if ($this->activeTab === 'Comune' && $query) {
             $query->with('regione');
         }
@@ -255,6 +320,8 @@ class AdminBaseTables extends Component
             'records' => $records,
             'regioni' => Regione::orderBy('nome')->pluck('nome', 'id'),
             'searchPlaceholder' => $this->getSearchPlaceholder(),
+            'companiesForRates' => collect([]),
+            'workPhasesForRates' => collect([]),
         ]);
     }
 }

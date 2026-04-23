@@ -29,7 +29,7 @@
                         @endforeach
                     </select>
                 </div>
-
+                @role('admin|supervisor')
                 <div class="col-12 col-md-4 mb-4">
                     <label for="status" class="form-label">Stato Lavorazione:</label>
                     <select wire:model="status" class="form-select tom-select">
@@ -41,7 +41,7 @@
                         <option value="KO">KO</option>
                     </select>
                 </div>
-
+                @endrole
                 <div class="col-12 col-md-4 mb-4">
                     <label for="" class="form-label">Centrale:</label>
                     <select wire:model="central_id" class="form-select tom-select">

@@ -21,22 +21,30 @@
             <a class="nav-link cursor-pointer {{ $activeTab === 'WorkPhase' ? 'active' : '' }}" 
                wire:click="setTab('WorkPhase')">Fasi Lavoro</a>
         </li>
+        <li class="nav-item">
+            <a class="nav-link cursor-pointer {{ $activeTab === 'CompanyWorkPhaseRate' ? 'active' : '' }}"
+               wire:click="setTab('CompanyWorkPhaseRate')">Matrice Prezzi</a>
+        </li>
     </ul>
 
     <!-- Action Bar -->
     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-        <h4>{{ $activeTab }}</h4>
+        <h4>{{ $activeTab === 'CompanyWorkPhaseRate' ? 'Matrice Prezzi' : $activeTab }}</h4>
         <div class="d-flex align-items-center gap-2">
-            <input
-                type="text"
-                class="form-control"
-                style="min-width: 280px;"
-                wire:model.blur="search"
-                placeholder="{{ $searchPlaceholder }}"
-            >
-            <button class="btn btn-success text-nowrap" wire:click="openCreateModal">
-                <i class="bi bi-plus-lg me-1"></i> Aggiungi Nuovo
-            </button>
+            @if($activeTab !== 'CompanyWorkPhaseRate')
+                <input
+                    type="text"
+                    class="form-control"
+                    style="min-width: 280px;"
+                    wire:model.blur="search"
+                    placeholder="{{ $searchPlaceholder }}"
+                >
+            @endif
+            @if($activeTab !== 'CompanyWorkPhaseRate')
+                <button class="btn btn-success text-nowrap" wire:click="openCreateModal">
+                    <i class="bi bi-plus-lg me-1"></i> Aggiungi Nuovo
+                </button>
+            @endif
         </div>
     </div>
 
@@ -52,6 +60,52 @@
         </div>
     @endif
 
+    @if($activeTab === 'CompanyWorkPhaseRate')
+        <div class="alert alert-info">
+            Inserisci il valore unitario per ogni combinazione Company/Fase Lavoro. La lavorazione salver&agrave; l'importo calcolato come tariffa unitaria &times; N.Roe.
+        </div>
+
+        <div class="table-responsive bg-body-tertiary rounded shadow-sm">
+            <table class="table table-bordered table-sm align-middle mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th scope="col" class="text-nowrap">Company</th>
+                        @foreach($workPhasesForRates as $phase)
+                            <th scope="col" class="text-nowrap text-center">{{ $phase->name }}</th>
+                        @endforeach
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($companiesForRates as $company)
+                        <tr>
+                            <th scope="row" class="text-nowrap">{{ $company->name }}</th>
+                            @foreach($workPhasesForRates as $phase)
+                                <td style="min-width: 120px;">
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text">&euro;</span>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            step="0.01"
+                                            class="form-control text-end"
+                                            wire:model.blur="rateValues.{{ $company->id }}.{{ $phase->id }}"
+                                            wire:blur="saveRate({{ $company->id }}, {{ $phase->id }})"
+                                        >
+                                    </div>
+                                </td>
+                            @endforeach
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="{{ max(1, $workPhasesForRates->count() + 1) }}" class="text-center py-4 text-muted">
+                                Aggiungi almeno una company e una fase lavoro per compilare la matrice.
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    @else
     <!-- Table Section -->
     <div class="table-responsive bg-body-tertiary rounded shadow-sm">
         <table class="table table-hover mb-0">
@@ -127,6 +181,7 @@
         <div class="mt-3">
             {{ $records->links() }}
         </div>
+    @endif
     @endif
 
     <!-- Modal Form -->

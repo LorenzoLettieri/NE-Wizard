@@ -3,6 +3,26 @@ import 'bootstrap';
 import { Modal } from 'bootstrap';
 import '../../vendor/rappasoft/laravel-livewire-tables/resources/imports/laravel-livewire-tables-all.js';
 
+if (window.flatpickr && !window.flatpickr.l10ns.it) {
+  window.flatpickr.l10ns.it = {
+    weekdays: {
+      shorthand: ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'],
+      longhand: ['Domenica', 'Lunedi', 'Martedi', 'Mercoledi', 'Giovedi', 'Venerdi', 'Sabato'],
+    },
+    months: {
+      shorthand: ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'],
+      longhand: ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'],
+    },
+    firstDayOfWeek: 1,
+    ordinal: () => '',
+    rangeSeparator: ' a ',
+    weekAbbreviation: 'Sett',
+    scrollTitle: 'Scorri per aumentare',
+    toggleTitle: 'Clicca per cambiare',
+    time_24hr: true,
+  };
+}
+
 import TomSelect from 'tom-select';
 
 let changeModeBtn = document.querySelector('#changeModeBtn')

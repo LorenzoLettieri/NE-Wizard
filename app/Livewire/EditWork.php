@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\Work;
 use App\Models\Central;
 use App\Models\Company;
+use App\Models\CompanyWorkPhaseRate;
 use App\Models\WorkPhase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -158,7 +159,7 @@ class EditWork extends Component
 
     protected function workPayload(): array
     {
-        $payload = [
+        $payload = array_merge([
             'company_id' => $this->company_id,
             'central_id' => $this->central_id,
             'network' => $this->network,
@@ -179,7 +180,7 @@ class EditWork extends Component
             'date_in_str' => $this->date_in_str,
             'date_out_str' => $this->date_out_str,
             'daphne' => $this->daphne,
-        ];
+        ], $this->accountingPayload());
 
         if ($this->canManageAdministrativeFields()) {
             $payload['status'] = $this->status;
@@ -187,6 +188,33 @@ class EditWork extends Component
         }
 
         return $payload;
+    }
+
+    protected function accountingPayload(): array
+    {
+        if (! $this->company_id || ! $this->work_phase_id || ! is_numeric($this->nroe)) {
+            return [
+                'unit_rate' => null,
+                'accounting_amount' => null,
+            ];
+        }
+
+        $unitRate = CompanyWorkPhaseRate::query()
+            ->where('company_id', $this->company_id)
+            ->where('work_phase_id', $this->work_phase_id)
+            ->value('unit_price');
+
+        if ($unitRate === null) {
+            return [
+                'unit_rate' => null,
+                'accounting_amount' => null,
+            ];
+        }
+
+        return [
+            'unit_rate' => $unitRate,
+            'accounting_amount' => round((float) $unitRate * (float) $this->nroe, 2),
+        ];
     }
 
     protected function selectedWorkPhaseName(): ?string

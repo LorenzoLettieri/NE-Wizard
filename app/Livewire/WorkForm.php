@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\Work;
 use App\Models\Central;
 use App\Models\Company;
+use App\Models\CompanyWorkPhaseRate;
 use App\Models\WorkPhase;
 use Carbon\Carbon;
 use Livewire\Component;
@@ -60,7 +61,7 @@ class WorkForm extends Component
 
     protected function workPayload(): array
     {
-        return [
+        return array_merge([
             'company_id' => $this->company_id,
             'central_id' => $this->central_id,
             'status' => $this->status,
@@ -82,6 +83,33 @@ class WorkForm extends Component
             'date_out_str' => $this->date_out_str,
             'notes' => $this->notes,
             'expected_delivery_date' => $this->expected_delivery_date,
+        ], $this->accountingPayload());
+    }
+
+    protected function accountingPayload(): array
+    {
+        if (! $this->company_id || ! $this->work_phase_id || ! is_numeric($this->nroe)) {
+            return [
+                'unit_rate' => null,
+                'accounting_amount' => null,
+            ];
+        }
+
+        $unitRate = CompanyWorkPhaseRate::query()
+            ->where('company_id', $this->company_id)
+            ->where('work_phase_id', $this->work_phase_id)
+            ->value('unit_price');
+
+        if ($unitRate === null) {
+            return [
+                'unit_rate' => null,
+                'accounting_amount' => null,
+            ];
+        }
+
+        return [
+            'unit_rate' => $unitRate,
+            'accounting_amount' => round((float) $unitRate * (float) $this->nroe, 2),
         ];
     }
 

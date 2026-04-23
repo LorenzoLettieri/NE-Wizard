@@ -3,7 +3,10 @@
 namespace Tests\Feature;
 
 use App\Livewire\AdminBaseTables;
+use App\Livewire\WorkEdit;
 use App\Livewire\WorkForm;
+use App\Models\Company;
+use App\Models\CompanyWorkPhaseRate;
 use App\Models\User;
 use App\Models\Work;
 use App\Models\WorkPhase;
@@ -135,6 +138,102 @@ class WorkPhaseFeatureTest extends TestCase
         $this->assertDatabaseHas('works', [
             'network' => 'NTW-PHASE',
             'work_phase_id' => $phase->id,
+        ]);
+    }
+
+    public function test_work_creation_persists_accounting_amount_from_company_phase_rate(): void
+    {
+        $this->seed(RoleSeeder::class);
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $operator = User::factory()->create();
+        $operator->assignRole('operator');
+
+        $company = Company::create(['name' => 'SIRTI']);
+        $phase = WorkPhase::create(['name' => 'FASE TEST']);
+
+        CompanyWorkPhaseRate::create([
+            'company_id' => $company->id,
+            'work_phase_id' => $phase->id,
+            'unit_price' => 12.50,
+        ]);
+
+        $this->actingAs($admin);
+
+        Livewire::test(WorkForm::class)
+            ->set('status', 'Da Lavorare')
+            ->set('network', 'NTW-RATE')
+            ->set('daphne', false)
+            ->set('operator_id', $operator->id)
+            ->set('company_id', $company->id)
+            ->set('work_phase_id', $phase->id)
+            ->set('nroe', 4)
+            ->call('store');
+
+        $this->assertDatabaseHas('works', [
+            'network' => 'NTW-RATE',
+            'unit_rate' => 12.50,
+            'accounting_amount' => 50.00,
+        ]);
+    }
+
+    public function test_work_update_recalculates_accounting_amount(): void
+    {
+        $this->seed(RoleSeeder::class);
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $operator = User::factory()->create();
+        $operator->assignRole('operator');
+
+        $company = Company::create(['name' => 'SIRTI']);
+        $phase = WorkPhase::create(['name' => 'FASE TEST']);
+
+        CompanyWorkPhaseRate::create([
+            'company_id' => $company->id,
+            'work_phase_id' => $phase->id,
+            'unit_price' => 10.00,
+        ]);
+
+        $work = Work::create([
+            'company_id' => $company->id,
+            'work_phase_id' => $phase->id,
+            'nroe' => 2,
+            'unit_rate' => 10.00,
+            'accounting_amount' => 20.00,
+        ]);
+        $work->users()->attach($operator->id);
+
+        $this->actingAs($admin);
+
+        Livewire::test(WorkEdit::class, ['work' => $work])
+            ->set('operator_id', [$operator->id])
+            ->set('nroe', 3)
+            ->call('update');
+
+        $work->refresh();
+
+        $this->assertSame('10.00', $work->unit_rate);
+        $this->assertSame('30.00', $work->accounting_amount);
+    }
+
+    public function test_admin_can_save_company_work_phase_rate_from_base_tables(): void
+    {
+        $company = Company::create(['name' => 'SIRTI']);
+        $phase = WorkPhase::create(['name' => 'FASE TEST']);
+
+        Livewire::test(AdminBaseTables::class)
+            ->call('setTab', 'CompanyWorkPhaseRate')
+            ->set("rateValues.{$company->id}.{$phase->id}", '18.75')
+            ->call('saveRate', $company->id, $phase->id);
+
+        $this->assertDatabaseHas('company_work_phase_rates', [
+            'company_id' => $company->id,
+            'work_phase_id' => $phase->id,
+            'unit_price' => 18.75,
         ]);
     }
 }

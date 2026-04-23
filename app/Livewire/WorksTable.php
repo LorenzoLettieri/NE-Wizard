@@ -1,4 +1,4 @@
-  <?php
+<?php
 
 namespace App\Livewire;
 
@@ -301,6 +301,15 @@ class WorksTable extends DataTableComponent
                 ->secondaryHeaderFilter('work_phase_id'),
             Column::make("N.Roe", "nroe")
                 ->sortable(),
+            ...($this->canViewAccountingColumns() ? [
+                Column::make("Importo contabilizzato", "accounting_amount")
+                    ->format(fn($value) => $value !== null ? number_format((float) $value, 2, ',', '.') . ' €' : '-')
+                    ->sortable(),
+                Column::make("Tariffa unitaria", "unit_rate")
+                    ->format(fn($value) => $value !== null ? number_format((float) $value, 2, ',', '.') . ' €' : '-')
+                    ->sortable()
+                    ->deselected(),
+            ] : []),
             Column::make("Network", "network")
                 ->sortable()->searchable()->secondaryHeaderFilter('network'),
             Column::make("WO", "wo_number")
@@ -380,5 +389,10 @@ class WorksTable extends DataTableComponent
                 return view('works.works-table-actions')->with('row', $row);
             })->html(),
         ];
+    }
+
+    protected function canViewAccountingColumns(): bool
+    {
+        return auth()->check() && auth()->user()->hasRole('admin');
     }
 }

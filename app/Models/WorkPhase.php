@@ -41,6 +41,11 @@ class WorkPhase extends Model
         return $this->hasMany(Work::class);
     }
 
+    public function companyRates(): HasMany
+    {
+        return $this->hasMany(CompanyWorkPhaseRate::class);
+    }
+
     public static function normalizeLegacyName(?string $name): ?string
     {
         $normalized = trim((string) $name);

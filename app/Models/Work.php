@@ -33,6 +33,8 @@ class Work extends Model
         'acception_date',
         'delivery_date',
         'nroe',
+        'unit_rate',
+        'accounting_amount',
         'wo_number',
         'unica_number',
         'suspension_history',
@@ -56,6 +58,8 @@ class Work extends Model
             'date_in' => 'date',
             'date_out' => 'date',
             'daphne' => 'boolean',
+            'unit_rate' => 'decimal:2',
+            'accounting_amount' => 'decimal:2',
         ];
     }
 
