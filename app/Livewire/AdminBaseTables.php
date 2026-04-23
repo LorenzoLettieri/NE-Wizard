@@ -3,14 +3,23 @@
 namespace App\Livewire;
 
 use Livewire\Component;
+use Livewire\WithPagination;
 use App\Models\Central;
 use App\Models\Comune;
 use App\Models\Regione;
 use App\Models\Company;
+use App\Models\WorkPhase;
 
 class AdminBaseTables extends Component
 {
+    use WithPagination;
+
+    private const PER_PAGE = 20;
+
+    protected $paginationTheme = 'bootstrap';
+
     public $activeTab = 'Central';
+    public string $search = '';
     
     // Modal states
     public $showModal = false;
@@ -24,11 +33,13 @@ class AdminBaseTables extends Component
     protected $defaultForm = [
         'central' => '',
         'region' => '',
+        'comune_progressive' => '',
         'code' => '',
         'name' => '',
         'location' => '',
         'sovracomune' => '',
         'catasto_code' => '',
+        'regione_id' => '',
         'nome' => '',
     ];
 
@@ -40,7 +51,14 @@ class AdminBaseTables extends Component
     public function setTab($tab)
     {
         $this->activeTab = $tab;
+        $this->search = '';
+        $this->resetPage();
         $this->resetModal();
+    }
+
+    public function updatedSearch()
+    {
+        $this->resetPage();
     }
 
     public function resetForm()
@@ -86,12 +104,17 @@ class AdminBaseTables extends Component
             'Comune' => Comune::class,
             'Regione' => Regione::class,
             'Company' => Company::class,
+            'WorkPhase' => WorkPhase::class,
             default => null,
         };
     }
 
     public function saveRecord()
     {
+        if ($this->activeTab === 'Comune' && ($this->formData['regione_id'] ?? '') === '') {
+            $this->formData['regione_id'] = null;
+        }
+
         // Add basic validation depending on the tab
         $rules = [];
         if ($this->activeTab === 'Central') {
@@ -101,10 +124,11 @@ class AdminBaseTables extends Component
             ];
         } elseif ($this->activeTab === 'Comune') {
             $rules = [
+                'formData.comune_progressive' => 'required|string|max:255',
                 'formData.name' => 'required|string|max:255',
-                'formData.code' => 'nullable|string|max:255',
+                'formData.code' => 'required|string|max:255',
                 'formData.location' => 'nullable|string|max:255',
-                'formData.region' => 'nullable|string|max:255',
+                'formData.regione_id' => 'nullable|integer|exists:regioni,id',
                 'formData.sovracomune' => 'nullable|string|max:255',
                 'formData.catasto_code' => 'nullable|string|max:255',
             ];
@@ -115,6 +139,11 @@ class AdminBaseTables extends Component
         } elseif ($this->activeTab === 'Company') {
             $rules = [
                 'formData.name' => 'required|string|max:255',
+            ];
+        } elseif ($this->activeTab === 'WorkPhase') {
+            $ignoreId = $this->isEditing && $this->editingId ? ',' . $this->editingId : '';
+            $rules = [
+                'formData.name' => 'required|string|max:255|unique:work_phases,name' . $ignoreId,
             ];
         }
 
@@ -130,7 +159,7 @@ class AdminBaseTables extends Component
         foreach ($fillables as $field) {
             // Note: Since 'name' is in $defaultForm, it exists in formData.
             if (array_key_exists($field, $this->formData)) {
-                $dataToSave[$field] = $this->formData[$field] ?: null;
+                $dataToSave[$field] = $this->formData[$field] === '' ? null : $this->formData[$field];
             }
         }
 
@@ -144,6 +173,7 @@ class AdminBaseTables extends Component
         }
 
         $this->resetModal();
+        $this->resetPage();
         session()->flash('message', 'Record salvato con successo!');
     }
 
@@ -153,19 +183,78 @@ class AdminBaseTables extends Component
         if ($modelClass) {
             $record = $modelClass::find($id);
             if ($record) {
+                if ($record instanceof WorkPhase && $record->works()->exists()) {
+                    session()->flash('error', 'Impossibile eliminare una fase lavoro già associata a lavorazioni.');
+                    return;
+                }
+
                 $record->delete();
+                $this->resetPage();
                 session()->flash('message', 'Record eliminato!');
             }
         }
     }
 
+    private function getSearchPlaceholder(): string
+    {
+        return match($this->activeTab) {
+            'Central' => 'Cerca centrale o regione...',
+            'Comune' => 'Cerca comune, codice, catasto o regione...',
+            'Regione' => 'Cerca regione...',
+            'Company' => 'Cerca company...',
+            'WorkPhase' => 'Cerca fase lavoro...',
+            default => 'Cerca...',
+        };
+    }
+
+    private function applySearch($query)
+    {
+        $search = trim($this->search);
+
+        if ($search === '') {
+            return $query;
+        }
+
+        return match($this->activeTab) {
+            'Central' => $query->where(function ($q) use ($search) {
+                $q->where('central', 'like', "%{$search}%")
+                    ->orWhere('region', 'like', "%{$search}%");
+            }),
+            'Comune' => $query->where(function ($q) use ($search) {
+                $q->where('comune_progressive', 'like', "%{$search}%")
+                    ->orWhere('code', 'like', "%{$search}%")
+                    ->orWhere('name', 'like', "%{$search}%")
+                    ->orWhere('location', 'like', "%{$search}%")
+                    ->orWhere('catasto_code', 'like', "%{$search}%")
+                    ->orWhere('sovracomune', 'like', "%{$search}%")
+                    ->orWhereHas('regione', function ($regionQuery) use ($search) {
+                        $regionQuery->where('nome', 'like', "%{$search}%");
+                    });
+            }),
+            'Regione' => $query->where('nome', 'like', "%{$search}%"),
+            'Company' => $query->where('name', 'like', "%{$search}%"),
+            'WorkPhase' => $query->where('name', 'like', "%{$search}%"),
+            default => $query,
+        };
+    }
+
     public function render()
     {
         $modelClass = $this->getModelClass();
-        $records = $modelClass ? $modelClass::all() : collect([]);
+        $query = $modelClass ? $modelClass::query() : null;
+
+        if ($this->activeTab === 'Comune' && $query) {
+            $query->with('regione');
+        }
+
+        $records = $query
+            ? $this->applySearch($query)->orderBy('id')->paginate(self::PER_PAGE)
+            : collect([]);
 
         return view('livewire.admin-base-tables', [
-            'records' => $records
+            'records' => $records,
+            'regioni' => Regione::orderBy('nome')->pluck('nome', 'id'),
+            'searchPlaceholder' => $this->getSearchPlaceholder(),
         ]);
     }
 }

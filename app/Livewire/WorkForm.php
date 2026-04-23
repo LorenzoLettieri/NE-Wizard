@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\Work;
 use App\Models\Central;
 use App\Models\Company;
+use App\Models\WorkPhase;
 use Carbon\Carbon;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -17,9 +18,9 @@ class WorkForm extends Component
     use HandlesMediaUploads;
 
     public $operators;
-    public $companies, $centrals;
+    public $companies, $centrals, $workPhases;
 
-    public $company_id, $central_id, $operator_id, $status, $network, $ao_cno, $ntw_scope, $description, $type, $phase, $company_assistant, $nroe, $wo_number, $unica_number, $notes, $tempo_daphne, $expected_delivery_date;
+    public $company_id, $central_id, $operator_id, $status, $network, $ao_cno, $ntw_scope, $description, $type, $phase, $work_phase_id, $company_assistant, $nroe, $wo_number, $unica_number, $notes, $tempo_daphne, $expected_delivery_date;
 
     public $go_live, $date_in_str, $date_out_str;
 
@@ -45,6 +46,7 @@ class WorkForm extends Component
     {
         $this->companies = Company::all();
         $this->centrals = Central::all();
+        $this->workPhases = WorkPhase::orderBy('name')->get();
         $this->operators = User::permission('get works')->get();
     }
 
@@ -52,6 +54,7 @@ class WorkForm extends Component
     {
         return array_merge($this->mediaUploadValidationRules(), [
             'expected_delivery_date' => 'nullable|date',
+            'work_phase_id' => 'nullable|integer|exists:work_phases,id',
         ]);
     }
 
@@ -66,7 +69,8 @@ class WorkForm extends Component
             'ntw_scope' => $this->ntw_scope,
             'description' => $this->description,
             'type' => $this->type,
-            'phase' => $this->phase,
+            'phase' => $this->selectedWorkPhaseName(),
+            'work_phase_id' => $this->work_phase_id ?: null,
             'daphne' => $this->daphne,
             'tempo_daphne' => $this->tempo_daphne,
             'company_assistant' => $this->company_assistant,
@@ -79,6 +83,15 @@ class WorkForm extends Component
             'notes' => $this->notes,
             'expected_delivery_date' => $this->expected_delivery_date,
         ];
+    }
+
+    protected function selectedWorkPhaseName(): ?string
+    {
+        if (! $this->work_phase_id) {
+            return $this->phase ?: null;
+        }
+
+        return WorkPhase::find($this->work_phase_id)?->name;
     }
 
     public function render()

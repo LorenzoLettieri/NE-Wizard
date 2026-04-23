@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\Work;
 use App\Models\Central;
 use App\Models\Company;
+use App\Models\WorkPhase;
 use Livewire\Component;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -21,10 +22,10 @@ class WorkEdit extends Component
 
     public $work;
     public $operators;
-    public $companies, $centrals;
+    public $companies, $centrals, $workPhases;
 
     public $suspension_history;
-    public $company_id, $central_id, $operator_id, $status, $network, $ao_cno, $ntw_scope, $description, $type, $phase, $company_assistant, $nroe, $wo_number,$unica_number, $notes, $expected_delivery_date;
+    public $company_id, $central_id, $operator_id, $status, $network, $ao_cno, $ntw_scope, $description, $type, $phase, $work_phase_id, $company_assistant, $nroe, $wo_number,$unica_number, $notes, $expected_delivery_date;
 
     public function update(){
         $this->validate($this->rules());
@@ -97,6 +98,7 @@ class WorkEdit extends Component
 
         $this->companies = Company::all();
         $this->centrals = Central::all();
+        $this->workPhases = WorkPhase::orderBy('name')->get();
         $this->operators = User::permission('get works')->get();
 
         $this->company_id = $work->company_id;
@@ -109,6 +111,7 @@ class WorkEdit extends Component
         $this->description = $work->description;
         $this->type = $work->type;
         $this->phase = $work->phase;
+        $this->work_phase_id = $work->work_phase_id ?? $this->resolveLegacyWorkPhaseId($work->phase);
         $this->company_assistant = $work->company_assistant;
         $this->nroe = $work->nroe;
         $this->wo_number = $work->wo_number;
@@ -128,6 +131,7 @@ class WorkEdit extends Component
     {
         return array_merge($this->mediaUploadValidationRules(), [
             'expected_delivery_date' => 'nullable|date',
+            'work_phase_id' => 'nullable|integer|exists:work_phases,id',
         ]);
     }
 
@@ -141,7 +145,8 @@ class WorkEdit extends Component
             'ntw_scope' => $this->ntw_scope,
             'description' => $this->description,
             'type' => $this->type,
-            'phase' => $this->phase,
+            'phase' => $this->selectedWorkPhaseName(),
+            'work_phase_id' => $this->work_phase_id ?: null,
             'company_assistant' => $this->company_assistant,
             'nroe' => $this->nroe,
             'wo_number' => $this->wo_number,
@@ -156,6 +161,26 @@ class WorkEdit extends Component
         }
 
         return $payload;
+    }
+
+    protected function selectedWorkPhaseName(): ?string
+    {
+        if (! $this->work_phase_id) {
+            return $this->phase ?: null;
+        }
+
+        return WorkPhase::find($this->work_phase_id)?->name;
+    }
+
+    protected function resolveLegacyWorkPhaseId(?string $phase): ?int
+    {
+        $name = WorkPhase::normalizeLegacyName($phase);
+
+        if (! $name) {
+            return null;
+        }
+
+        return WorkPhase::where('name', $name)->value('id');
     }
 
     protected function canManageAdministrativeFields(): bool

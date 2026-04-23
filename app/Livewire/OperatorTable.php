@@ -4,6 +4,7 @@ namespace App\Livewire;
 
 use Carbon\Carbon;
 use App\Models\Work;
+use App\Models\WorkPhase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -22,7 +23,7 @@ class OperatorTable extends DataTableComponent
     public function builder(): Builder{
         // return Work::query()->with('users')->where('users.id', $current_user->id);
         return Work::query()
-        ->with(['users', 'company', 'central'])
+        ->with(['users', 'company', 'central', 'workPhase'])
         ->whereHas('users', function (Builder $query) {
             $query->where('users.id', Auth::id());
         });
@@ -76,27 +77,10 @@ class OperatorTable extends DataTableComponent
                 $builder->where('status', $value);
             }),
 
-        SelectFilter::make('Fase', 'phase')
-            ->options([
-                '' => 'Tutti',
-                'FASE 1' => 'FASE 1',
-                'FASE 2' => 'FASE 2',
-                'AGGIORNAMENTO' => 'AGGIORNAMENTO',
-                'MODIFICA' => 'MODIFICA',
-                'CANCELLAZIONE PTE' => 'CANCELLAZIONE PTE',
-                'CAMBIO PTE ROE' => 'CAMBIO PTE ROE',
-                'BONIFICA PTE' => 'BONIFICA PTE',
-                'INS SPLITTER ARLO' => 'INS SPLITTER ARLO',
-                'ALTRA BONIFICA' => 'ALTRA BONIFICA',
-                'DESA ROE' => 'DESA ROE',
-                'DESA PTE' => 'DESA PTE',
-                'RFOS' => 'RFOS',
-                'COD PRIMARIA' => 'COD PRIMARIA',
-                'NTW CU' => 'NTW CU',
-                'NTW FO' => 'NTW FO',
-                'NET FO 5G' => 'NET FO 5G',
-            ])->filter(function(Builder $builder, string $value){
-                $builder->where('phase', $value);
+        SelectFilter::make('Fase', 'work_phase_id')
+            ->options(['' => 'Tutti'] + WorkPhase::options())
+            ->filter(function(Builder $builder, string $value){
+                $builder->where('work_phase_id', $value);
             }),
 
         TextFilter::make('Numero WO', 'wo_number')
@@ -189,8 +173,17 @@ class OperatorTable extends DataTableComponent
                 ->sortable()->searchable(),
             Column::make("Tipo", "type")
                 ->sortable()->searchable(),
-            Column::make("Fase", "phase")
-                ->sortable()->searchable()->secondaryHeaderFilter('phase'),
+            Column::make("Fase")
+                ->label(fn ($row) => $row->workPhase?->name ?? $row->phase ?? '')
+                ->searchable(function (Builder $builder, string $searchTerm) {
+                    $builder->where(function (Builder $query) use ($searchTerm) {
+                        $query->where('works.phase', 'like', "%{$searchTerm}%")
+                            ->orWhereHas('workPhase', function (Builder $phaseQuery) use ($searchTerm) {
+                                $phaseQuery->where('name', 'like', "%{$searchTerm}%");
+                            });
+                    });
+                })
+                ->secondaryHeaderFilter('work_phase_id'),
             Column::make("N.Roe", "nroe")
                 ->sortable(),
                 Column::make("Network", "network")

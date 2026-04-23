@@ -8,11 +8,11 @@ class Comune extends Model
 {
     protected $table = 'comuni';
     protected $fillable = [
-        'id',
+        'comune_progressive',
         'code',
         'name',
         'location',
-        'region',
+        'regione_id',
         'sovracomune',
         'catasto_code',
     ];

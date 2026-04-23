@@ -1,4 +1,4 @@
-<?php
+  <?php
 
 namespace App\Livewire;
 
@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use App\Models\Work;
 use App\Models\Central;
 use App\Models\Company;
+use App\Models\WorkPhase;
 use Livewire\Attributes\On;
 use Illuminate\Database\Eloquent\Builder;
 use Rappasoft\LaravelLivewireTables\Views\Column;
@@ -25,7 +26,7 @@ class WorksTable extends DataTableComponent
     public function builder(): Builder
     {
         return Work::query()
-            ->with(['company', 'central', 'users', 'workSuspensions'])
+            ->with(['company', 'central', 'users', 'workSuspensions', 'workPhase'])
             ->withCount('media');
     }
 
@@ -167,27 +168,10 @@ class WorksTable extends DataTableComponent
                 }),
 
 
-            SelectFilter::make('Fase', 'phase')
-                ->options([
-                    '' => 'Tutti',
-                    'FASE 1' => 'FASE 1',
-                    'FASE 2' => 'FASE 2',
-                    'AGGIORNAMENTO' => 'AGGIORNAMENTO',
-                    'MODIFICA' => 'MODIFICA',
-                    'CANCELLAZIONE PTE' => 'CANCELLAZIONE PTE',
-                    'CAMBIO PTE ROE' => 'CAMBIO PTE ROE',
-                    'BONIFICA PTE' => 'BONIFICA PTE',
-                    'INS SPLITTER ARLO' => 'INS SPLITTER ARLO',
-                    'ALTRA BONIFICA' => 'ALTRA BONIFICA',
-                    'DESA ROE' => 'DESA ROE',
-                    'DESA PTE' => 'DESA PTE',
-                    'RFOS' => 'RFOS',
-                    'COD PRIMARIA' => 'COD PRIMARIA',
-                    'NTW CU' => 'NTW CU',
-                    'NTW FO' => 'NTW FO',
-                    'NET FO 5G' => 'NET FO 5G',
-                ])->filter(function (Builder $builder, string $value) {
-                    $builder->where('phase', $value);
+            SelectFilter::make('Fase', 'work_phase_id')
+                ->options(['' => 'Tutti'] + WorkPhase::options())
+                ->filter(function (Builder $builder, string $value) {
+                    $builder->where('work_phase_id', $value);
                 }),
 
             TextFilter::make('Numero WO', 'wo_number')
@@ -304,8 +288,17 @@ class WorksTable extends DataTableComponent
                 ->sortable()->searchable()->secondaryHeaderFilter(filterKey: 'ntw_scope'),
             Column::make("Tipo", "type")
                 ->sortable()->searchable(),
-            Column::make("Fase", "phase")
-                ->sortable()->searchable()->secondaryHeaderFilter('phase'),
+            Column::make("Fase")
+                ->label(fn ($row) => $row->workPhase?->name ?? $row->phase ?? '')
+                ->searchable(function (Builder $builder, string $searchTerm) {
+                    $builder->where(function (Builder $query) use ($searchTerm) {
+                        $query->where('works.phase', 'like', "%{$searchTerm}%")
+                            ->orWhereHas('workPhase', function (Builder $phaseQuery) use ($searchTerm) {
+                                $phaseQuery->where('name', 'like', "%{$searchTerm}%");
+                            });
+                    });
+                })
+                ->secondaryHeaderFilter('work_phase_id'),
             Column::make("N.Roe", "nroe")
                 ->sortable(),
             Column::make("Network", "network")

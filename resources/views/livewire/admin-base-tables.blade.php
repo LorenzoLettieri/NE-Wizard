@@ -17,19 +17,38 @@
             <a class="nav-link cursor-pointer {{ $activeTab === 'Company' ? 'active' : '' }}" 
                wire:click="setTab('Company')">Company</a>
         </li>
+        <li class="nav-item">
+            <a class="nav-link cursor-pointer {{ $activeTab === 'WorkPhase' ? 'active' : '' }}" 
+               wire:click="setTab('WorkPhase')">Fasi Lavoro</a>
+        </li>
     </ul>
 
     <!-- Action Bar -->
-    <div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
         <h4>{{ $activeTab }}</h4>
-        <button class="btn btn-success" wire:click="openCreateModal">
-            <i class="bi bi-plus-lg me-1"></i> Aggiungi Nuovo
-        </button>
+        <div class="d-flex align-items-center gap-2">
+            <input
+                type="text"
+                class="form-control"
+                style="min-width: 280px;"
+                wire:model.blur="search"
+                placeholder="{{ $searchPlaceholder }}"
+            >
+            <button class="btn btn-success text-nowrap" wire:click="openCreateModal">
+                <i class="bi bi-plus-lg me-1"></i> Aggiungi Nuovo
+            </button>
+        </div>
     </div>
 
     @if (session('message'))
         <div class="alert alert-success">
             {{ session('message') }}
+        </div>
+    @endif
+
+    @if (session('error'))
+        <div class="alert alert-danger">
+            {{ session('error') }}
         </div>
     @endif
 
@@ -44,6 +63,7 @@
                         <th scope="col">Nome Centrale</th>
                         <th scope="col">Regione</th>
                     @elseif($activeTab === 'Comune')
+                        <th scope="col">Progressivo</th>
                         <th scope="col">Codice</th>
                         <th scope="col">Nome</th>
                         <th scope="col">Location</th>
@@ -53,6 +73,8 @@
                         <th scope="col">Nome</th>
                     @elseif($activeTab === 'Company')
                         <th scope="col">Nome Company</th>
+                    @elseif($activeTab === 'WorkPhase')
+                        <th scope="col">Nome Fase Lavoro</th>
                     @endif
 
                     <th scope="col" class="text-end">Azioni</th>
@@ -67,14 +89,17 @@
                             <td>{{ $row->central }}</td>
                             <td>{{ $row->region }}</td>
                         @elseif($activeTab === 'Comune')
+                            <td>{{ $row->comune_progressive }}</td>
                             <td>{{ $row->code }}</td>
                             <td>{{ $row->name }}</td>
                             <td>{{ $row->location }}</td>
                             <td>{{ $row->catasto_code }}</td>
-                            <td>{{ $row->region }}</td>
+                            <td>{{ $row->regione?->nome ?? '-' }}</td>
                         @elseif($activeTab === 'Regione')
                             <td>{{ $row->nome }}</td>
                         @elseif($activeTab === 'Company')
+                            <td>{{ $row->name }}</td>
+                        @elseif($activeTab === 'WorkPhase')
                             <td>{{ $row->name }}</td>
                         @endif
 
@@ -97,6 +122,12 @@
             </tbody>
         </table>
     </div>
+
+    @if(method_exists($records, 'links'))
+        <div class="mt-3">
+            {{ $records->links() }}
+        </div>
+    @endif
 
     <!-- Modal Form -->
     @if($showModal)
@@ -124,12 +155,16 @@
                             
                             @elseif($activeTab === 'Comune')
                                 <div class="mb-3">
+                                    <label class="form-label">Progressivo Comune *</label>
+                                    <input type="text" class="form-control" wire:model="formData.comune_progressive" required>
+                                </div>
+                                <div class="mb-3">
                                     <label class="form-label">Nome Comune *</label>
                                     <input type="text" class="form-control" wire:model="formData.name" required>
                                 </div>
                                 <div class="mb-3">
-                                    <label class="form-label">Codice</label>
-                                    <input type="text" class="form-control" wire:model="formData.code">
+                                    <label class="form-label">Codice *</label>
+                                    <input type="text" class="form-control" wire:model="formData.code" required>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label">Location</label>
@@ -141,7 +176,12 @@
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label">Regione</label>
-                                    <input type="text" class="form-control" wire:model="formData.region">
+                                    <select class="form-select" wire:model="formData.regione_id">
+                                        <option value="">Nessuna regione</option>
+                                        @foreach($regioni as $id => $nome)
+                                            <option value="{{ $id }}">{{ $nome }}</option>
+                                        @endforeach
+                                    </select>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label">Sovracomune</label>
@@ -157,6 +197,11 @@
                             @elseif($activeTab === 'Company')
                                 <div class="mb-3">
                                     <label class="form-label">Nome Company *</label>
+                                    <input type="text" class="form-control" wire:model="formData.name" required>
+                                </div>
+                            @elseif($activeTab === 'WorkPhase')
+                                <div class="mb-3">
+                                    <label class="form-label">Nome Fase Lavoro *</label>
                                     <input type="text" class="form-control" wire:model="formData.name" required>
                                 </div>
                             @endif

@@ -38,6 +38,7 @@ class WorksExport implements FromQuery, WithMapping, WithHeadings, ShouldAutoSiz
                 'central:id,central,region',
                 'users:id,name',
                 'workSuspensions:id,work_id,started_at,ended_at',
+                'workPhase:id,name',
             ])
             ->whereBetween($this->dateField, [$this->start, $this->end])
             ->orderBy('id');
@@ -87,7 +88,7 @@ class WorksExport implements FromQuery, WithMapping, WithHeadings, ShouldAutoSiz
             $work->description,                     // Descrizione
             $work->ntw_scope,                       // Ambito NTW
             $work->type,                            // Tipo
-            $work->phase,                           // Fase
+            $work->workPhase?->name ?? $work->phase, // Fase
             $work->nroe,                            // N.Roe
             $work->network,                         // Network
             $work->wo_number,                       // WO

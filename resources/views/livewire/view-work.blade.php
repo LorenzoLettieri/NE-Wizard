@@ -59,7 +59,7 @@
 
                 <div class="col-md-4">
                     <label class="form-label">Fase Lavoro</label>
-                    <div class="form-control">{{ $work->phase ?? '' }}</div>
+                    <div class="form-control">{{ $work->workPhase?->name ?? $work->phase ?? '' }}</div>
                 </div>
 
                 <div class="col-md-4">
