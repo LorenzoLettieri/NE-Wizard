@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
         $this->call(CompanySeeder::class);
         $this->call(CentralSeeder::class);
         $this->call(WorkPhaseSeeder::class);
+        $this->call(NetworkScopeSeeder::class);
         $this->call(UserTestSeeder::class);
         $this->call(RegioniSeeder::class);
         $this->call(ComuniSeeder::class);

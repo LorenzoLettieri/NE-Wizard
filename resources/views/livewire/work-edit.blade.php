@@ -63,20 +63,12 @@
                     <input type="ao_cno" class="form-control" id="ao_cno" wire:model="ao_cno">
                 </div>
                 <div class="col-12 col-md-4 mb-4">
-                    <label for="" class="form-label">Ambito NTW:</label>
-                    <select wire:model="ntw_scope" class="form-select tom-select">
+                    <label for="network_scope_id" class="form-label">Ambito NTW:</label>
+                    <select wire:model="network_scope_id" class="form-select tom-select">
                         <option value="">-- Seleziona --</option>
-                        <option value="FTTH">FTTH</option>
-                        <option value="FTTH PTE">FTTH PTE</option>
-                        <option value="FTTH PNRR">FTTH PNRR</option>
-                        <option value="5G">5G</option>
-                        <option value="REACTIVE">REACTIVE</option>
-                        <option value="INCREMENTALE">INCREMENTALE</option>
-                        <option value="DESATURAZIONE">DESATURAZIONE</option>
-                        <option value="NGAN">NGAN</option>
-                        <option value="GIUNZIONE">GIUNZIONE</option>
-                        <option value="SUB-LOOP">SUB-LOOP</option>
-                        <option value="Altro">Altro</option>
+                        @foreach($networkScopes as $networkScope)
+                            <option value="{{ $networkScope->id }}">{{ $networkScope->name }}</option>
+                        @endforeach
                     </select>
                 </div>
             </div>

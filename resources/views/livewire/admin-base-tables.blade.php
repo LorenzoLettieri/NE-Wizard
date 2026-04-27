@@ -18,8 +18,12 @@
                wire:click="setTab('Company')">Company</a>
         </li>
         <li class="nav-item">
-            <a class="nav-link cursor-pointer {{ $activeTab === 'WorkPhase' ? 'active' : '' }}" 
+            <a class="nav-link cursor-pointer {{ $activeTab === 'WorkPhase' ? 'active' : '' }}"
                wire:click="setTab('WorkPhase')">Fasi Lavoro</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link cursor-pointer {{ $activeTab === 'NetworkScope' ? 'active' : '' }}"
+               wire:click="setTab('NetworkScope')">Ambiti Network</a>
         </li>
         <li class="nav-item">
             <a class="nav-link cursor-pointer {{ $activeTab === 'CompanyWorkPhaseRate' ? 'active' : '' }}"
@@ -129,6 +133,8 @@
                         <th scope="col">Nome Company</th>
                     @elseif($activeTab === 'WorkPhase')
                         <th scope="col">Nome Fase Lavoro</th>
+                    @elseif($activeTab === 'NetworkScope')
+                        <th scope="col">Nome Ambito Network</th>
                     @endif
 
                     <th scope="col" class="text-end">Azioni</th>
@@ -154,6 +160,8 @@
                         @elseif($activeTab === 'Company')
                             <td>{{ $row->name }}</td>
                         @elseif($activeTab === 'WorkPhase')
+                            <td>{{ $row->name }}</td>
+                        @elseif($activeTab === 'NetworkScope')
                             <td>{{ $row->name }}</td>
                         @endif
 
@@ -257,6 +265,11 @@
                             @elseif($activeTab === 'WorkPhase')
                                 <div class="mb-3">
                                     <label class="form-label">Nome Fase Lavoro *</label>
+                                    <input type="text" class="form-control" wire:model="formData.name" required>
+                                </div>
+                            @elseif($activeTab === 'NetworkScope')
+                                <div class="mb-3">
+                                    <label class="form-label">Nome Ambito Network *</label>
                                     <input type="text" class="form-control" wire:model="formData.name" required>
                                 </div>
                             @endif

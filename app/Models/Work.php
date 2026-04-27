@@ -23,6 +23,7 @@ class Work extends Model
         'ao_cno',
         'description',
         'ntw_scope',
+        'network_scope_id',
         'type',
         'phase',
         'work_phase_id',
@@ -80,6 +81,11 @@ class Work extends Model
     public function workPhase(): BelongsTo
     {
         return $this->belongsTo(WorkPhase::class);
+    }
+
+    public function networkScope(): BelongsTo
+    {
+        return $this->belongsTo(NetworkScope::class);
     }
 
     public function media(): MorphMany

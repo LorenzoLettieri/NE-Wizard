@@ -79,7 +79,9 @@ class BackfillWorkAccountingAmounts extends Command
                         continue;
                     }
 
-                    if (! is_numeric($work->nroe)) {
+                    $quantity = $this->accountingQuantity($work->nroe);
+
+                    if ($quantity === null) {
                         $summary['missing_nroe']++;
                         $summary['skipped']++;
                         continue;
@@ -96,7 +98,7 @@ class BackfillWorkAccountingAmounts extends Command
                     $summary['eligible']++;
                     $updates[$work->id] = [
                         'unit_rate' => $unitRate,
-                        'accounting_amount' => round((float) $unitRate * (float) $work->nroe, 2),
+                        'accounting_amount' => round((float) $unitRate * $quantity, 2),
                     ];
                 }
 
@@ -151,5 +153,14 @@ class BackfillWorkAccountingAmounts extends Command
     private function rateKey(int|string $companyId, int|string $workPhaseId): string
     {
         return "{$companyId}:{$workPhaseId}";
+    }
+
+    private function accountingQuantity(mixed $nroe): ?float
+    {
+        if ($nroe === null) {
+            return 1.0;
+        }
+
+        return is_numeric($nroe) ? (float) $nroe : null;
     }
 }

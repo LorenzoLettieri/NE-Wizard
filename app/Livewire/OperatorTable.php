@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use Carbon\Carbon;
+use App\Models\NetworkScope;
 use App\Models\Work;
 use App\Models\WorkPhase;
 use Illuminate\Support\Facades\DB;
@@ -23,7 +24,7 @@ class OperatorTable extends DataTableComponent
     public function builder(): Builder{
         // return Work::query()->with('users')->where('users.id', $current_user->id);
         return Work::query()
-        ->with(['users', 'company', 'central', 'workPhase'])
+        ->with(['users', 'company', 'central', 'workPhase', 'networkScope'])
         ->whereHas('users', function (Builder $query) {
             $query->where('users.id', Auth::id());
         });
@@ -35,7 +36,11 @@ class OperatorTable extends DataTableComponent
         $this->setPrimaryKey('id');
         $this->setSearchLive();
         $this->setEagerLoadAllRelationsStatus(true);
-        $this->setAdditionalSelects(['works.id as id']);
+        $this->setAdditionalSelects([
+            'works.id as id',
+            'works.phase as phase',
+            'works.work_phase_id as work_phase_id',
+        ]);
 
         $this->setDefaultSort('created_at', 'desc');
 
@@ -81,6 +86,12 @@ class OperatorTable extends DataTableComponent
             ->options(['' => 'Tutti'] + WorkPhase::options())
             ->filter(function(Builder $builder, string $value){
                 $builder->where('work_phase_id', $value);
+            }),
+
+        SelectFilter::make('Ambito NTW', 'network_scope_id')
+            ->options(['' => 'Tutti'] + NetworkScope::options())
+            ->filter(function(Builder $builder, string $value){
+                $builder->where('network_scope_id', $value);
             }),
 
         TextFilter::make('Numero WO', 'wo_number')

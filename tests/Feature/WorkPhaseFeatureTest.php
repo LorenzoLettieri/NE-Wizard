@@ -3,8 +3,10 @@
 namespace Tests\Feature;
 
 use App\Livewire\AdminBaseTables;
+use App\Livewire\OperatorTable;
 use App\Livewire\WorkEdit;
 use App\Livewire\WorkForm;
+use App\Livewire\WorksTable;
 use App\Models\Company;
 use App\Models\CompanyWorkPhaseRate;
 use App\Models\User;
@@ -141,6 +143,45 @@ class WorkPhaseFeatureTest extends TestCase
         ]);
     }
 
+    public function test_works_table_renders_legacy_work_phase_name(): void
+    {
+        $this->seed(RoleSeeder::class);
+
+        $supervisor = User::factory()->create();
+        $supervisor->assignRole('supervisor');
+
+        Work::create([
+            'status' => 'Da Lavorare',
+            'phase' => 'FASE LEGACY VISIBILE',
+        ]);
+
+        $this->actingAs($supervisor);
+
+        Livewire::test(WorksTable::class)
+            ->assertSee('Fase')
+            ->assertSee('FASE LEGACY VISIBILE');
+    }
+
+    public function test_operator_table_renders_legacy_work_phase_name(): void
+    {
+        $this->seed(RoleSeeder::class);
+
+        $operator = User::factory()->create();
+        $operator->assignRole('operator');
+
+        $work = Work::create([
+            'status' => 'Da Lavorare',
+            'phase' => 'FASE LEGACY OPERATORE',
+        ]);
+        $work->users()->attach($operator->id);
+
+        $this->actingAs($operator);
+
+        Livewire::test(OperatorTable::class)
+            ->assertSee('Fase')
+            ->assertSee('FASE LEGACY OPERATORE');
+    }
+
     public function test_work_creation_persists_accounting_amount_from_company_phase_rate(): void
     {
         $this->seed(RoleSeeder::class);
@@ -176,6 +217,45 @@ class WorkPhaseFeatureTest extends TestCase
             'network' => 'NTW-RATE',
             'unit_rate' => 12.50,
             'accounting_amount' => 50.00,
+        ]);
+    }
+
+    public function test_work_creation_assumes_one_nroe_when_calculating_accounting_amount_with_null_nroe(): void
+    {
+        $this->seed(RoleSeeder::class);
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $operator = User::factory()->create();
+        $operator->assignRole('operator');
+
+        $company = Company::create(['name' => 'SIRTI']);
+        $phase = WorkPhase::create(['name' => 'FASE TEST']);
+
+        CompanyWorkPhaseRate::create([
+            'company_id' => $company->id,
+            'work_phase_id' => $phase->id,
+            'unit_price' => 12.50,
+        ]);
+
+        $this->actingAs($admin);
+
+        Livewire::test(WorkForm::class)
+            ->set('status', 'Da Lavorare')
+            ->set('network', 'NTW-RATE-NULL-NROE')
+            ->set('daphne', false)
+            ->set('operator_id', $operator->id)
+            ->set('company_id', $company->id)
+            ->set('work_phase_id', $phase->id)
+            ->set('nroe', null)
+            ->call('store');
+
+        $this->assertDatabaseHas('works', [
+            'network' => 'NTW-RATE-NULL-NROE',
+            'nroe' => null,
+            'unit_rate' => 12.50,
+            'accounting_amount' => 12.50,
         ]);
     }
 
@@ -306,23 +386,39 @@ class WorkPhaseFeatureTest extends TestCase
         $this->assertStringContainsString('Apply mode completed', $output);
     }
 
-    public function test_backfill_accounting_amounts_skips_works_without_required_rate_data(): void
+    public function test_backfill_accounting_amounts_assumes_one_nroe_when_nroe_is_null(): void
     {
         $company = Company::create(['name' => 'SIRTI']);
-        $ratedPhase = WorkPhase::create(['name' => 'FASE TEST']);
-        $unratedPhase = WorkPhase::create(['name' => 'FASE SENZA TARIFFA']);
+        $phase = WorkPhase::create(['name' => 'FASE TEST']);
 
         CompanyWorkPhaseRate::create([
             'company_id' => $company->id,
-            'work_phase_id' => $ratedPhase->id,
+            'work_phase_id' => $phase->id,
             'unit_price' => 7.50,
         ]);
 
-        $missingNroe = Work::create([
+        $work = Work::create([
             'company_id' => $company->id,
-            'work_phase_id' => $ratedPhase->id,
+            'work_phase_id' => $phase->id,
             'nroe' => null,
         ]);
+
+        Artisan::call('works:backfill-accounting-amounts', [
+            '--apply' => true,
+            '--force' => true,
+        ]);
+
+        $work->refresh();
+
+        $this->assertSame('7.50', $work->unit_rate);
+        $this->assertSame('7.50', $work->accounting_amount);
+    }
+
+    public function test_backfill_accounting_amounts_skips_works_without_required_rate_data(): void
+    {
+        $company = Company::create(['name' => 'SIRTI']);
+        $unratedPhase = WorkPhase::create(['name' => 'FASE SENZA TARIFFA']);
+
         $missingRate = Work::create([
             'company_id' => $company->id,
             'work_phase_id' => $unratedPhase->id,
@@ -335,9 +431,7 @@ class WorkPhaseFeatureTest extends TestCase
         ]);
         $output = Artisan::output();
 
-        $this->assertNull($missingNroe->fresh()->accounting_amount);
         $this->assertNull($missingRate->fresh()->accounting_amount);
-        $this->assertStringContainsString('missing_nroe', $output);
         $this->assertStringContainsString('missing_rate', $output);
     }
 }

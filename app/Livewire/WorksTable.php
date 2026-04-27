@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use App\Models\Work;
 use App\Models\Central;
 use App\Models\Company;
+use App\Models\NetworkScope;
 use App\Models\WorkPhase;
 use Livewire\Attributes\On;
 use Illuminate\Database\Eloquent\Builder;
@@ -26,7 +27,7 @@ class WorksTable extends DataTableComponent
     public function builder(): Builder
     {
         return Work::query()
-            ->with(['company', 'central', 'users', 'workSuspensions', 'workPhase'])
+            ->with(['company', 'central', 'users', 'workSuspensions', 'workPhase', 'networkScope'])
             ->withCount('media');
     }
 
@@ -40,7 +41,11 @@ class WorksTable extends DataTableComponent
         $this->setPrimaryKey('id');
         $this->setSearchLive();
         $this->setEagerLoadAllRelationsStatus(true);
-        $this->setAdditionalSelects(['works.id as id']);
+        $this->setAdditionalSelects([
+            'works.id as id',
+            'works.phase as phase',
+            'works.work_phase_id as work_phase_id',
+        ]);
 
         $this->setDefaultSort('created_at', 'desc');
 
@@ -147,24 +152,10 @@ class WorksTable extends DataTableComponent
                     $builder->where('status', $value);
                 }),
 
-            SelectFilter::make('Ambito NTW', 'ntw_scope')
-                ->options([
-                    '' => 'Tutti',
-                    'FTTH' => 'FTTH',
-                    'FTTH PTE' => 'FTTH PTE',
-                    'FTTH PNRR' => 'FTTH PNRR',
-                    '5G' => '5G',
-                    'REACTIVE' => 'REACTIVE',
-                    'INCREMENTALE' => 'INCREMENTALE',
-                    'DESATURAZIONE' => 'DESATURAZIONE',
-                    'NGAN' => 'NGAN',
-                    'GIUNZIONE' => 'GIUNZIONE',
-                    'SUB-LOOP' => 'SUB-LOOP',
-                    'Altro' => 'Altro',
-
-
-                ])->filter(function (Builder $builder, string $value) {
-                    $builder->where('ntw_scope', $value);
+            SelectFilter::make('Ambito NTW', 'network_scope_id')
+                ->options(['' => 'Tutti'] + NetworkScope::options())
+                ->filter(function (Builder $builder, string $value) {
+                    $builder->where('network_scope_id', $value);
                 }),
 
 

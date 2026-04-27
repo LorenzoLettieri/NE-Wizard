@@ -7,6 +7,7 @@ use App\Models\Work;
 use App\Models\Central;
 use App\Models\Company;
 use App\Models\CompanyWorkPhaseRate;
+use App\Models\NetworkScope;
 use App\Models\WorkPhase;
 use Livewire\Component;
 use Illuminate\Support\Carbon;
@@ -23,10 +24,10 @@ class WorkEdit extends Component
 
     public $work;
     public $operators;
-    public $companies, $centrals, $workPhases;
+    public $companies, $centrals, $workPhases, $networkScopes;
 
     public $suspension_history;
-    public $company_id, $central_id, $operator_id, $status, $network, $ao_cno, $ntw_scope, $description, $type, $phase, $work_phase_id, $company_assistant, $nroe, $wo_number,$unica_number, $notes, $expected_delivery_date;
+    public $company_id, $central_id, $operator_id, $status, $network, $ao_cno, $ntw_scope, $network_scope_id, $description, $type, $phase, $work_phase_id, $company_assistant, $nroe, $wo_number,$unica_number, $notes, $expected_delivery_date;
 
     public function update(){
         $this->validate($this->rules());
@@ -100,6 +101,7 @@ class WorkEdit extends Component
         $this->companies = Company::all();
         $this->centrals = Central::all();
         $this->workPhases = WorkPhase::orderBy('name')->get();
+        $this->networkScopes = NetworkScope::orderBy('name')->get();
         $this->operators = User::permission('get works')->get();
 
         $this->company_id = $work->company_id;
@@ -109,6 +111,7 @@ class WorkEdit extends Component
         $this->network = $work->network;
         $this->ao_cno = $work->ao_cno;
         $this->ntw_scope = $work->ntw_scope;
+        $this->network_scope_id = $work->network_scope_id ?? $this->resolveLegacyNetworkScopeId($work->ntw_scope);
         $this->description = $work->description;
         $this->type = $work->type;
         $this->phase = $work->phase;
@@ -133,6 +136,7 @@ class WorkEdit extends Component
         return array_merge($this->mediaUploadValidationRules(), [
             'expected_delivery_date' => 'nullable|date',
             'work_phase_id' => 'nullable|integer|exists:work_phases,id',
+            'network_scope_id' => 'nullable|integer|exists:network_scopes,id',
         ]);
     }
 
@@ -143,7 +147,8 @@ class WorkEdit extends Component
             'central_id' => $this->central_id,
             'network' => $this->network,
             'ao_cno' => $this->ao_cno,
-            'ntw_scope' => $this->ntw_scope,
+            'ntw_scope' => $this->selectedNetworkScopeName(),
+            'network_scope_id' => $this->network_scope_id ?: null,
             'description' => $this->description,
             'type' => $this->type,
             'phase' => $this->selectedWorkPhaseName(),
@@ -166,7 +171,9 @@ class WorkEdit extends Component
 
     protected function accountingPayload(): array
     {
-        if (! $this->company_id || ! $this->work_phase_id || ! is_numeric($this->nroe)) {
+        $quantity = $this->accountingQuantity();
+
+        if (! $this->company_id || ! $this->work_phase_id || $quantity === null) {
             return [
                 'unit_rate' => null,
                 'accounting_amount' => null,
@@ -187,8 +194,17 @@ class WorkEdit extends Component
 
         return [
             'unit_rate' => $unitRate,
-            'accounting_amount' => round((float) $unitRate * (float) $this->nroe, 2),
+            'accounting_amount' => round((float) $unitRate * $quantity, 2),
         ];
+    }
+
+    protected function accountingQuantity(): ?float
+    {
+        if ($this->nroe === null) {
+            return 1.0;
+        }
+
+        return is_numeric($this->nroe) ? (float) $this->nroe : null;
     }
 
     protected function selectedWorkPhaseName(): ?string
@@ -209,6 +225,26 @@ class WorkEdit extends Component
         }
 
         return WorkPhase::where('name', $name)->value('id');
+    }
+
+    protected function resolveLegacyNetworkScopeId(?string $scope): ?int
+    {
+        $scope = trim((string) $scope);
+
+        if ($scope === '') {
+            return null;
+        }
+
+        return NetworkScope::where('name', $scope)->value('id');
+    }
+
+    protected function selectedNetworkScopeName(): ?string
+    {
+        if (! $this->network_scope_id) {
+            return null;
+        }
+
+        return NetworkScope::find($this->network_scope_id)?->name;
     }
 
     protected function canManageAdministrativeFields(): bool

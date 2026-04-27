@@ -7,6 +7,7 @@ use App\Models\Work;
 use App\Models\Central;
 use App\Models\Company;
 use App\Models\CompanyWorkPhaseRate;
+use App\Models\NetworkScope;
 use App\Models\WorkPhase;
 use Carbon\Carbon;
 use Livewire\Component;
@@ -19,9 +20,9 @@ class WorkForm extends Component
     use HandlesMediaUploads;
 
     public $operators;
-    public $companies, $centrals, $workPhases;
+    public $companies, $centrals, $workPhases, $networkScopes;
 
-    public $company_id, $central_id, $operator_id, $status, $network, $ao_cno, $ntw_scope, $description, $type, $phase, $work_phase_id, $company_assistant, $nroe, $wo_number, $unica_number, $notes, $tempo_daphne, $expected_delivery_date;
+    public $company_id, $central_id, $operator_id, $status, $network, $ao_cno, $ntw_scope, $network_scope_id, $description, $type, $phase, $work_phase_id, $company_assistant, $nroe, $wo_number, $unica_number, $notes, $tempo_daphne, $expected_delivery_date;
 
     public $go_live, $date_in_str, $date_out_str;
 
@@ -48,6 +49,7 @@ class WorkForm extends Component
         $this->companies = Company::all();
         $this->centrals = Central::all();
         $this->workPhases = WorkPhase::orderBy('name')->get();
+        $this->networkScopes = NetworkScope::orderBy('name')->get();
         $this->operators = User::permission('get works')->get();
     }
 
@@ -56,6 +58,7 @@ class WorkForm extends Component
         return array_merge($this->mediaUploadValidationRules(), [
             'expected_delivery_date' => 'nullable|date',
             'work_phase_id' => 'nullable|integer|exists:work_phases,id',
+            'network_scope_id' => 'nullable|integer|exists:network_scopes,id',
         ]);
     }
 
@@ -67,7 +70,8 @@ class WorkForm extends Component
             'status' => $this->status,
             'network' => $this->network,
             'ao_cno' => $this->ao_cno,
-            'ntw_scope' => $this->ntw_scope,
+            'ntw_scope' => $this->selectedNetworkScopeName(),
+            'network_scope_id' => $this->network_scope_id ?: null,
             'description' => $this->description,
             'type' => $this->type,
             'phase' => $this->selectedWorkPhaseName(),
@@ -88,7 +92,9 @@ class WorkForm extends Component
 
     protected function accountingPayload(): array
     {
-        if (! $this->company_id || ! $this->work_phase_id || ! is_numeric($this->nroe)) {
+        $quantity = $this->accountingQuantity();
+
+        if (! $this->company_id || ! $this->work_phase_id || $quantity === null) {
             return [
                 'unit_rate' => null,
                 'accounting_amount' => null,
@@ -109,8 +115,17 @@ class WorkForm extends Component
 
         return [
             'unit_rate' => $unitRate,
-            'accounting_amount' => round((float) $unitRate * (float) $this->nroe, 2),
+            'accounting_amount' => round((float) $unitRate * $quantity, 2),
         ];
+    }
+
+    protected function accountingQuantity(): ?float
+    {
+        if ($this->nroe === null) {
+            return 1.0;
+        }
+
+        return is_numeric($this->nroe) ? (float) $this->nroe : null;
     }
 
     protected function selectedWorkPhaseName(): ?string
@@ -120,6 +135,15 @@ class WorkForm extends Component
         }
 
         return WorkPhase::find($this->work_phase_id)?->name;
+    }
+
+    protected function selectedNetworkScopeName(): ?string
+    {
+        if (! $this->network_scope_id) {
+            return null;
+        }
+
+        return NetworkScope::find($this->network_scope_id)?->name;
     }
 
     public function render()

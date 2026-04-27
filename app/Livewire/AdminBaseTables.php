@@ -9,6 +9,7 @@ use App\Models\Comune;
 use App\Models\Regione;
 use App\Models\Company;
 use App\Models\CompanyWorkPhaseRate;
+use App\Models\NetworkScope;
 use App\Models\WorkPhase;
 
 class AdminBaseTables extends Component
@@ -111,6 +112,7 @@ class AdminBaseTables extends Component
             'Regione' => Regione::class,
             'Company' => Company::class,
             'WorkPhase' => WorkPhase::class,
+            'NetworkScope' => NetworkScope::class,
             'CompanyWorkPhaseRate' => CompanyWorkPhaseRate::class,
             default => null,
         };
@@ -151,6 +153,11 @@ class AdminBaseTables extends Component
             $ignoreId = $this->isEditing && $this->editingId ? ',' . $this->editingId : '';
             $rules = [
                 'formData.name' => 'required|string|max:255|unique:work_phases,name' . $ignoreId,
+            ];
+        } elseif ($this->activeTab === 'NetworkScope') {
+            $ignoreId = $this->isEditing && $this->editingId ? ',' . $this->editingId : '';
+            $rules = [
+                'formData.name' => 'required|string|max:255|unique:network_scopes,name' . $ignoreId,
             ];
         } elseif ($this->activeTab === 'CompanyWorkPhaseRate') {
             return;
@@ -197,6 +204,11 @@ class AdminBaseTables extends Component
                     return;
                 }
 
+                if ($record instanceof NetworkScope && $record->works()->exists()) {
+                    session()->flash('error', 'Impossibile eliminare un ambito network già associato a lavorazioni.');
+                    return;
+                }
+
                 $record->delete();
                 $this->resetPage();
                 session()->flash('message', 'Record eliminato!');
@@ -212,6 +224,7 @@ class AdminBaseTables extends Component
             'Regione' => 'Cerca regione...',
             'Company' => 'Cerca company...',
             'WorkPhase' => 'Cerca fase lavoro...',
+            'NetworkScope' => 'Cerca ambito network...',
             'CompanyWorkPhaseRate' => 'Cerca company o fase lavoro...',
             default => 'Cerca...',
         };
@@ -289,6 +302,7 @@ class AdminBaseTables extends Component
             'Regione' => $query->where('nome', 'like', "%{$search}%"),
             'Company' => $query->where('name', 'like', "%{$search}%"),
             'WorkPhase' => $query->where('name', 'like', "%{$search}%"),
+            'NetworkScope' => $query->where('name', 'like', "%{$search}%"),
             default => $query,
         };
     }
