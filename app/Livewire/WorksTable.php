@@ -63,6 +63,8 @@ class WorksTable extends DataTableComponent
             'class' => 'table-sticky-head',
         ]);
 
+        $this->setSecondaryHeaderStatus(true);
+
         $this->setTdAttributes(function (Column $column) {
             if ($column->isField("created_at") || $column->isField("completion_date") || $column->isField('expected_delivery_date')) {
                 return [
@@ -276,7 +278,7 @@ class WorksTable extends DataTableComponent
             Column::make("Descrizione", "description")
                 ->sortable(),
             Column::make("Ambito NTW", "ntw_scope")
-                ->sortable()->searchable()->secondaryHeaderFilter(filterKey: 'ntw_scope'),
+                ->sortable()->searchable()->secondaryHeaderFilter(filterKey: 'network_scope_id'),
             Column::make("Tipo", "type")
                 ->sortable()->searchable(),
             Column::make("Fase")
