@@ -236,4 +236,108 @@ class WorkPhaseFeatureTest extends TestCase
             'unit_price' => 18.75,
         ]);
     }
+
+    public function test_backfill_accounting_amounts_dry_run_does_not_update_works(): void
+    {
+        $company = Company::create(['name' => 'SIRTI']);
+        $phase = WorkPhase::create(['name' => 'FASE TEST']);
+
+        CompanyWorkPhaseRate::create([
+            'company_id' => $company->id,
+            'work_phase_id' => $phase->id,
+            'unit_price' => 12.50,
+        ]);
+
+        $work = Work::create([
+            'company_id' => $company->id,
+            'work_phase_id' => $phase->id,
+            'nroe' => 4,
+        ]);
+
+        Artisan::call('works:backfill-accounting-amounts');
+        $output = Artisan::output();
+
+        $work->refresh();
+
+        $this->assertNull($work->unit_rate);
+        $this->assertNull($work->accounting_amount);
+        $this->assertStringContainsString('Dry-run completed', $output);
+        $this->assertStringContainsString('eligible', $output);
+    }
+
+    public function test_backfill_accounting_amounts_apply_fills_missing_values_without_overwriting_existing_ones(): void
+    {
+        $company = Company::create(['name' => 'SIRTI']);
+        $phase = WorkPhase::create(['name' => 'FASE TEST']);
+
+        CompanyWorkPhaseRate::create([
+            'company_id' => $company->id,
+            'work_phase_id' => $phase->id,
+            'unit_price' => 10.00,
+        ]);
+
+        $missingAccounting = Work::create([
+            'company_id' => $company->id,
+            'work_phase_id' => $phase->id,
+            'nroe' => 3,
+        ]);
+
+        $existingAccounting = Work::create([
+            'company_id' => $company->id,
+            'work_phase_id' => $phase->id,
+            'nroe' => 5,
+            'unit_rate' => 99.00,
+            'accounting_amount' => 495.00,
+        ]);
+
+        Artisan::call('works:backfill-accounting-amounts', [
+            '--apply' => true,
+            '--force' => true,
+        ]);
+        $output = Artisan::output();
+
+        $missingAccounting->refresh();
+        $existingAccounting->refresh();
+
+        $this->assertSame('10.00', $missingAccounting->unit_rate);
+        $this->assertSame('30.00', $missingAccounting->accounting_amount);
+        $this->assertSame('99.00', $existingAccounting->unit_rate);
+        $this->assertSame('495.00', $existingAccounting->accounting_amount);
+        $this->assertStringContainsString('Apply mode completed', $output);
+    }
+
+    public function test_backfill_accounting_amounts_skips_works_without_required_rate_data(): void
+    {
+        $company = Company::create(['name' => 'SIRTI']);
+        $ratedPhase = WorkPhase::create(['name' => 'FASE TEST']);
+        $unratedPhase = WorkPhase::create(['name' => 'FASE SENZA TARIFFA']);
+
+        CompanyWorkPhaseRate::create([
+            'company_id' => $company->id,
+            'work_phase_id' => $ratedPhase->id,
+            'unit_price' => 7.50,
+        ]);
+
+        $missingNroe = Work::create([
+            'company_id' => $company->id,
+            'work_phase_id' => $ratedPhase->id,
+            'nroe' => null,
+        ]);
+        $missingRate = Work::create([
+            'company_id' => $company->id,
+            'work_phase_id' => $unratedPhase->id,
+            'nroe' => 2,
+        ]);
+
+        Artisan::call('works:backfill-accounting-amounts', [
+            '--apply' => true,
+            '--force' => true,
+        ]);
+        $output = Artisan::output();
+
+        $this->assertNull($missingNroe->fresh()->accounting_amount);
+        $this->assertNull($missingRate->fresh()->accounting_amount);
+        $this->assertStringContainsString('missing_nroe', $output);
+        $this->assertStringContainsString('missing_rate', $output);
+    }
 }
