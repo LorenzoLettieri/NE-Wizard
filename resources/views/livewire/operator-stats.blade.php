@@ -203,7 +203,7 @@
                 </div>
             </div>
             <div class="operator-activity-chart-shell" wire:ignore>
-                <div id="operator-timeline" style="min-height: 420px;"></div>
+                        {{-- <div id="operator-timeline" style="min-height: 420px;"></div> --}}
             </div>
         </div>
     </div>
