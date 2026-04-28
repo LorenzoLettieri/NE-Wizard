@@ -135,9 +135,11 @@
                         <tr>
                             <th>Operatore</th>
                             <th>Giorni Presenza</th>
+                            <th>Ore Presenza</th>
+                            <th>Ore Lavoro Attivo</th>
+                            <th>Ore Pausa</th>
                             <th>Ore Permesso</th>
                             <th>Ore Straordinario</th>
-                            <th>Totale Ore Lavorate</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -145,9 +147,11 @@
                             <tr>
                                 <td class="fw-medium">{{ $row['user']->name }}</td>
                                 <td>{{ $row['days_present'] }}</td>
+                                <td class="fw-bold">{{ $row['presence_hours'] }}</td>
+                                <td class="text-success fw-bold">{{ $row['active_work_hours'] }}</td>
+                                <td>{{ $row['break_hours'] }}</td>
                                 <td>{{ round($row['leave_hours'], 2) }}h</td>
-                                <td class="text-primary fw-bold">{{ $row['overtime_hours'] }}h</td>
-                                <td class="fw-bold fs-6">{{ $row['total_hours'] }}h</td>
+                                <td class="text-primary fw-bold">{{ $row['overtime_hours'] }}</td>
                             </tr>
                         @endforeach
                     </tbody>

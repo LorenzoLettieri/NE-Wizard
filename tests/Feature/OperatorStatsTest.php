@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Livewire\OperatorStats;
 use App\Models\Company;
+use App\Models\Timesheet;
 use App\Models\User;
 use App\Models\Work;
 use App\Models\WorkPhase;
@@ -218,6 +219,59 @@ class OperatorStatsTest extends TestCase
                     && $rows[0]['operator_name'] === 'Mario Rossi'
                     && $rows[0]['assigned_count'] === 1
                     && $rows[0]['earned_amount'] === 90.0;
+            });
+    }
+
+    public function test_operator_activity_report_distinguishes_shift_time_breaks_and_work_time(): void
+    {
+        $this->seed(RoleSeeder::class);
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $operator = User::factory()->create(['name' => 'Mario Rossi']);
+        $operator->assignRole('operator');
+
+        $work = Work::create([
+            'status' => 'In Lavorazione',
+            'acception_date' => Carbon::parse('2026-04-10 08:30:00', 'UTC'),
+            'delivery_date' => Carbon::parse('2026-04-10 12:30:00', 'UTC'),
+        ]);
+
+        $work->users()->attach($operator->id, [
+            'created_at' => Carbon::parse('2026-04-10 08:00:00', 'UTC'),
+            'updated_at' => Carbon::parse('2026-04-10 08:00:00', 'UTC'),
+        ]);
+
+        $work->workSuspensions()->create([
+            'started_at' => Carbon::parse('2026-04-10 09:00:00', 'UTC'),
+            'ended_at' => Carbon::parse('2026-04-10 09:30:00', 'UTC'),
+        ]);
+
+        Timesheet::create([
+            'user_id' => $operator->id,
+            'date' => '2026-04-10',
+            'entry_time' => Carbon::parse('2026-04-10 08:00:00', 'UTC'),
+            'break_start' => Carbon::parse('2026-04-10 10:00:00', 'UTC'),
+            'break_end' => Carbon::parse('2026-04-10 10:30:00', 'UTC'),
+            'exit_time' => Carbon::parse('2026-04-10 17:00:00', 'UTC'),
+            'overtime_hours' => 1,
+        ]);
+
+        $this->actingAs($admin);
+
+        Livewire::test(OperatorStats::class)
+            ->set('startDate', '2026-04-10')
+            ->set('endDate', '2026-04-10')
+            ->assertViewHas('rows', function ($rows) {
+                $row = collect($rows)->firstWhere('operator_name', 'Mario Rossi');
+
+                return $row
+                    && $row['presence_label'] === '8h 30m'
+                    && $row['break_label'] === '30m'
+                    && $row['active_work_label'] === '3h'
+                    && $row['suspension_label'] === '30m'
+                    && $row['overtime_label'] === '1h';
             });
     }
 }

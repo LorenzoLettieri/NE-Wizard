@@ -33,4 +33,9 @@ class Timesheet extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    public function hasClosedBreak(): bool
+    {
+        return $this->break_start !== null && $this->break_end !== null;
+    }
 }

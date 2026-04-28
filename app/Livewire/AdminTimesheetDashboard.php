@@ -2,8 +2,10 @@
 
 namespace App\Livewire;
 
+use App\Domain\OperatorActivity\OperatorActivityBuilder;
 use App\Models\Timesheet;
 use App\Models\User;
+use App\Models\Work;
 use Carbon\Carbon;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -74,34 +76,38 @@ class AdminTimesheetDashboard extends Component
                 ->whereYear('date', $this->reportYear)
                 ->get();
 
-            $totalMinutes = 0;
-            $overtimeMinutes = 0;
-            $leaveHours = 0;
-            $daysPresent = $timesheets->count();
+            $windowStart = Carbon::create((int) $this->reportYear, (int) $this->reportMonth, 1, 0, 0, 0, 'UTC')->startOfMonth();
+            $windowEnd = $windowStart->copy()->endOfMonth();
 
-            foreach ($timesheets as $ts) {
-                if ($ts->entry_time && $ts->exit_time) {
-                    $mins = $ts->entry_time->diffInMinutes($ts->exit_time);
-                    if ($ts->break_start && $ts->break_end) {
-                        $mins -= $ts->break_start->diffInMinutes($ts->break_end);
-                    }
-                    $totalMinutes += $mins;
-                }
+            $works = $user->works()
+                ->where(function ($query) use ($windowStart, $windowEnd) {
+                    $query->whereBetween('user_work.created_at', [$windowStart, $windowEnd])
+                        ->orWhere(function ($nested) use ($windowStart, $windowEnd) {
+                            $nested->whereNotNull('acception_date')
+                                ->where('acception_date', '<=', $windowEnd)
+                                ->where(function ($window) use ($windowStart) {
+                                    $window->whereNull('delivery_date')
+                                        ->orWhere('delivery_date', '>=', $windowStart);
+                                });
+                        });
+                })
+                ->with('workSuspensions')
+                ->get();
 
-                if ($ts->overtime_hours > 0) {
-                    $overtimeMinutes += ($ts->overtime_hours * 60);
-                    $totalMinutes += ($ts->overtime_hours * 60); // Assuming overtime is included in total
-                }
-
-                $leaveHours += $ts->leave_hours;
-            }
+            $summary = app(OperatorActivityBuilder::class)->build($user, $works, $timesheets, $windowStart, $windowEnd);
+            $daysPresent = collect($summary->dailyBreakdown())
+                ->filter(fn (array $day) => $day['presence_seconds'] > 0 || $day['leave_seconds'] > 0 || $day['overtime_seconds'] > 0)
+                ->count();
 
             $report[] = [
                 'user' => $user,
-                'total_hours' => floor($totalMinutes / 60) . ':' . sprintf('%02d', $totalMinutes % 60),
-                'overtime_hours' => floor($overtimeMinutes / 60) . ':' . sprintf('%02d', $overtimeMinutes % 60),
-                'leave_hours' => $leaveHours,
-                'days_present' => $daysPresent
+                'total_hours' => Work::formatDuration($summary->presenceSeconds()) ?? '0m',
+                'presence_hours' => Work::formatDuration($summary->presenceSeconds()) ?? '0m',
+                'active_work_hours' => Work::formatDuration($summary->activeWorkSeconds()) ?? '0m',
+                'break_hours' => Work::formatDuration($summary->breakSeconds()) ?? '0m',
+                'overtime_hours' => Work::formatDuration($summary->overtimeSeconds()) ?? '0m',
+                'leave_hours' => round($summary->leaveSeconds() / 3600, 2),
+                'days_present' => $daysPresent,
             ];
         }
 

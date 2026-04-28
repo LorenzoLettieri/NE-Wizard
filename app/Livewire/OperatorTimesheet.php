@@ -3,10 +3,10 @@
 namespace App\Livewire;
 
 use App\Models\Timesheet;
+use App\Support\Timesheets\TimesheetStateMachine;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
-use Livewire\Attributes\Layout;
 
 class OperatorTimesheet extends Component
 {
@@ -77,6 +77,8 @@ class OperatorTimesheet extends Component
 
     public function saveAction()
     {
+        $this->resetErrorBag();
+
         $startDate = Carbon::parse($this->selectedDate);
         $endDate = ($this->actionType === 'leave' && $this->leaveType === 'ferie') ? Carbon::parse($this->selectedEndDate) : $startDate;
 
@@ -104,6 +106,12 @@ class OperatorTimesheet extends Component
             $timesheet = Timesheet::where('user_id', Auth::id())
                 ->where('date', $date->toDateString())
                 ->first();
+
+            $transition = app(TimesheetStateMachine::class)->validate($this->actionType, $timesheet);
+            if (! $transition->allowed) {
+                $this->addError('actionType', $transition->message());
+                return;
+            }
 
             if (!$timesheet && $this->actionType === 'start_shift') {
                 $timesheet = new Timesheet();
@@ -144,7 +152,8 @@ class OperatorTimesheet extends Component
                         $timesheet->leave_hours = $this->leaveHours;
                         // Set entry_time from inputTime for permesso/malattia
                         if ($this->inputTime) {
-                            $timesheet->entry_time = Carbon::parse($date->toDateString() . ' ' . $this->inputTime);
+                            $timesheet->entry_time = Carbon::createFromFormat('Y-m-d H:i', $date->toDateString() . ' ' . $this->inputTime, 'Europe/Rome')
+                                ->setTimezone('UTC');
                         }
                     }
                     break;
