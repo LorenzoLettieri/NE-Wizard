@@ -66,12 +66,12 @@ class OperatorStats extends Component
             ->values()
             ->all();
 
-        $this->timelineData = $this->formatTimelineData($rows, $viewWindowStart, $viewWindowEnd);
-        $this->timelineConfig = [
-            'mode' => $this->viewMode,
-            'min' => $viewWindowStart->getTimestamp() * 1000,
-            'max' => $viewWindowEnd->getTimestamp() * 1000,
-        ];
+        // $this->timelineData = $this->formatTimelineData($rows, $viewWindowStart, $viewWindowEnd);
+        // $this->timelineConfig = [
+        //     'mode' => $this->viewMode,
+        //     'min' => $viewWindowStart->getTimestamp() * 1000,
+        //     'max' => $viewWindowEnd->getTimestamp() * 1000,
+        // ];
 
         return view('livewire.operator-stats', [
             'rows' => $rows,
@@ -83,15 +83,16 @@ class OperatorStats extends Component
             'workPhaseOptions' => WorkPhase::orderBy('name')->get(['id', 'name']),
             'ntwScopeOptions' => $this->ntwScopeOptions(),
             'statusOptions' => $this->statusOptions(),
-            'timelineData' => $this->timelineData,
+            // 'timelineData' => $this->timelineData,
+
             'dayOptions' => $dayOptions,
             'weekOptions' => $weekOptions,
             'timelineModeOptions' => [
                 ['value' => 'day', 'label' => 'Giornaliera'],
                 ['value' => 'week', 'label' => 'Settimanale'],
             ],
-            'timelineWindowLabel' => $this->timelineWindowLabel($viewWindowStart, $viewWindowEnd),
-            'timelineConfig' => $this->timelineConfig,
+// ''timelineWindowLabel' => $this->timelineWindowLabel($viewWindowStart, $viewWindowEnd),
+// 'timelineConfig' => $this->timelineConfig,'
         ]);
     }
 
