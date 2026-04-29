@@ -32,15 +32,17 @@ class AdminTimesheetDashboard extends Component
     public $editExitTime = '';
     public $editBreakStart = '';
     public $editBreakEnd = '';
+    public $editLeaveStartTime = '';
     public $editLeaveType = '';
     public $editLeaveHours = 0;
     public $editOvertimeHours = 0;
 
     public function mount()
     {
-        $this->viewDate = now()->toDateString();
-        $this->reportMonth = now()->month;
-        $this->reportYear = now()->year;
+        $now = now('Europe/Rome');
+        $this->viewDate = $now->toDateString();
+        $this->reportMonth = $now->month;
+        $this->reportYear = $now->year;
     }
 
     // Detailed Table Data
@@ -76,8 +78,12 @@ class AdminTimesheetDashboard extends Component
                 ->whereYear('date', $this->reportYear)
                 ->get();
 
-            $windowStart = Carbon::create((int) $this->reportYear, (int) $this->reportMonth, 1, 0, 0, 0, 'UTC')->startOfMonth();
-            $windowEnd = $windowStart->copy()->endOfMonth();
+            $windowStart = Carbon::create((int) $this->reportYear, (int) $this->reportMonth, 1, 0, 0, 0, 'Europe/Rome')
+                ->startOfMonth()
+                ->setTimezone('UTC');
+            $windowEnd = Carbon::create((int) $this->reportYear, (int) $this->reportMonth, 1, 0, 0, 0, 'Europe/Rome')
+                ->endOfMonth()
+                ->setTimezone('UTC');
 
             $works = $user->works()
                 ->where(function ($query) use ($windowStart, $windowEnd) {
@@ -132,10 +138,11 @@ class AdminTimesheetDashboard extends Component
         $this->editingTimesheetId = $timesheet->id;
         $this->editUserName = $timesheet->user->name;
         $this->editDate = $timesheet->date->toDateString();
-        $this->editEntryTime = $this->formatTimeForInput($timesheet->entry_time);
+        $this->editEntryTime = $this->formatTimeForInput($timesheet->effectiveShiftEntryTime());
         $this->editExitTime = $this->formatTimeForInput($timesheet->exit_time);
         $this->editBreakStart = $this->formatTimeForInput($timesheet->break_start);
         $this->editBreakEnd = $this->formatTimeForInput($timesheet->break_end);
+        $this->editLeaveStartTime = $this->formatTimeForInput($timesheet->effectiveLeaveStartTime());
         $this->editLeaveType = $timesheet->leave_type ?? '';
         $this->editLeaveHours = (float) $timesheet->leave_hours;
         $this->editOvertimeHours = (float) $timesheet->overtime_hours;
@@ -154,6 +161,7 @@ class AdminTimesheetDashboard extends Component
         $this->editExitTime = '';
         $this->editBreakStart = '';
         $this->editBreakEnd = '';
+        $this->editLeaveStartTime = '';
         $this->editLeaveType = '';
         $this->editLeaveHours = 0;
         $this->editOvertimeHours = 0;
@@ -180,6 +188,7 @@ class AdminTimesheetDashboard extends Component
             'editExitTime' => 'nullable|date_format:H:i',
             'editBreakStart' => 'nullable|date_format:H:i',
             'editBreakEnd' => 'nullable|date_format:H:i',
+            'editLeaveStartTime' => 'nullable|date_format:H:i',
             'editLeaveType' => 'nullable|in:ferie,permesso,malattia',
             'editLeaveHours' => 'nullable|numeric|min:0|max:24',
             'editOvertimeHours' => 'nullable|numeric|min:0|max:24',
@@ -189,6 +198,7 @@ class AdminTimesheetDashboard extends Component
         $exitTime = $this->parseEditTime($this->editExitTime);
         $breakStart = $this->parseEditTime($this->editBreakStart);
         $breakEnd = $this->parseEditTime($this->editBreakEnd);
+        $leaveStartTime = $this->parseEditTime($this->editLeaveStartTime);
 
         if ($exitTime && !$entryTime) {
             $this->addError('editExitTime', 'Per impostare l\'uscita è necessario impostare anche l\'entrata.');
@@ -226,6 +236,10 @@ class AdminTimesheetDashboard extends Component
             $this->addError('editLeaveHours', 'Inserisci un numero di ore maggiore di zero.');
         }
 
+        if (in_array($this->editLeaveType, ['permesso', 'malattia'], true) && ! $leaveStartTime) {
+            $this->addError('editLeaveStartTime', 'Indica l\'orario di inizio del permesso.');
+        }
+
         if ($this->getErrorBag()->isNotEmpty()) {
             return;
         }
@@ -236,6 +250,10 @@ class AdminTimesheetDashboard extends Component
         }
         if ($this->editLeaveType === '') {
             $leaveHours = 0;
+            $leaveStartTime = null;
+        }
+        if ($this->editLeaveType === 'ferie') {
+            $leaveStartTime = null;
         }
 
         $timesheet = Timesheet::findOrFail($this->editingTimesheetId);
@@ -244,6 +262,7 @@ class AdminTimesheetDashboard extends Component
         $timesheet->exit_time = $exitTime;
         $timesheet->break_start = $breakStart;
         $timesheet->break_end = $breakEnd;
+        $timesheet->leave_start_time = $leaveStartTime;
         $timesheet->leave_type = $this->editLeaveType ?: null;
         $timesheet->leave_hours = $leaveHours;
         $timesheet->overtime_hours = (float) $this->editOvertimeHours;

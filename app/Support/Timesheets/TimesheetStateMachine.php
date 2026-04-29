@@ -9,9 +9,9 @@ final class TimesheetStateMachine
     public function validate(string $action, ?Timesheet $timesheet): TimesheetTransitionResult
     {
         return match ($action) {
-            'start_shift' => TimesheetTransitionResult::allowWhen(! $timesheet?->entry_time, 'shift_already_started'),
+            'start_shift' => TimesheetTransitionResult::allowWhen(! $timesheet?->effectiveShiftEntryTime(), 'shift_already_started'),
             'start_break' => TimesheetTransitionResult::allowWhen(
-                (bool) ($timesheet?->entry_time && ! $timesheet?->break_start && ! $timesheet?->exit_time),
+                (bool) ($timesheet?->effectiveShiftEntryTime() && ! $timesheet?->break_start && ! $timesheet?->exit_time),
                 'break_not_allowed'
             ),
             'end_break' => TimesheetTransitionResult::allowWhen(
@@ -19,7 +19,7 @@ final class TimesheetStateMachine
                 'break_not_open'
             ),
             'end_shift' => TimesheetTransitionResult::allowWhen(
-                (bool) ($timesheet?->entry_time && ! $timesheet?->exit_time),
+                (bool) ($timesheet?->effectiveShiftEntryTime() && ! $timesheet?->exit_time),
                 'shift_not_started'
             ),
             default => TimesheetTransitionResult::allowed(),

@@ -24,8 +24,9 @@ class OperatorTimesheet extends Component
 
     public function mount()
     {
-        $this->weekStartDate = now()->startOfWeek()->toDateString();
-        $this->inputTime = now()->format('H:i');
+        $now = now('Europe/Rome');
+        $this->weekStartDate = $now->copy()->startOfWeek()->toDateString();
+        $this->inputTime = $now->format('H:i');
     }
 
     public function getTimesheetsProperty()
@@ -42,7 +43,7 @@ class OperatorTimesheet extends Component
     public function getTodayTimesheetProperty()
     {
         return Timesheet::where('user_id', Auth::id())
-            ->where('date', now()->toDateString())
+            ->where('date', now('Europe/Rome')->toDateString())
             ->first();
     }
 
@@ -59,9 +60,10 @@ class OperatorTimesheet extends Component
     public function openActionModal($action)
     {
         $this->actionType = $action;
-        $this->inputTime = now()->format('H:i');
-        $this->selectedDate = now()->toDateString();
-        $this->selectedEndDate = now()->toDateString();
+        $now = now('Europe/Rome');
+        $this->inputTime = $now->format('H:i');
+        $this->selectedDate = $now->toDateString();
+        $this->selectedEndDate = $now->toDateString();
 
         $timesheet = $this->todayTimesheet;
 
@@ -70,6 +72,9 @@ class OperatorTimesheet extends Component
             $this->leaveType = ($timesheet && $action == 'leave') ? $timesheet->leave_type : '';
             $this->leaveHours = ($timesheet && $action == 'leave') ? $timesheet->leave_hours : 0;
             $this->overtimeHours = ($timesheet && $action == 'overtime') ? $timesheet->overtime_hours : 0;
+            if ($action === 'leave' && $timesheet?->effectiveLeaveStartTime()) {
+                $this->inputTime = $timesheet->effectiveLeaveStartTime()->timezone('Europe/Rome')->format('H:i');
+            }
         }
 
         $this->showModal = true;
@@ -79,16 +84,18 @@ class OperatorTimesheet extends Component
     {
         $this->resetErrorBag();
 
-        $startDate = Carbon::parse($this->selectedDate);
-        $endDate = ($this->actionType === 'leave' && $this->leaveType === 'ferie') ? Carbon::parse($this->selectedEndDate) : $startDate;
+        $startDate = Carbon::parse($this->selectedDate, 'Europe/Rome')->startOfDay();
+        $endDate = ($this->actionType === 'leave' && $this->leaveType === 'ferie')
+            ? Carbon::parse($this->selectedEndDate, 'Europe/Rome')->startOfDay()
+            : $startDate;
 
         // For shift/break actions, we always use NOW and override selectedDate just in case
         if (in_array($this->actionType, ['start_shift', 'end_shift', 'start_break', 'end_break'])) {
-            $timestamp = now();
+            $timestamp = now('Europe/Rome')->setTimezone('UTC');
             $dates = [$startDate]; // Only one day for shifts/breaks
         } else {
             // For leaves/overtime, we use the date range (only if leaveType is 'ferie')
-            $timestamp = now();
+            $timestamp = now('Europe/Rome')->setTimezone('UTC');
 
             $dates = [];
             $currentDate = $startDate->copy();
@@ -129,7 +136,8 @@ class OperatorTimesheet extends Component
 
             switch ($this->actionType) {
                 case 'start_shift':
-                    if (!$timesheet->entry_time)
+                    $this->normalizeLegacyHourlyLeaveOnly($timesheet);
+                    if (!$timesheet->effectiveShiftEntryTime())
                         $timesheet->entry_time = $timestamp;
                     break;
                 case 'end_shift':
@@ -145,15 +153,19 @@ class OperatorTimesheet extends Component
                         $timesheet->break_end = $timestamp;
                     break;
                 case 'leave':
+                    $wasLegacyHourlyLeaveOnly = $timesheet->isLegacyHourlyLeaveOnly();
                     $timesheet->leave_type = $this->leaveType;
                     if ($this->leaveType === 'ferie') {
                         $timesheet->leave_hours = 8;
+                        $timesheet->leave_start_time = null;
                     } else {
                         $timesheet->leave_hours = $this->leaveHours;
-                        // Set entry_time from inputTime for permesso/malattia
                         if ($this->inputTime) {
-                            $timesheet->entry_time = Carbon::createFromFormat('Y-m-d H:i', $date->toDateString() . ' ' . $this->inputTime, 'Europe/Rome')
+                            $timesheet->leave_start_time = Carbon::createFromFormat('Y-m-d H:i', $date->toDateString() . ' ' . $this->inputTime, 'Europe/Rome')
                                 ->setTimezone('UTC');
+                        }
+                        if (!$timesheet->exit_time && !$timesheet->break_start && !$timesheet->break_end && $wasLegacyHourlyLeaveOnly) {
+                            $timesheet->entry_time = null;
                         }
                     }
                     break;
@@ -167,6 +179,16 @@ class OperatorTimesheet extends Component
 
         $this->showModal = false;
         $this->dispatch('timesheet-updated');
+    }
+
+    private function normalizeLegacyHourlyLeaveOnly(Timesheet $timesheet): void
+    {
+        if (! $timesheet->isLegacyHourlyLeaveOnly()) {
+            return;
+        }
+
+        $timesheet->leave_start_time = $timesheet->entry_time;
+        $timesheet->entry_time = null;
     }
 
     public function render()

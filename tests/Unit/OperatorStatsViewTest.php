@@ -80,4 +80,27 @@ class OperatorStatsViewTest extends TestCase
         $this->assertSame('UTC', $start->timezoneName);
         $this->assertSame('UTC', $end->timezoneName);
     }
+
+    public function test_operator_stats_chart_formats_axis_in_rome_timezone(): void
+    {
+        $html = file_get_contents(resource_path('views/livewire/operator-stats.blade.php'));
+
+        $this->assertStringContainsString("timeZone: 'Europe/Rome'", $html);
+        $this->assertStringContainsString('formatRomeTimeLabel', $html);
+    }
+
+    public function test_operator_stats_filter_range_uses_rome_day_boundaries(): void
+    {
+        $component = new \App\Livewire\OperatorStats();
+
+        $method = (new ReflectionClass(\App\Livewire\OperatorStats::class))->getMethod('resolveReportRange');
+        $method->setAccessible(true);
+
+        [$start, $end] = $method->invoke($component, '2026-04-10', '2026-04-10');
+
+        $this->assertSame('2026-04-10 00:00', $start->copy()->timezone('Europe/Rome')->format('Y-m-d H:i'));
+        $this->assertSame('2026-04-10 23:59', $end->copy()->timezone('Europe/Rome')->format('Y-m-d H:i'));
+        $this->assertSame('UTC', $start->timezoneName);
+        $this->assertSame('UTC', $end->timezoneName);
+    }
 }

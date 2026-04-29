@@ -53,6 +53,7 @@ class TimesheetDetailsSheet implements FromCollection, WithHeadings, WithStyles,
                 '',
                 '',
                 '',
+                '',
                 ''
             ]);
             $this->headerRows[] = $currentRow;
@@ -77,8 +78,9 @@ class TimesheetDetailsSheet implements FromCollection, WithHeadings, WithStyles,
                     $fmtTime = fn($d) => $d ? $d->format('H:i') : '-';
 
                     $totalMinutes = 0;
-                    if ($ts->entry_time && $ts->exit_time) {
-                        $totalMinutes = $ts->entry_time->diffInMinutes($ts->exit_time);
+                    $shiftEntry = $ts->effectiveShiftEntryTime();
+                    if ($shiftEntry && $ts->exit_time) {
+                        $totalMinutes = $shiftEntry->diffInMinutes($ts->exit_time);
                         if ($ts->break_start && $ts->break_end) {
                             $totalMinutes -= $ts->break_start->diffInMinutes($ts->break_end);
                         }
@@ -94,7 +96,7 @@ class TimesheetDetailsSheet implements FromCollection, WithHeadings, WithStyles,
                     $collection->push([
                         '', // Empty operator column for data rows
                         $dateString, // Date (formatted by columnFormats)
-                        $fmtTime($dt($ts->entry_time)),
+                        $fmtTime($dt($shiftEntry)),
                         $fmtTime($dt($ts->exit_time)),
                         $fmtTime($dt($ts->break_start)),
                         $fmtTime($dt($ts->break_end)),
@@ -102,6 +104,7 @@ class TimesheetDetailsSheet implements FromCollection, WithHeadings, WithStyles,
                         $ts->overtime_hours > 0 ? round($ts->overtime_hours, 2) : '-',
                         $ts->leave_hours > 0 ? round($ts->leave_hours, 2) : '-',
                         $ts->leave_type,
+                        $fmtTime($dt($ts->effectiveLeaveStartTime())),
                     ]);
                 } else {
                     // No timesheet = Absent
@@ -115,6 +118,7 @@ class TimesheetDetailsSheet implements FromCollection, WithHeadings, WithStyles,
                         'Assente', // Total Hours / Status
                         '',
                         '',
+                        '',
                         '' // Overtime, Leave
                     ]);
                 }
@@ -122,7 +126,7 @@ class TimesheetDetailsSheet implements FromCollection, WithHeadings, WithStyles,
             }
 
             // EMPTY ROW SEPARATOR
-            $collection->push(['', '', '', '', '', '', '', '', '', '']);
+            $collection->push(['', '', '', '', '', '', '', '', '', '', '']);
             $currentRow++;
         }
 
@@ -142,6 +146,7 @@ class TimesheetDetailsSheet implements FromCollection, WithHeadings, WithStyles,
             'Straordinario',
             'Permessi',
             'Tipo Permesso',
+            'Inizio Permesso',
         ];
     }
 

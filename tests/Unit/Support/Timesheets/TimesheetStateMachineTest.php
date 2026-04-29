@@ -32,4 +32,18 @@ class TimesheetStateMachineTest extends TestCase
         $this->assertTrue($result->allowed);
         $this->assertNull($result->reason);
     }
+
+    public function test_state_machine_allows_starting_shift_on_legacy_hourly_leave_only_record(): void
+    {
+        $timesheet = new Timesheet([
+            'entry_time' => Carbon::parse('2026-04-10 10:00:00', 'UTC'),
+            'leave_type' => 'permesso',
+            'leave_hours' => 2,
+        ]);
+
+        $result = app(TimesheetStateMachine::class)->validate('start_shift', $timesheet);
+
+        $this->assertTrue($result->allowed);
+        $this->assertNull($result->reason);
+    }
 }

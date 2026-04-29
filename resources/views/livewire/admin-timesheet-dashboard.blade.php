@@ -50,7 +50,7 @@
                             <tr>
                                 <td class="fw-medium">{{ $ts->user->name }}</td>
                                 <td>{{ $ts->date->format('d/m/Y') }}</td>
-                                <td>{{ $ts->entry_time ? $ts->entry_time->timezone('Europe/Rome')->format('H:i') : '-' }}
+                                <td>{{ $ts->effectiveShiftEntryTime() ? $ts->effectiveShiftEntryTime()->timezone('Europe/Rome')->format('H:i') : '-' }}
                                 </td>
                                 <td>{{ $ts->exit_time ? $ts->exit_time->timezone('Europe/Rome')->format('H:i') : '-' }}</td>
                                 <td>
@@ -65,8 +65,9 @@
                                 <td class="fw-bold">
                                     @php
                                         $totalMinutes = 0;
-                                        if ($ts->entry_time && $ts->exit_time) {
-                                            $totalMinutes = $ts->entry_time->diffInMinutes($ts->exit_time);
+                                        $shiftEntry = $ts->effectiveShiftEntryTime();
+                                        if ($shiftEntry && $ts->exit_time) {
+                                            $totalMinutes = $shiftEntry->diffInMinutes($ts->exit_time);
                                             if ($ts->break_start && $ts->break_end) {
                                                 $totalMinutes -= $ts->break_start->diffInMinutes($ts->break_end);
                                             }
@@ -79,7 +80,16 @@
                                     @endphp
                                     {{ sprintf('%02d:%02d', $hours, $mins) }}
                                 </td>
-                                <td>{{ $ts->leave_hours > 0 ? round($ts->leave_hours, 2) . 'h' : '-' }}</td>
+                                <td>
+                                    @if($ts->leave_hours > 0)
+                                        {{ round($ts->leave_hours, 2) }}h
+                                        @if($ts->effectiveLeaveStartTime())
+                                            <small class="text-muted d-block">dalle {{ $ts->effectiveLeaveStartTime()->timezone('Europe/Rome')->format('H:i') }}</small>
+                                        @endif
+                                    @else
+                                        -
+                                    @endif
+                                </td>
                                 <td>{{ $ts->overtime_hours > 0 ? round($ts->overtime_hours, 2) . 'h' : '-' }}</td>
                                 <td class="text-end pe-3">
                                     <button class="btn btn-sm btn-outline-primary" wire:click="openEditModal({{ $ts->id }})">
@@ -213,6 +223,14 @@
                                 <input type="number" step="0.5" min="0" class="form-control" wire:model="editLeaveHours">
                                 @error('editLeaveHours') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
                             </div>
+
+                            @if(in_array($editLeaveType, ['permesso', 'malattia'], true))
+                                <div class="col-12">
+                                    <label class="form-label">Inizio Permesso/Malattia</label>
+                                    <input type="time" class="form-control" wire:model="editLeaveStartTime">
+                                    @error('editLeaveStartTime') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                                </div>
+                            @endif
 
                             <div class="col-12">
                                 <label class="form-label">Ore Straordinario</label>

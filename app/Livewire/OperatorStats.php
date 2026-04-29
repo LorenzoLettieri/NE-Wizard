@@ -41,18 +41,18 @@ class OperatorStats extends Component
 
     public function mount()
     {
-        $this->startDate = Carbon::now()->startOfMonth()->toDateString();
-        $this->endDate = Carbon::now()->toDateString();
-        $this->selectedDay = Carbon::now()->toDateString();
-        $this->selectedWeekStart = Carbon::now()->startOfWeek()->toDateString();
+        $now = Carbon::now('Europe/Rome');
+        $this->startDate = $now->copy()->startOfMonth()->toDateString();
+        $this->endDate = $now->toDateString();
+        $this->selectedDay = $now->toDateString();
+        $this->selectedWeekStart = $now->copy()->startOfWeek()->toDateString();
     }
 
     public function render()
     {
         $t0 = microtime(true);
 
-        $startDate = Carbon::parse($this->startDate)->startOfDay();
-        $endDate = Carbon::parse($this->endDate)->endOfDay();
+        [$startDate, $endDate] = $this->resolveReportRange($this->startDate, $this->endDate);
         [$viewWindowStart, $viewWindowEnd, $dayOptions, $weekOptions] = $this->resolveTimelineWindow($startDate, $endDate);
         $canViewEconomicReport = auth()->check() && auth()->user()->hasRole('admin');
 
@@ -135,11 +135,20 @@ class OperatorStats extends Component
         $this->companyId = '';
         $this->workPhaseId = '';
         $this->ntwScope = '';
-        $this->startDate = Carbon::now()->startOfMonth()->toDateString();
-        $this->endDate = Carbon::now()->toDateString();
+        $now = Carbon::now('Europe/Rome');
+        $this->startDate = $now->copy()->startOfMonth()->toDateString();
+        $this->endDate = $now->toDateString();
         $this->viewMode = 'day';
-        $this->selectedDay = Carbon::now()->toDateString();
-        $this->selectedWeekStart = Carbon::now()->startOfWeek()->toDateString();
+        $this->selectedDay = $now->toDateString();
+        $this->selectedWeekStart = $now->copy()->startOfWeek()->toDateString();
+    }
+
+    private function resolveReportRange(string $startDate, string $endDate): array
+    {
+        return [
+            Carbon::parse($startDate, 'Europe/Rome')->startOfDay()->setTimezone('UTC'),
+            Carbon::parse($endDate, 'Europe/Rome')->endOfDay()->setTimezone('UTC'),
+        ];
     }
 
     private function buildAllRows(\Illuminate\Support\Collection $operators, Carbon $startDate, Carbon $endDate): array
@@ -149,6 +158,8 @@ class OperatorStats extends Component
         }
 
         $operatorIds = $operators->pluck('id')->all();
+        $startDateLocal = $startDate->copy()->timezone('Europe/Rome')->toDateString();
+        $endDateLocal = $endDate->copy()->timezone('Europe/Rome')->toDateString();
 
         $t = microtime(true);
             $allAssignedWorks = Work::query()
@@ -167,14 +178,14 @@ class OperatorStats extends Component
                 })
                 ->tap(fn (Builder $query) => $this->applyWorkFilters($query))
                 ->select('works.*', 'user_work.user_id as _operator_id')
-                ->with('workSuspensions')
+                ->with(['workSuspensions', 'workPhase'])
                 ->get()
                 ->groupBy('_operator_id');
 
             $allEarnedWorks = Work::query()
                 ->join('user_work', 'works.id', '=', 'user_work.work_id')
                 ->whereIn('user_work.user_id', $operatorIds)
-                ->whereBetween('works.completion_date', [$startDate->toDateString(), $endDate->toDateString()])
+                ->whereBetween('works.completion_date', [$startDateLocal, $endDateLocal])
                 ->tap(fn (Builder $query) => $this->applyWorkFilters($query))
                 ->select('works.*', 'user_work.user_id as _operator_id')
                 ->get()
@@ -182,7 +193,7 @@ class OperatorStats extends Component
 
             $allTimesheets = Timesheet::query()
                 ->whereIn('user_id', $operatorIds)
-                ->whereBetween('date', [$startDate->toDateString(), $endDate->toDateString()])
+                ->whereBetween('date', [$startDateLocal, $endDateLocal])
                 ->get()
                 ->groupBy('user_id');
 
@@ -372,9 +383,11 @@ class OperatorStats extends Component
     {
         $dayOptions = [];
         $weekOptions = [];
-        $cursor = $startDate->copy();
+        $rangeStart = $startDate->copy()->timezone('Europe/Rome')->startOfDay();
+        $rangeEnd = $endDate->copy()->timezone('Europe/Rome')->endOfDay();
+        $cursor = $rangeStart->copy();
 
-        while ($cursor->lte($endDate)) {
+        while ($cursor->lte($rangeEnd)) {
             $dayOptions[] = [
                 'value' => $cursor->toDateString(),
                 'label' => $cursor->format('d/m/Y'),
@@ -382,8 +395,8 @@ class OperatorStats extends Component
             $cursor->addDay();
         }
 
-        $weekCursor = $startDate->copy()->startOfWeek();
-        $weekEndBoundary = $endDate->copy()->endOfWeek();
+        $weekCursor = $rangeStart->copy()->startOfWeek();
+        $weekEndBoundary = $rangeEnd->copy()->endOfWeek();
         while ($weekCursor->lte($weekEndBoundary)) {
             $weekOptions[] = [
                 'value' => $weekCursor->toDateString(),
@@ -400,11 +413,11 @@ class OperatorStats extends Component
         $weekValues = array_column($weekOptions, 'value');
 
         if (! in_array($this->selectedDay, $dayValues, true)) {
-            $this->selectedDay = $endDate->copy()->toDateString();
+            $this->selectedDay = $rangeEnd->copy()->toDateString();
         }
 
         if (! in_array($this->selectedWeekStart, $weekValues, true)) {
-            $this->selectedWeekStart = $endDate->copy()->startOfWeek()->toDateString();
+            $this->selectedWeekStart = $rangeEnd->copy()->startOfWeek()->toDateString();
         }
 
         if ($this->viewMode === 'week') {

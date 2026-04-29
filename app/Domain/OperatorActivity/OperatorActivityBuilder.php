@@ -42,7 +42,13 @@ final class OperatorActivityBuilder
         $intervals = [];
 
         foreach ($timesheets as $timesheet) {
-            if (! $timesheet->entry_time) {
+            $entryTime = $timesheet->effectiveShiftEntryTime();
+
+            if (! $entryTime) {
+                continue;
+            }
+
+            if (! $timesheet->exit_time && ! $this->isTodayTimesheet($timesheet)) {
                 continue;
             }
 
@@ -53,10 +59,10 @@ final class OperatorActivityBuilder
             $interval = (new OperatorActivityInterval(
                 'presence',
                 'Turno',
-                $timesheet->entry_time->copy()->max($windowStart),
+                $entryTime->copy()->max($windowStart),
                 $end->min($windowEnd),
                 ['timesheet_date' => $timesheet->date?->toDateString()],
-            ))->withBounds($timesheet->entry_time->copy()->max($windowStart), $end->min($windowEnd));
+            ))->withBounds($entryTime->copy()->max($windowStart), $end->min($windowEnd));
 
             if ($interval) {
                 $intervals[] = $interval;
@@ -64,6 +70,11 @@ final class OperatorActivityBuilder
         }
 
         return new OperatorActivityCollection($intervals);
+    }
+
+    private function isTodayTimesheet(Timesheet $timesheet): bool
+    {
+        return $timesheet->date?->toDateString() === now('Europe/Rome')->toDateString();
     }
 
     private function breakIntervals(Collection $timesheets, Carbon $windowStart, Carbon $windowEnd): OperatorActivityCollection
@@ -103,20 +114,33 @@ final class OperatorActivityBuilder
                 continue;
             }
 
+            $workLabel = $this->workTimelineLabel($work);
             $intervals[] = new OperatorActivityInterval(
                 'raw_work',
-                'Lavoro: '.($work->wo_number ?? $work->id),
+                $workLabel,
                 $start,
                 $end,
                 [
                     'work_id' => $work->id,
-                    'work_label' => $work->wo_number ?? (string) $work->id,
+                    'work_label' => $workLabel,
                     'status' => $work->status,
                 ],
             );
         }
 
         return new OperatorActivityCollection($intervals);
+    }
+
+    private function workTimelineLabel(Work $work): string
+    {
+        $phase = $work->workPhase?->name ?: $work->phase;
+
+        return sprintf(
+            'Lavoro: %s - %s - %s',
+            $work->id ?? '-',
+            $work->ntw_scope ?: '-',
+            $phase ?: '-',
+        );
     }
 
     private function suspensionIntervals(Collection $works, Carbon $windowStart, Carbon $windowEnd): OperatorActivityCollection
@@ -154,21 +178,24 @@ final class OperatorActivityBuilder
 
         foreach ($this->rawWorkIntervals($works, $windowStart, $windowEnd)->all() as $interval) {
             $matchingWork = $works->first(fn (Work $work) => $work->id === ($interval->meta['work_id'] ?? null));
+
+            if (! $matchingWork || $matchingWork->status !== 'In Lavorazione') {
+                continue;
+            }
+
             $fragments = [$interval];
 
-            if ($matchingWork) {
-                foreach ($matchingWork->workSuspensions as $suspension) {
-                    $fragmentCollection = (new OperatorActivityCollection($fragments))->subtract(
-                        new OperatorActivityCollection([
-                            $this->toSuspensionInterval($matchingWork, $suspension, $windowStart, $windowEnd),
-                        ]),
-                    );
+            foreach ($matchingWork->workSuspensions as $suspension) {
+                $fragmentCollection = (new OperatorActivityCollection($fragments))->subtract(
+                    new OperatorActivityCollection([
+                        $this->toSuspensionInterval($matchingWork, $suspension, $windowStart, $windowEnd),
+                    ]),
+                );
 
-                    $fragments = array_values(array_filter(
-                        $fragmentCollection->all(),
-                        fn (?OperatorActivityInterval $fragment) => $fragment !== null,
-                    ));
-                }
+                $fragments = array_values(array_filter(
+                    $fragmentCollection->all(),
+                    fn (?OperatorActivityInterval $fragment) => $fragment !== null,
+                ));
             }
 
             foreach ($fragments as $fragment) {
@@ -230,8 +257,9 @@ final class OperatorActivityBuilder
                 $start = Carbon::parse($timesheet->date->toDateString().' 00:00:00', 'Europe/Rome')->setTimezone('UTC');
                 $end = Carbon::parse($timesheet->date->toDateString().' 23:59:59', 'Europe/Rome')->setTimezone('UTC');
             } else {
-                $start = $timesheet->entry_time
-                    ? $timesheet->entry_time->copy()
+                $leaveStartTime = $timesheet->effectiveLeaveStartTime();
+                $start = $leaveStartTime
+                    ? $leaveStartTime->copy()
                     : Carbon::parse($timesheet->date->toDateString().' 08:00:00', 'Europe/Rome')->setTimezone('UTC');
                 $end = $start->copy()->addSeconds((int) round(((float) $timesheet->leave_hours) * 3600));
             }
@@ -264,7 +292,7 @@ final class OperatorActivityBuilder
 
         foreach ($timesheets as $timesheet) {
             $events = [
-                ['type' => 'shift_start_marker', 'label' => 'Ingresso turno', 'timestamp' => $timesheet->entry_time],
+                ['type' => 'shift_start_marker', 'label' => 'Ingresso turno', 'timestamp' => $timesheet->effectiveShiftEntryTime()],
                 ['type' => 'break_start_marker', 'label' => 'Inizio pausa', 'timestamp' => $timesheet->break_start],
                 ['type' => 'break_end_marker', 'label' => 'Fine pausa', 'timestamp' => $timesheet->break_end],
                 ['type' => 'shift_end_marker', 'label' => 'Uscita turno', 'timestamp' => $timesheet->exit_time],

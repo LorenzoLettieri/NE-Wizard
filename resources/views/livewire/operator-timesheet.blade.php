@@ -20,11 +20,11 @@
             <div class="d-flex flex-wrap gap-2">
                 <!-- Shift/Break Actions: Desktop Only -->
                 <div class="d-none d-md-flex flex-wrap gap-2">
-                    <button wire:click="openActionModal('start_shift')" class="btn btn-secondary" @if($today && $today->entry_time) disabled @endif>
+                    <button wire:click="openActionModal('start_shift')" class="btn btn-secondary" @if($today && $today->effectiveShiftEntryTime()) disabled @endif>
                         <i class="bi bi-play-circle me-1"></i> Inizio Turno
                     </button>
 
-                    <button wire:click="openActionModal('start_break')" class="btn btn-secondary" @if(!$today || ($today && $today->break_start) || ($today && !$today->entry_time) || ($today && $today->exit_time))
+                    <button wire:click="openActionModal('start_break')" class="btn btn-secondary" @if(!$today || ($today && $today->break_start) || ($today && !$today->effectiveShiftEntryTime()) || ($today && $today->exit_time))
                     disabled @endif>
                         <i class="bi bi-pause-circle me-1"></i> Inizio Pausa
                     </button>
@@ -34,7 +34,7 @@
                         <i class="bi bi-play-circle-fill me-1"></i> Fine Pausa
                     </button>
 
-                    <button wire:click="openActionModal('end_shift')" class="btn btn-secondary" @if(!$today || ($today && $today->exit_time) || ($today && !$today->entry_time)) disabled @endif>
+                    <button wire:click="openActionModal('end_shift')" class="btn btn-secondary" @if(!$today || ($today && $today->exit_time) || ($today && !$today->effectiveShiftEntryTime())) disabled @endif>
                         <i class="bi bi-stop-circle me-1"></i> Fine Turno
                     </button>
 
@@ -89,7 +89,7 @@
                             <tr>
                                 <td class="px-4 fw-medium">{{ $ts->date->format('d/m/Y') }}</td>
                                 <td>
-                                    {{ $ts->entry_time ? $ts->entry_time->timezone('Europe/Rome')->format('H:i') : '-' }}
+                                    {{ $ts->effectiveShiftEntryTime() ? $ts->effectiveShiftEntryTime()->timezone('Europe/Rome')->format('H:i') : '-' }}
                                 </td>
                                 <td>
                                     {{ $ts->break_start ? $ts->break_start->timezone('Europe/Rome')->format('H:i') : '-' }}
@@ -104,6 +104,9 @@
                                     @if($ts->leave_hours > 0)
                                         {{ round($ts->leave_hours, 2) }}h <small
                                             class="text-muted">({{ $ts->leave_type }})</small>
+                                        @if($ts->effectiveLeaveStartTime())
+                                            <small class="text-muted d-block">dalle {{ $ts->effectiveLeaveStartTime()->timezone('Europe/Rome')->format('H:i') }}</small>
+                                        @endif
                                     @else
                                         -
                                     @endif
@@ -118,8 +121,9 @@
                                 <td class="fw-bold text-end px-4">
                                     @php
                                         $totalMinutes = 0;
-                                        if ($ts->entry_time && $ts->exit_time) {
-                                            $totalMinutes = $ts->entry_time->diffInMinutes($ts->exit_time);
+                                        $shiftEntry = $ts->effectiveShiftEntryTime();
+                                        if ($shiftEntry && $ts->exit_time) {
+                                            $totalMinutes = $shiftEntry->diffInMinutes($ts->exit_time);
                                             if ($ts->break_start && $ts->break_end) {
                                                 $totalMinutes -= round($ts->break_start->diffInMinutes($ts->break_end));
                                             }
