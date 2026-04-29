@@ -7,6 +7,8 @@ use Carbon\Carbon;
 
 final class OperatorActivitySummary
 {
+    private ?array $cachedDailyBreakdown = null;
+
     public function __construct(
         public readonly OperatorActivityCollection $presence,
         public readonly OperatorActivityCollection $breaks,
@@ -95,6 +97,10 @@ final class OperatorActivitySummary
 
     public function dailyBreakdown(string $timezone = 'Europe/Rome'): array
     {
+        if ($this->cachedDailyBreakdown !== null) {
+            return $this->cachedDailyBreakdown;
+        }
+
         $dayMap = [];
         $collections = [
             'presence' => $this->presence,
@@ -124,7 +130,7 @@ final class OperatorActivitySummary
 
         ksort($dayMap);
 
-        return array_map(function (array $day): array {
+        $result = array_map(function (array $day): array {
             $presenceSeconds = $day['presence_seconds'];
             $activeWorkSeconds = $day['active_work_seconds'];
 
@@ -148,6 +154,8 @@ final class OperatorActivitySummary
                     : 0.0,
             ];
         }, array_values($dayMap));
+
+        return $this->cachedDailyBreakdown = $result;
     }
 
     public function aggregateBy(string $unit): array

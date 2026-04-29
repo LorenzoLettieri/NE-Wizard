@@ -12,8 +12,11 @@ use App\Models\WorkPhase;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
+use Livewire\Attributes\Lazy;
 use Livewire\Component;
 
+#[Lazy]
 class OperatorStats extends Component
 {
     private const MONTHLY_TARGET = 3500.0;
@@ -41,6 +44,11 @@ class OperatorStats extends Component
     public array $timelineData = [];
 
     public array $timelineConfig = [];
+
+    public function placeholder(): string
+    {
+        return '<div class="d-flex justify-content-center align-items-center py-5"><div class="spinner-border" role="status"><span class="visually-hidden">Caricamento...</span></div></div>';
+    }
 
     public function mount()
     {
@@ -136,7 +144,7 @@ class OperatorStats extends Component
         $operatorIds = $operators->pluck('id')->all();
 
         $cacheKey = implode(':', [
-            'operator_stats_batch',
+            'operator_stats_batch_v2',
             implode(',', $operatorIds),
             $startDate->toDateString(),
             $endDate->toDateString(),
@@ -146,7 +154,16 @@ class OperatorStats extends Component
             $this->ntwScope ?: '*',
         ]);
 
-        [$rowsData, $activitiesById] = Cache::remember($cacheKey, now()->addMinutes(5), function () use ($operators, $operatorIds, $startDate, $endDate): array {
+        [$rowsData] = Cache::remember($cacheKey, now()->addMinutes(5), function () use ($operators, $operatorIds, $startDate, $endDate): array {
+            $t = microtime(true);
+            // ... batch queries ...
+            Log::debug('queries: ' . round((microtime(true) - $t) * 1000) . 'ms');
+
+            $t = microtime(true);
+            // ... foreach operators loop ...
+            Log::debug('computation: ' . round((microtime(true) - $t) * 1000) . 'ms');
+
+
             $allAssignedWorks = Work::query()
                 ->join('user_work', 'works.id', '=', 'user_work.work_id')
                 ->whereIn('user_work.user_id', $operatorIds)
@@ -183,7 +200,6 @@ class OperatorStats extends Component
                 ->groupBy('user_id');
 
             $rowsData = [];
-            $activitiesById = [];
 
             foreach ($operators as $operator) {
                 $assignedWorks = $allAssignedWorks->get($operator->id, collect());
@@ -211,6 +227,10 @@ class OperatorStats extends Component
                 $targetPercentage = self::MONTHLY_TARGET > 0
                     ? round(($earnedAmount / self::MONTHLY_TARGET) * 100, 1)
                     : 0.0;
+
+                // Pre-format full-range timeline as plain int arrays — no Carbon objects, fast to serialize
+                $fullRangeSeries = app(OperatorActivityChartFormatter::class)
+                    ->forOperator($operator, $activity, $startDate, $endDate);
 
                 $rowsData[] = [
                     'operator_id' => $operator->id,
@@ -249,19 +269,41 @@ class OperatorStats extends Component
                     'target_percentage' => $targetPercentage,
                     'target_bar_width' => min(100, $targetPercentage),
                     'target_class' => $this->targetClass($targetPercentage),
+                    '_series' => $fullRangeSeries,
                 ];
-
-                $activitiesById[$operator->id] = $activity;
             }
 
-            return [$rowsData, $activitiesById];
+            return [$rowsData];
         });
 
+        // Reconstruct timeline closures from cached plain arrays — no Carbon deserialization needed
         foreach ($rowsData as &$rowData) {
-            $operator = $operators->find($rowData['operator_id']);
-            $activity = $activitiesById[$rowData['operator_id']];
-            $rowData['timeline'] = fn (Carbon $viewWindowStart, Carbon $viewWindowEnd): array => app(OperatorActivityChartFormatter::class)
-                ->forOperator($operator, $activity, $viewWindowStart, $viewWindowEnd);
+            $series = $rowData['_series'];
+            unset($rowData['_series']);
+            $rowData['timeline'] = function (Carbon $windowStart, Carbon $windowEnd) use ($series): array {
+                $wsMs = $windowStart->getTimestamp() * 1000;
+                $weMs = $windowEnd->getTimestamp() * 1000;
+                $result = [];
+                foreach ($series as $s) {
+                    $clippedData = [];
+                    foreach ($s['data'] as $point) {
+                        [$startMs, $endMs] = $point['y'];
+                        if ($startMs >= $weMs || $endMs <= $wsMs) {
+                            continue;
+                        }
+                        $clippedStart = max($startMs, $wsMs);
+                        $clippedEnd = min($endMs, $weMs);
+                        $point['y'] = [$clippedStart, $clippedEnd];
+                        $point['meta']['duration_label'] = Work::formatDuration((int) (($clippedEnd - $clippedStart) / 1000));
+                        $clippedData[] = $point;
+                    }
+                    if (! empty($clippedData)) {
+                        $result[] = ['name' => $s['name'], 'color' => $s['color'], 'data' => $clippedData];
+                    }
+                }
+
+                return $result;
+            };
         }
         unset($rowData);
 
