@@ -60,6 +60,10 @@ class OperatorStats extends Component
 
     public function render()
     {
+        set_time_limit(300);
+
+        $t0 = microtime(true);
+
         $startDate = Carbon::parse($this->startDate)->startOfDay();
         $endDate = Carbon::parse($this->endDate)->endOfDay();
         [$viewWindowStart, $viewWindowEnd, $dayOptions, $weekOptions] = $this->resolveTimelineWindow($startDate, $endDate);
@@ -70,16 +74,26 @@ class OperatorStats extends Component
             ->orderBy('name')
             ->get();
 
+        Log::debug('render: setup ' . round((microtime(true) - $t0) * 1000) . 'ms');
+        $t0 = microtime(true);
+
         $rows = $this->buildAllRows($operators, $startDate, $endDate);
 
+        Log::debug('render: buildAllRows ' . round((microtime(true) - $t0) * 1000) . 'ms, operators=' . count($rows));
+        $t0 = microtime(true);
+
         $this->timelineData = $this->formatTimelineData($rows, $viewWindowStart, $viewWindowEnd);
+
+        Log::debug('render: formatTimelineData ' . round((microtime(true) - $t0) * 1000) . 'ms, series=' . count($this->timelineData));
+        $t0 = microtime(true);
+
         $this->timelineConfig = [
             'mode' => $this->viewMode,
             'min' => $viewWindowStart->getTimestamp() * 1000,
             'max' => $viewWindowEnd->getTimestamp() * 1000,
         ];
 
-        return view('livewire.operator-stats', [
+        $view = view('livewire.operator-stats', [
             'rows' => $rows,
             'economicSummary' => $this->buildEconomicSummary($rows),
             'canViewEconomicReport' => $canViewEconomicReport,
@@ -100,6 +114,10 @@ class OperatorStats extends Component
             'timelineWindowLabel' => $this->timelineWindowLabel($viewWindowStart, $viewWindowEnd),
             'timelineConfig' => $this->timelineConfig,
         ]);
+
+        Log::debug('render: view() ' . round((microtime(true) - $t0) * 1000) . 'ms');
+
+        return $view;
     }
 
     private function formatTimelineData(array $rows, Carbon $viewWindowStart, Carbon $viewWindowEnd): array
