@@ -175,6 +175,47 @@ final class OperatorActivityCollection
         return new self($result);
     }
 
+    /**
+     * Collapses all intervals into a single deduplicated timeline ignoring type/label,
+     * so overlapping intervals from different works are not double-counted.
+     */
+    public function deduplicateTimeline(): self
+    {
+        $sorted = collect($this->intervals)
+            ->sortBy(fn (OperatorActivityInterval $i) => $i->start->getTimestamp())
+            ->values();
+
+        $merged = [];
+        $current = null;
+
+        foreach ($sorted as $interval) {
+            if ($current === null) {
+                $current = $interval;
+                continue;
+            }
+
+            if ($current->overlaps($interval) || $current->touches($interval)) {
+                $current = new OperatorActivityInterval(
+                    $current->type,
+                    $current->label,
+                    $current->start,
+                    $current->end->max($interval->end),
+                    $current->meta,
+                );
+                continue;
+            }
+
+            $merged[] = $current;
+            $current = $interval;
+        }
+
+        if ($current !== null) {
+            $merged[] = $current;
+        }
+
+        return new self($merged);
+    }
+
     public function totalSecondsByType(string $type): int
     {
         return (int) collect($this->intervals)

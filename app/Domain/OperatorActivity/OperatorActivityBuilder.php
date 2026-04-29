@@ -176,37 +176,52 @@ final class OperatorActivityBuilder
     {
         $intervals = [];
 
-        foreach ($this->rawWorkIntervals($works, $windowStart, $windowEnd)->all() as $interval) {
-            $matchingWork = $works->first(fn (Work $work) => $work->id === ($interval->meta['work_id'] ?? null));
-
-            if (! $matchingWork || $matchingWork->status !== 'In Lavorazione') {
+        foreach ($works as $work) {
+            if (! $work->acception_date || $work->status === 'KO') {
                 continue;
             }
 
-            $fragments = [$interval];
+            $workLabel = $this->workTimelineLabel($work);
+            $meta = ['work_id' => $work->id, 'work_label' => $workLabel, 'status' => $work->status];
 
-            foreach ($matchingWork->workSuspensions as $suspension) {
+            $inLavorazioneHistory = $work->statusHistory->where('status', 'In Lavorazione')->values();
+
+            if ($inLavorazioneHistory->isNotEmpty()) {
+                // Usa la storia precisa registrata dall'observer
+                $baseFragments = [];
+                foreach ($inLavorazioneHistory as $h) {
+                    $start = $h->started_at->copy()->max($windowStart);
+                    $end = ($h->ended_at ?? now())->copy()->min($windowEnd);
+                    if ($end->lte($start)) {
+                        continue;
+                    }
+                    $baseFragments[] = new OperatorActivityInterval('active_work', $workLabel, $start, $end, $meta);
+                }
+            } else {
+                // Fallback: usa acception_date → delivery_date sottraendo le sospensioni
+                $start = $work->acception_date->copy()->max($windowStart);
+                $end = ($work->delivery_date ?? now())->copy()->min($windowEnd);
+                if ($end->lte($start)) {
+                    continue;
+                }
+                $baseFragments = [new OperatorActivityInterval('active_work', $workLabel, $start, $end, $meta)];
+            }
+
+            // Sottrae le sospensioni (no-op se la history è già precisa, corretto per il backfill)
+            $fragments = $baseFragments;
+            foreach ($work->workSuspensions as $suspension) {
                 $fragmentCollection = (new OperatorActivityCollection($fragments))->subtract(
                     new OperatorActivityCollection([
-                        $this->toSuspensionInterval($matchingWork, $suspension, $windowStart, $windowEnd),
+                        $this->toSuspensionInterval($work, $suspension, $windowStart, $windowEnd),
                     ]),
                 );
-
                 $fragments = array_values(array_filter(
                     $fragmentCollection->all(),
                     fn (?OperatorActivityInterval $fragment) => $fragment !== null,
                 ));
             }
 
-            foreach ($fragments as $fragment) {
-                $intervals[] = new OperatorActivityInterval(
-                    'active_work',
-                    $interval->label,
-                    $fragment->start,
-                    $fragment->end,
-                    $interval->meta,
-                );
-            }
+            array_push($intervals, ...$fragments);
         }
 
         return new OperatorActivityCollection($intervals);

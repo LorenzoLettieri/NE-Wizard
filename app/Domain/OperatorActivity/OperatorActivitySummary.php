@@ -55,7 +55,7 @@ final class OperatorActivitySummary
 
     public function activeWorkSeconds(): int
     {
-        return $this->activeWork->totalSeconds();
+        return $this->activeWork->deduplicateTimeline()->totalSeconds();
     }
 
     public function suspensionSeconds(): int
@@ -122,7 +122,10 @@ final class OperatorActivitySummary
                     'suspension_seconds' => 0,
                 ];
 
-                $seconds = (new OperatorActivityCollection($intervals))->totalSeconds();
+                $collection = new OperatorActivityCollection($intervals);
+                $seconds = $key === 'active_work'
+                    ? $collection->deduplicateTimeline()->totalSeconds()
+                    : $collection->totalSeconds();
                 $dayMap[$dateKey]["{$key}_seconds"] += $seconds;
             }
         }

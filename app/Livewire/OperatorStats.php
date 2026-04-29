@@ -178,7 +178,7 @@ class OperatorStats extends Component
                 })
                 ->tap(fn (Builder $query) => $this->applyWorkFilters($query))
                 ->select('works.*', 'user_work.user_id as _operator_id')
-                ->with(['workSuspensions', 'workPhase'])
+                ->with(['workSuspensions', 'workPhase', 'statusHistory'])
                 ->get()
                 ->groupBy('_operator_id');
 

@@ -98,6 +98,11 @@ class Work extends Model
         return $this->hasMany(WorkSuspension::class)->orderBy('started_at');
     }
 
+    public function statusHistory(): HasMany
+    {
+        return $this->hasMany(WorkStatusHistory::class)->orderBy('started_at');
+    }
+
     public function getTotalSuspensionSecondsAttribute(): int
     {
         if (! $this->acception_date || ! $this->delivery_date) {
