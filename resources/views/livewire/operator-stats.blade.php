@@ -161,12 +161,11 @@
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
                 <div>
                     <h5 class="mb-1">Timeline Attività</h5>
-                    <p class="text-muted small mb-0">Presenza, lavoro attivo, sospensioni, pause, permessi, straordinari e timbrature di turno/pausa.</p>
+                    <p class="text-muted small mb-0">Presenza, lavoro attivo effettivo, pause, permessi, straordinari e timbrature di turno/pausa.</p>
                 </div>
                 <div class="operator-activity-legend d-flex flex-wrap gap-2 small">
                     <span><i style="background:#0d6efd"></i> Presenza</span>
                     <span><i style="background:#198754"></i> Lavoro attivo</span>
-                    <span><i style="background:#ffc107"></i> Sospensione</span>
                     <span><i style="background:#6c757d"></i> Pausa</span>
                     <span><i style="background:#dc3545"></i> Permesso/Ferie</span>
                     <span><i style="background:#6610f2"></i> Straordinario</span>
@@ -547,20 +546,14 @@
 
             renderChart(@json(['series' => $timelineData, 'config' => $timelineConfig]));
 
-            Livewire.hook('morph.updated', ({ component }) => {
-                if (component.name === 'operator-stats') {
-                    renderChart({
-                        series: @this.get('timelineData'),
-                        config: @this.get('timelineConfig')
-                    });
-                }
+            window.addEventListener('timeline-data', (e) => {
+                renderChart({ series: e.detail.series, config: e.detail.config });
             });
 
             new MutationObserver(() => {
-                renderChart({
-                    series: @this.get('timelineData'),
-                    config: @this.get('timelineConfig')
-                }, true);
+                if (lastPayload) {
+                    renderChart(JSON.parse(lastPayload), true);
+                }
             }).observe(document.documentElement, {
                 attributes: true,
                 attributeFilter: ['data-bs-theme']

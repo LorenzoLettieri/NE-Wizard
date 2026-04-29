@@ -11,12 +11,9 @@ use App\Models\Work;
 use App\Models\WorkPhase;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
-use Livewire\Attributes\Lazy;
 use Livewire\Component;
 
-#[Lazy]
 class OperatorStats extends Component
 {
     private const MONTHLY_TARGET = 3500.0;
@@ -41,14 +38,6 @@ class OperatorStats extends Component
 
     public $selectedWeekStart = '';
 
-    public array $timelineData = [];
-
-    public array $timelineConfig = [];
-
-    public function placeholder(): string
-    {
-        return '<div class="d-flex justify-content-center align-items-center py-5"><div class="spinner-border" role="status"><span class="visually-hidden">Caricamento...</span></div></div>';
-    }
 
     public function mount()
     {
@@ -60,8 +49,6 @@ class OperatorStats extends Component
 
     public function render()
     {
-        set_time_limit(300);
-
         $t0 = microtime(true);
 
         $startDate = Carbon::parse($this->startDate)->startOfDay();
@@ -82,16 +69,18 @@ class OperatorStats extends Component
         Log::debug('render: buildAllRows ' . round((microtime(true) - $t0) * 1000) . 'ms, operators=' . count($rows));
         $t0 = microtime(true);
 
-        $this->timelineData = $this->formatTimelineData($rows, $viewWindowStart, $viewWindowEnd);
+        $timelineData = $this->formatTimelineData($rows, $viewWindowStart, $viewWindowEnd);
 
-        Log::debug('render: formatTimelineData ' . round((microtime(true) - $t0) * 1000) . 'ms, series=' . count($this->timelineData));
+        Log::debug('render: formatTimelineData ' . round((microtime(true) - $t0) * 1000) . 'ms, series=' . count($timelineData));
         $t0 = microtime(true);
 
-        $this->timelineConfig = [
+        $timelineConfig = [
             'mode' => $this->viewMode,
             'min' => $viewWindowStart->getTimestamp() * 1000,
             'max' => $viewWindowEnd->getTimestamp() * 1000,
         ];
+
+        $this->dispatch('timeline-data', series: $timelineData, config: $timelineConfig);
 
         $view = view('livewire.operator-stats', [
             'rows' => $rows,
@@ -103,7 +92,7 @@ class OperatorStats extends Component
             'workPhaseOptions' => WorkPhase::orderBy('name')->get(['id', 'name']),
             'ntwScopeOptions' => $this->ntwScopeOptions(),
             'statusOptions' => $this->statusOptions(),
-            'timelineData' => $this->timelineData,
+            'timelineData' => $timelineData,
 
             'dayOptions' => $dayOptions,
             'weekOptions' => $weekOptions,
@@ -112,7 +101,7 @@ class OperatorStats extends Component
                 ['value' => 'week', 'label' => 'Settimanale'],
             ],
             'timelineWindowLabel' => $this->timelineWindowLabel($viewWindowStart, $viewWindowEnd),
-            'timelineConfig' => $this->timelineConfig,
+            'timelineConfig' => $timelineConfig,
         ]);
 
         Log::debug('render: view() ' . round((microtime(true) - $t0) * 1000) . 'ms');
@@ -161,27 +150,7 @@ class OperatorStats extends Component
 
         $operatorIds = $operators->pluck('id')->all();
 
-        $cacheKey = implode(':', [
-            'operator_stats_batch_v2',
-            implode(',', $operatorIds),
-            $startDate->toDateString(),
-            $endDate->toDateString(),
-            $this->status ?: '*',
-            $this->companyId ?: '*',
-            $this->workPhaseId ?: '*',
-            $this->ntwScope ?: '*',
-        ]);
-
-        [$rowsData] = Cache::remember($cacheKey, now()->addMinutes(5), function () use ($operators, $operatorIds, $startDate, $endDate): array {
-            $t = microtime(true);
-            // ... batch queries ...
-            Log::debug('queries: ' . round((microtime(true) - $t) * 1000) . 'ms');
-
-            $t = microtime(true);
-            // ... foreach operators loop ...
-            Log::debug('computation: ' . round((microtime(true) - $t) * 1000) . 'ms');
-
-
+        $t = microtime(true);
             $allAssignedWorks = Work::query()
                 ->join('user_work', 'works.id', '=', 'user_work.work_id')
                 ->whereIn('user_work.user_id', $operatorIds)
@@ -216,6 +185,9 @@ class OperatorStats extends Component
                 ->whereBetween('date', [$startDate->toDateString(), $endDate->toDateString()])
                 ->get()
                 ->groupBy('user_id');
+
+            Log::debug('queries: ' . round((microtime(true) - $t) * 1000) . 'ms');
+            $t = microtime(true);
 
             $rowsData = [];
 
@@ -291,10 +263,8 @@ class OperatorStats extends Component
                 ];
             }
 
-            return [$rowsData];
-        });
+            Log::debug('computation: ' . round((microtime(true) - $t) * 1000) . 'ms');
 
-        // Reconstruct timeline closures from cached plain arrays — no Carbon deserialization needed
         foreach ($rowsData as &$rowData) {
             $series = $rowData['_series'];
             unset($rowData['_series']);
@@ -303,6 +273,10 @@ class OperatorStats extends Component
                 $weMs = $windowEnd->getTimestamp() * 1000;
                 $result = [];
                 foreach ($series as $s) {
+                    if (($s['name'] ?? '') === 'Sospensione') {
+                        continue;
+                    }
+
                     $clippedData = [];
                     foreach ($s['data'] as $point) {
                         [$startMs, $endMs] = $point['y'];

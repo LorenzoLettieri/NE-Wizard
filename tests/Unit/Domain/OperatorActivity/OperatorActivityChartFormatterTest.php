@@ -35,7 +35,15 @@ class OperatorActivityChartFormatterTest extends TestCase
                     ['work_label' => 'WO-15']
                 ),
             ]),
-            suspensions: new OperatorActivityCollection(),
+            suspensions: new OperatorActivityCollection([
+                new OperatorActivityInterval(
+                    'suspension',
+                    'Sospensione: WO-15',
+                    Carbon::parse('2026-04-10 08:00:00', 'UTC'),
+                    Carbon::parse('2026-04-10 18:00:00', 'UTC'),
+                    ['work_label' => 'WO-15']
+                ),
+            ]),
             overtime: new OperatorActivityCollection(),
             leaves: new OperatorActivityCollection(),
             rawWork: new OperatorActivityCollection(),
@@ -80,15 +88,18 @@ class OperatorActivityChartFormatterTest extends TestCase
 
         $presenceSeries = collect($series)->firstWhere('name', 'Presenza');
         $activeWorkSeries = collect($series)->firstWhere('name', 'Lavoro attivo');
+        $suspensionSeries = collect($series)->firstWhere('name', 'Sospensione');
         $entrySeries = collect($series)->firstWhere('name', 'Ingresso turno');
         $breakStartSeries = collect($series)->firstWhere('name', 'Inizio pausa');
 
         $this->assertNotNull($presenceSeries);
         $this->assertNotNull($activeWorkSeries);
+        $this->assertNull($suspensionSeries);
         $this->assertNotNull($entrySeries);
         $this->assertNotNull($breakStartSeries);
         $this->assertSame('#0d6efd', $presenceSeries['color']);
         $this->assertSame('#198754', $activeWorkSeries['color']);
+        $this->assertSame('#0dcaf0', $breakStartSeries['color']);
         $this->assertTrue($entrySeries['data'][0]['meta']['is_event']);
         $this->assertSame(
             Carbon::parse('2026-04-10 07:00:00', 'UTC')->getTimestamp() * 1000,

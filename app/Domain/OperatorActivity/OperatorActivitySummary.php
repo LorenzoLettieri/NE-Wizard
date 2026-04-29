@@ -87,7 +87,6 @@ final class OperatorActivitySummary
         return [
             'presence' => $this->presence->all(),
             'active_work' => $this->activeWork->all(),
-            'suspension' => $this->suspensions->all(),
             'break' => $this->breaks->all(),
             'leave' => $this->leaves->all(),
             'overtime' => $this->overtime->all(),

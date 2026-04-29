@@ -2,7 +2,6 @@
 
 namespace Tests\Unit;
 
-use App\Livewire\OperatorStats;
 use Carbon\Carbon;
 use ReflectionClass;
 use Tests\TestCase;
@@ -33,8 +32,8 @@ class OperatorStatsViewTest extends TestCase
 
         $this->assertStringContainsString("function renderChart(payload, force = false)", $html);
         $this->assertStringContainsString("if (!force && serialized === lastPayload && chart)", $html);
-        $this->assertStringContainsString("config: @this.get('timelineConfig')", $html);
-        $this->assertStringContainsString("}, true);", $html);
+        $this->assertStringContainsString("window.addEventListener('timeline-data'", $html);
+        $this->assertStringContainsString("renderChart(JSON.parse(lastPayload), true)", $html);
     }
 
     public function test_operator_stats_view_exposes_chart_mode_and_period_selectors(): void
@@ -46,23 +45,28 @@ class OperatorStatsViewTest extends TestCase
         $this->assertStringContainsString('wire:model.live="selectedWeekStart"', $html);
     }
 
-    public function test_operator_stats_exposes_chart_payload_as_livewire_state(): void
+    public function test_operator_stats_chart_legend_excludes_suspension_from_timeline(): void
     {
-        $reflection = new ReflectionClass(OperatorStats::class);
+        $html = file_get_contents(resource_path('views/livewire/operator-stats.blade.php'));
 
-        $this->assertTrue($reflection->hasProperty('timelineData'));
-        $this->assertTrue($reflection->getProperty('timelineData')->isPublic());
-        $this->assertTrue($reflection->hasProperty('timelineConfig'));
-        $this->assertTrue($reflection->getProperty('timelineConfig')->isPublic());
+        $this->assertStringNotContainsString('background:#ffc107', $html);
+    }
+
+    public function test_operator_stats_does_not_cache_timeline_rows(): void
+    {
+        $source = file_get_contents(app_path('Livewire/OperatorStats.php'));
+
+        $this->assertStringNotContainsString('Cache::remember', $source);
+        $this->assertStringNotContainsString('operator_stats_batch', $source);
     }
 
     public function test_daily_timeline_window_uses_rome_business_hours(): void
     {
-        $component = new OperatorStats();
+        $component = new \App\Livewire\OperatorStats();
         $component->viewMode = 'day';
         $component->selectedDay = '2026-04-10';
 
-        $method = (new ReflectionClass(OperatorStats::class))->getMethod('resolveTimelineWindow');
+        $method = (new ReflectionClass(\App\Livewire\OperatorStats::class))->getMethod('resolveTimelineWindow');
         $method->setAccessible(true);
 
         [$start, $end] = $method->invoke(

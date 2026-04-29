@@ -207,7 +207,11 @@ final class OperatorActivityCollection
                     $days[$dateKey][] = $slice;
                 }
 
-                $currentStart = $sliceEnd;
+                // Advance to the start of the next day in the target timezone.
+                // Using $sliceEnd here causes an infinite loop when $currentStart lands
+                // at 23:59:59 local time: endOfDay() returns the same instant, so
+                // $sliceEnd never moves forward.
+                $currentStart = $localStart->copy()->addDay()->startOfDay()->setTimezone('UTC');
             }
         }
 
