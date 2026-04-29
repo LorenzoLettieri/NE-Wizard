@@ -165,11 +165,11 @@
                 </div>
                 <div class="operator-activity-legend d-flex flex-wrap gap-2 small">
                     <span><i style="background:#0d6efd"></i> Presenza</span>
-                    <span><i style="background:#198754"></i> Lavoro attivo</span>
-                    <span><i style="background:#6c757d"></i> Pausa</span>
+                    <span><i style="background:#fd7e14"></i> Lavorazioni</span>
+                    <span><i style="background:#198754"></i> Tempi morti</span>
                     <span><i style="background:#dc3545"></i> Permesso/Ferie</span>
                     <span><i style="background:#6610f2"></i> Straordinario</span>
-                    <span><i style="background:#0dcaf0"></i> Timbrature</span>
+                    <span><i style="background:#0d6efd"></i> Timbrature</span>
                 </div>
             </div>
             <div class="row g-3 align-items-end mb-3">
@@ -461,6 +461,11 @@
                             rangeBarGroupRows: true,
                             barHeight: '70%'
                         }
+                    },
+                    stroke: {
+                        show: true,
+                        width: 1,
+                        colors: [theme.card]
                     },
                     xaxis: {
                         type: 'datetime',

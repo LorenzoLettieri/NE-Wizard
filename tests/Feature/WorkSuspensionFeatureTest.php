@@ -399,6 +399,8 @@ class WorkSuspensionFeatureTest extends TestCase
             'status' => 'Consegnato',
             'acception_date' => Carbon::parse('2026-03-31 08:00:00', 'UTC'),
             'delivery_date' => Carbon::parse('2026-03-31 14:00:00', 'UTC'),
+            'unit_rate' => 12.50,
+            'accounting_amount' => 50.00,
             'created_at' => Carbon::parse('2026-03-31 07:30:00', 'UTC'),
             'updated_at' => Carbon::parse('2026-03-31 14:00:00', 'UTC'),
         ]);
@@ -416,7 +418,11 @@ class WorkSuspensionFeatureTest extends TestCase
         $export = new WorksExport('created_at', '2026-03-31', '2026-03-31');
 
         $this->assertContains('Tempo effettivo di lavorazione', $export->headings());
-        $this->assertSame('4h', $export->map($work)[18]);
+        $this->assertContains('Importo contabilizzato', $export->headings());
+        $this->assertContains('Tariffa unitaria', $export->headings());
+        $this->assertSame(50.0, $export->map($work)[10]);
+        $this->assertSame(12.5, $export->map($work)[11]);
+        $this->assertSame('4h', $export->map($work)[20]);
 
         Livewire::test(OperatorStats::class)
             ->set('startDate', '2026-03-01')

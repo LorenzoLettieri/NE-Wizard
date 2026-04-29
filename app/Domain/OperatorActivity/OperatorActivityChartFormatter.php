@@ -9,15 +9,15 @@ use Carbon\Carbon;
 final class OperatorActivityChartFormatter
 {
     private const TYPE_CONFIG = [
-        'presence' => ['name' => 'Presenza', 'color' => '#0d6efd'],
-        'active_work' => ['name' => 'Lavoro attivo', 'color' => '#198754'],
-        'break' => ['name' => 'Pausa', 'color' => '#6c757d'],
+        'presence' => ['name' => 'Presenza', 'color' => '#73A437'],
+        'active_work' => ['name' => 'Lavorazioni', 'color' => '#faad50'],
+        'break' => ['name' => 'Tempi morti', 'color' => '#466db6'],
         'leave' => ['name' => 'Permesso/Ferie', 'color' => '#dc3545'],
         'overtime' => ['name' => 'Straordinario', 'color' => '#6610f2'],
-        'shift_start_marker' => ['name' => 'Ingresso turno', 'color' => '#0dcaf0'],
-        'break_start_marker' => ['name' => 'Inizio pausa', 'color' => '#0dcaf0'],
-        'break_end_marker' => ['name' => 'Fine pausa', 'color' => '#0dcaf0'],
-        'shift_end_marker' => ['name' => 'Uscita turno', 'color' => '#0dcaf0'],
+        'shift_start_marker' => ['name' => 'Ingresso turno', 'color' => '#213E73'],
+        'break_start_marker' => ['name' => 'Inizio pausa', 'color' => '#213E73'],
+        'break_end_marker' => ['name' => 'Fine pausa', 'color' => '#213E73'],
+        'shift_end_marker' => ['name' => 'Uscita turno', 'color' => '#213E73'],
     ];
 
     public function forOperator(

@@ -57,21 +57,23 @@ class WorksExport implements FromQuery, WithMapping, WithHeadings, ShouldAutoSiz
             'Tipo',                // H
             'Fase',                // I
             'N.Roe',               // J
-            'Network',             // K
-            'WO',                  // L
-            'UNICA',               // M
-            'AO/CNO',              // N
-            'DAPHNE',              // O
-            'Operatori Assegnati', // P
-            'Data PiC',            // Q (acception_date)
-            'Data Consegna',       // R (delivery_date)
-            'Tempo effettivo di lavorazione', // S
-            'Data FL',             // T (completion_date)
-            'Data In',             // U (date_in_str)
-            'Data Out',            // V (date_out_str)
-            'Assistente Impresa',  // W
-            'Note',                // X
-            'Storico sospensioni', // Y
+            'Importo contabilizzato', // K
+            'Tariffa unitaria',    // L
+            'Network',             // M
+            'WO',                  // N
+            'UNICA',               // O
+            'AO/CNO',              // P
+            'DAPHNE',              // Q
+            'Operatori Assegnati', // R
+            'Data PiC',            // S (acception_date)
+            'Data Consegna',       // T (delivery_date)
+            'Tempo effettivo di lavorazione', // U
+            'Data FL',             // V (completion_date)
+            'Data In',             // W (date_in_str)
+            'Data Out',            // X (date_out_str)
+            'Assistente Impresa',  // Y
+            'Note',                // Z
+            'Storico sospensioni', // AA
         ];
     }
 
@@ -90,6 +92,8 @@ class WorksExport implements FromQuery, WithMapping, WithHeadings, ShouldAutoSiz
             $work->type,                            // Tipo
             $work->workPhase?->name ?? $work->phase, // Fase
             $work->nroe,                            // N.Roe
+            $work->accounting_amount !== null ? (float) $work->accounting_amount : null, // Importo contabilizzato
+            $work->unit_rate !== null ? (float) $work->unit_rate : null, // Tariffa unitaria
             $work->network,                         // Network
             $work->wo_number,                       // WO
             $work->unica_number,                    // UNICA
@@ -110,12 +114,14 @@ class WorksExport implements FromQuery, WithMapping, WithHeadings, ShouldAutoSiz
 
     public function columnFormats(): array
     {
-        // Colonne date: A (creazione), Q (PiC), R (Consegna), T (FL)
+        // Colonne date: A (creazione), S (PiC), T (Consegna), V (FL)
         return [
             'A' => NumberFormat::FORMAT_DATE_DDMMYYYY,
-            'Q' => NumberFormat::FORMAT_DATE_DDMMYYYY,
-            'R' => NumberFormat::FORMAT_DATE_DDMMYYYY,
+            'K' => NumberFormat::FORMAT_CURRENCY_EUR_SIMPLE,
+            'L' => NumberFormat::FORMAT_CURRENCY_EUR_SIMPLE,
+            'S' => NumberFormat::FORMAT_DATE_DDMMYYYY,
             'T' => NumberFormat::FORMAT_DATE_DDMMYYYY,
+            'V' => NumberFormat::FORMAT_DATE_DDMMYYYY,
         ];
     }
 
