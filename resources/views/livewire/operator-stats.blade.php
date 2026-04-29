@@ -438,27 +438,6 @@
                 };
             }
 
-            const romeTimeFormatters = {
-                day: new Intl.DateTimeFormat('it-IT', {
-                    timeZone: 'Europe/Rome',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    hour12: false,
-                }),
-                week: new Intl.DateTimeFormat('it-IT', {
-                    timeZone: 'Europe/Rome',
-                    day: '2-digit',
-                    month: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    hour12: false,
-                }),
-            };
-
-            function formatRomeTimeLabel(value, mode) {
-                return (mode === 'day' ? romeTimeFormatters.day : romeTimeFormatters.week)
-                    .format(new Date(value));
-            }
 
             function buildOptions(payload) {
                 const theme = getThemeConfig();
@@ -489,9 +468,9 @@
                         max: timelineConfig.max,
                         labels: {
                             datetimeUTC: false,
-                            formatter: function(value, timestamp) {
-                                return formatRomeTimeLabel(timestamp ?? value, timelineConfig.mode);
-                            },
+                            datetimeFormatter: timelineConfig.mode === 'day'
+                                ? { hour: 'HH:mm' }
+                                : { day: 'dd/MM', hour: 'HH:mm' },
                             style: {
                                 colors: theme.muted
                             }

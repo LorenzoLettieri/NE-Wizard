@@ -87,6 +87,8 @@ class OperatorStatsViewTest extends TestCase
 
         $this->assertStringContainsString("timeZone: 'Europe/Rome'", $html);
         $this->assertStringContainsString('formatRomeTimeLabel', $html);
+        $this->assertStringContainsString('formatter: function(value, timestamp, opts)', $html);
+        $this->assertStringContainsString('opts?.timestamp ?? timestamp', $html);
     }
 
     public function test_operator_stats_filter_range_uses_rome_day_boundaries(): void
