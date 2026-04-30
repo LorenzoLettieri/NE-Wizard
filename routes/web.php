@@ -3,6 +3,7 @@
 use App\Http\Controllers\OperatorController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DecommissioningController;
+use App\Http\Controllers\Admin\OperatorWorkspaceController;
 use App\Http\Controllers\MediaDownloadController;
 use App\Http\Controllers\UsersController;
 use App\Http\Controllers\WorkController;
@@ -28,6 +29,7 @@ Route::group(['middleware' => ['role:admin']], function () {
     Route::get('/timesheets/dashboard', [\App\Http\Controllers\AdminTimesheetController::class, 'index'])->name('admin.timesheets');
     Route::get('/admin/timesheets/export', [\App\Http\Controllers\AdminTimesheetController::class, 'export'])->name('admin.timesheets.export');
     Route::get('/admin/base-tables', [\App\Http\Controllers\Admin\BaseTablesController::class, 'index'])->name('admin.base-tables');
+    Route::get('/admin/operators/{user}/view', [OperatorWorkspaceController::class, 'show'])->name('admin.operator-workspace');
 
 });
 

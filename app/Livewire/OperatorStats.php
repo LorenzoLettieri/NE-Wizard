@@ -38,14 +38,23 @@ class OperatorStats extends Component
 
     public $selectedWeekStart = '';
 
+    public ?int $lockedOperatorId = null;
 
-    public function mount()
+    public bool $hideOperatorFilterWhenLocked = false;
+
+    public function mount(?int $lockedOperatorId = null, bool $hideOperatorFilterWhenLocked = false)
     {
+        $this->lockedOperatorId = $lockedOperatorId;
+        $this->hideOperatorFilterWhenLocked = $hideOperatorFilterWhenLocked;
         $now = Carbon::now('Europe/Rome');
         $this->startDate = $now->copy()->startOfMonth()->toDateString();
         $this->endDate = $now->toDateString();
         $this->selectedDay = $now->toDateString();
         $this->selectedWeekStart = $now->copy()->startOfWeek()->toDateString();
+
+        if ($this->lockedOperatorId !== null) {
+            $this->operatorId = (string) $this->lockedOperatorId;
+        }
     }
 
     public function render()
@@ -56,8 +65,12 @@ class OperatorStats extends Component
         [$viewWindowStart, $viewWindowEnd, $dayOptions, $weekOptions] = $this->resolveTimelineWindow($startDate, $endDate);
         $canViewEconomicReport = auth()->check() && auth()->user()->hasRole('admin');
 
+        $selectedOperatorId = $this->lockedOperatorId !== null
+            ? (string) $this->lockedOperatorId
+            : $this->operatorId;
+
         $operators = User::permission('get works')
-            ->when($this->operatorId !== '', fn (Builder $query) => $query->whereKey($this->operatorId))
+            ->when($selectedOperatorId !== '', fn (Builder $query) => $query->whereKey($selectedOperatorId))
             ->orderBy('name')
             ->get();
 
@@ -88,6 +101,7 @@ class OperatorStats extends Component
             'canViewEconomicReport' => $canViewEconomicReport,
             'monthlyTarget' => self::MONTHLY_TARGET,
             'operatorOptions' => User::permission('get works')->orderBy('name')->get(['id', 'name']),
+            'hideOperatorFilter' => $this->hideOperatorFilterWhenLocked && $this->lockedOperatorId !== null,
             'companyOptions' => Company::orderBy('name')->get(['id', 'name']),
             'workPhaseOptions' => WorkPhase::orderBy('name')->get(['id', 'name']),
             'ntwScopeOptions' => $this->ntwScopeOptions(),
@@ -130,7 +144,7 @@ class OperatorStats extends Component
 
     public function resetFilters(): void
     {
-        $this->operatorId = '';
+        $this->operatorId = $this->lockedOperatorId !== null ? (string) $this->lockedOperatorId : '';
         $this->status = '';
         $this->companyId = '';
         $this->workPhaseId = '';

@@ -24,15 +24,17 @@
                     <label class="form-label">Data Fine</label>
                     <input type="date" wire:model.lazy="endDate" class="form-control">
                 </div>
-                <div class="col-12 col-md-6 col-xl-3">
-                    <label class="form-label">Operatore</label>
-                    <select wire:model.live="operatorId" class="form-select">
-                        <option value="">Tutti</option>
-                        @foreach ($operatorOptions as $operator)
-                            <option value="{{ $operator->id }}">{{ $operator->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
+                @unless ($hideOperatorFilter)
+                    <div class="col-12 col-md-6 col-xl-3">
+                        <label class="form-label">Operatore</label>
+                        <select wire:model.live="operatorId" class="form-select">
+                            <option value="">Tutti</option>
+                            @foreach ($operatorOptions as $operator)
+                                <option value="{{ $operator->id }}">{{ $operator->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                @endunless
                 <div class="col-12 col-md-4 col-xl-2">
                     <label class="form-label">Status</label>
                     <select wire:model.live="status" class="form-select">
@@ -155,7 +157,7 @@
             </div>
         </div>
     @endif
-
+    @role('admin')
     <div class="card border-0 shadow-sm mb-4">
         <div class="card-body">
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
@@ -413,7 +415,7 @@
             @endif
         </div>
     </div>
-
+    @endrole
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {

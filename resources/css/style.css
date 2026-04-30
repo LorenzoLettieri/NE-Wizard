@@ -151,6 +151,7 @@ ul.dropdown-menu[role="menu"] {
 }
 
 .operator-activity-chart-shell {
+  --operator-activity-chart-breakout: 0rem;
   border: 1px solid var(--bs-border-color);
   border-radius: var(--bs-border-radius);
   background:
@@ -160,6 +161,21 @@ ul.dropdown-menu[role="menu"] {
       color-mix(in srgb, var(--bs-tertiary-bg) 88%, transparent)
     );
   padding: 0.75rem;
+  width: calc(100% + var(--operator-activity-chart-breakout));
+  margin-inline: calc(var(--operator-activity-chart-breakout) / -2);
+  max-width: none;
+}
+
+@media (min-width: 1400px) {
+  .operator-activity-chart-shell {
+    --operator-activity-chart-breakout: 10rem;
+  }
+}
+
+@media (min-width: 1800px) {
+  .operator-activity-chart-shell {
+    --operator-activity-chart-breakout: 14rem;
+  }
 }
 
 .operator-activity-legend {

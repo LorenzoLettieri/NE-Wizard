@@ -28,6 +28,9 @@
                             <ul class="dropdown-menu">
                                 <li><a class="dropdown-item" href="{{route('editUser', ['id' => $user->id])}}">Modifica Dati
                                         utente</a></li>
+                                @if(!$user->hasRole('admin') && $user->can('get works'))
+                                    <li><a class="dropdown-item" href="{{ route('admin.operator-workspace', $user) }}">Vedi come operatore</a></li>
+                                @endif
                                 {{-- @if($user->hasRole('supervisor'))
                                 <li><a class="dropdown-item" wire:click="removeRole({{$user->id}}, 'supervisor')"
                                         href="#">Rimuovi Ruolo Supervisor</a></li>

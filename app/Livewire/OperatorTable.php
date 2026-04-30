@@ -20,13 +20,24 @@ use Rappasoft\LaravelLivewireTables\Views\Filters\DateRangeFilter;
 class OperatorTable extends DataTableComponent
 {
     use AuthorizesRequests;
+
+    public ?int $targetOperatorId = null;
+
+    public bool $readOnlyMode = false;
+
+    public function mount(?int $targetOperatorId = null, bool $readOnlyMode = false): void
+    {
+        $this->targetOperatorId = $targetOperatorId;
+        $this->readOnlyMode = $readOnlyMode;
+    }
     
     public function builder(): Builder{
-        // return Work::query()->with('users')->where('users.id', $current_user->id);
+        $operatorId = $this->scopedOperatorId();
+
         return Work::query()
         ->with(['users', 'company', 'central', 'workPhase', 'networkScope'])
-        ->whereHas('users', function (Builder $query) {
-            $query->where('users.id', Auth::id());
+        ->whereHas('users', function (Builder $query) use ($operatorId) {
+            $query->where('users.id', $operatorId);
         });
             
     }
@@ -216,13 +227,18 @@ class OperatorTable extends DataTableComponent
             )
                 ->sortable(),
             Column::make('Actions')->label(function ($row, Column $column){
-                return view('operator.operator-table-actions')->with('row', Work::find($row->id));
+                return view('operator.operator-table-actions', [
+                    'row' => Work::find($row->id),
+                    'readOnlyMode' => $this->readOnlyMode,
+                ]);
             })->html(),
             
         ];
     }
 
     public function takeWork($id){
+        abort_if($this->readOnlyMode, 403);
+
         DB::transaction(function () use ($id): void {
             $acceptedWork = Work::query()->lockForUpdate()->findOrFail($id);
             $this->authorize('operate', $acceptedWork);
@@ -233,6 +249,8 @@ class OperatorTable extends DataTableComponent
     }
 
     public function deliveryWork($id){
+        abort_if($this->readOnlyMode, 403);
+
         DB::transaction(function () use ($id): void {
             $acceptedWork = Work::query()->lockForUpdate()->findOrFail($id);
             $this->authorize('operate', $acceptedWork);
@@ -246,6 +264,8 @@ class OperatorTable extends DataTableComponent
     }
 
     public function suspendWork($id){
+        abort_if($this->readOnlyMode, 403);
+
         DB::transaction(function () use ($id): void {
             $acceptedWork = Work::query()->lockForUpdate()->findOrFail($id);
             $this->authorize('operate', $acceptedWork);
@@ -256,6 +276,8 @@ class OperatorTable extends DataTableComponent
     }
 
     public function unsuspendWork($id){
+        abort_if($this->readOnlyMode, 403);
+
         DB::transaction(function () use ($id): void {
             $acceptedWork = Work::query()->lockForUpdate()->findOrFail($id);
             $this->authorize('operate', $acceptedWork);
@@ -269,5 +291,14 @@ class OperatorTable extends DataTableComponent
 
             $acceptedWork->save();
         });
+    }
+
+    protected function scopedOperatorId(): int
+    {
+        if ($this->targetOperatorId !== null && Auth::user()?->hasRole('admin')) {
+            return $this->targetOperatorId;
+        }
+
+        return (int) Auth::id();
     }
 }
