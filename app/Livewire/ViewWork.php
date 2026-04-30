@@ -53,9 +53,7 @@ class ViewWork extends Component
      public function endWork($id){
         $work = Work::findOrFail($id);
         $this->authorize('complete', $work);
-        $work->status = "Fine Lavori";
-        $work->completion_date = Carbon::now();
-        $work->save();
+        $work->transitionToStatus('Fine Lavori', Carbon::now());
 
         $this->dispatch('refreshDatatable');
      }

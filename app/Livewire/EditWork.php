@@ -88,6 +88,9 @@ class EditWork extends Component
                 $this->syncOperatorsPreservingAssignmentDates();
             }
             $this->syncStructuredSuspensions($this->work, $validatedSuspensions);
+            if ($this->canManageAdministrativeFields() && filled($this->status)) {
+                $this->work->transitionToStatus($this->status, Carbon::now());
+            }
         });
 
         $uploadedCount = 0;

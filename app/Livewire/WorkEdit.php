@@ -27,7 +27,9 @@ class WorkEdit extends Component
     public $companies, $centrals, $workPhases, $networkScopes;
 
     public $suspension_history;
-    public $company_id, $central_id, $operator_id, $status, $network, $ao_cno, $ntw_scope, $network_scope_id, $description, $type, $phase, $work_phase_id, $company_assistant, $nroe, $wo_number,$unica_number, $notes, $expected_delivery_date;
+    public $company_id, $central_id, $operator_id, $status, $network, $ao_cno, $ntw_scope, $network_scope_id, $description, $type, $phase, $work_phase_id, $company_assistant, $nroe, $wo_number, $unica_number, $notes, $tempo_daphne, $expected_delivery_date;
+
+    public $daphne;
 
     public function update(){
         $this->validate($this->rules());
@@ -39,6 +41,9 @@ class WorkEdit extends Component
                 $this->syncOperatorsPreservingAssignmentDates();
             }
             $this->syncStructuredSuspensions($this->work, $validatedSuspensions);
+            if ($this->canManageAdministrativeFields() && filled($this->status)) {
+                $this->work->transitionToStatus($this->status, Carbon::now());
+            }
         });
 
         $uploadedCount = 0;
@@ -121,6 +126,8 @@ class WorkEdit extends Component
         $this->wo_number = $work->wo_number;
         $this->unica_number = $work->unica_number;
         $this->notes = $work->notes;
+        $this->daphne = $work->daphne;
+        $this->tempo_daphne = $work->tempo_daphne;
         $this->expected_delivery_date = $work->expected_delivery_date?->format('Y-m-d');
 
         $this->suspension_history = $work->suspension_history;
@@ -158,6 +165,8 @@ class WorkEdit extends Component
             'wo_number' => $this->wo_number,
             'unica_number' => $this->unica_number,
             'notes' => $this->notes,
+            'daphne' => $this->daphne,
+            'tempo_daphne' => $this->tempo_daphne,
             'suspension_history' => $this->suspension_history,
         ], $this->accountingPayload());
 

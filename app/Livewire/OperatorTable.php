@@ -242,9 +242,11 @@ class OperatorTable extends DataTableComponent
         DB::transaction(function () use ($id): void {
             $acceptedWork = Work::query()->lockForUpdate()->findOrFail($id);
             $this->authorize('operate', $acceptedWork);
-            $acceptedWork->status = 'In Lavorazione';
-            $acceptedWork->acception_date = Carbon::now();
-            $acceptedWork->save();
+            $acceptedWork->transitionToStatus(
+                'In Lavorazione',
+                Carbon::now(),
+                forceAcceptanceDate: true,
+            );
         });
     }
 
@@ -254,12 +256,7 @@ class OperatorTable extends DataTableComponent
         DB::transaction(function () use ($id): void {
             $acceptedWork = Work::query()->lockForUpdate()->findOrFail($id);
             $this->authorize('operate', $acceptedWork);
-            $deliveryAt = Carbon::now();
-
-            $acceptedWork->closeOpenSuspension($deliveryAt);
-            $acceptedWork->status = 'Consegnato';
-            $acceptedWork->delivery_date = $deliveryAt;
-            $acceptedWork->save();
+            $acceptedWork->transitionToStatus('Consegnato', Carbon::now());
         });
     }
 
@@ -269,9 +266,7 @@ class OperatorTable extends DataTableComponent
         DB::transaction(function () use ($id): void {
             $acceptedWork = Work::query()->lockForUpdate()->findOrFail($id);
             $this->authorize('operate', $acceptedWork);
-            $acceptedWork->openSuspension(Carbon::now());
-            $acceptedWork->status = 'Sospeso';
-            $acceptedWork->save();
+            $acceptedWork->transitionToStatus('Sospeso', Carbon::now());
         });
     }
 
@@ -281,15 +276,7 @@ class OperatorTable extends DataTableComponent
         DB::transaction(function () use ($id): void {
             $acceptedWork = Work::query()->lockForUpdate()->findOrFail($id);
             $this->authorize('operate', $acceptedWork);
-            $resumeAt = Carbon::now();
-
-            $acceptedWork->closeOpenSuspension($resumeAt);
-            $acceptedWork->status = 'In Lavorazione';
-            if(!$acceptedWork->acception_date){
-                $acceptedWork->acception_date = $resumeAt;
-            }
-
-            $acceptedWork->save();
+            $acceptedWork->transitionToStatus('In Lavorazione', Carbon::now());
         });
     }
 

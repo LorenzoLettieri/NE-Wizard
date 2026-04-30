@@ -18,11 +18,13 @@ use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\TestCase;
+use Tests\Support\UsesMysqlTestDatabase;
 
-#[\PHPUnit\Framework\Attributes\RequiresPhpExtension('pdo_sqlite')]
 class WorkSuspensionFeatureTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabase, UsesMysqlTestDatabase {
+        UsesMysqlTestDatabase::beforeRefreshingDatabase insteadof RefreshDatabase;
+    }
 
     protected function tearDown(): void
     {
@@ -221,6 +223,174 @@ class WorkSuspensionFeatureTest extends TestCase
             ->assertHasErrors(['suspensions.0.ended_at']);
     }
 
+    public function test_supervisor_edit_to_suspended_creates_open_suspension(): void
+    {
+        $this->seed(RoleSeeder::class);
+
+        $supervisor = User::factory()->create();
+        $supervisor->assignRole('supervisor');
+
+        $work = Work::create([
+            'status' => 'In Lavorazione',
+            'acception_date' => Carbon::parse('2026-03-31 08:00:00', 'UTC'),
+            'daphne' => false,
+        ]);
+
+        Carbon::setTestNow(Carbon::parse('2026-03-31 12:15:00', 'UTC'));
+
+        $this->actingAs($supervisor);
+
+        Livewire::test(WorkEdit::class, ['work' => $work])
+            ->set('status', 'Sospeso')
+            ->set('daphne', false)
+            ->call('update')
+            ->assertHasNoErrors();
+
+        $work->refresh();
+        $suspension = $work->workSuspensions()->first();
+
+        $this->assertSame('Sospeso', $work->status);
+        $this->assertNotNull($suspension);
+        $this->assertSame('2026-03-31 12:15:00', $suspension->started_at->format('Y-m-d H:i:s'));
+        $this->assertNull($suspension->ended_at);
+    }
+
+    public function test_supervisor_edit_to_fine_lavori_closes_open_suspension_and_sets_delivery_date(): void
+    {
+        $this->seed(RoleSeeder::class);
+
+        $supervisor = User::factory()->create();
+        $supervisor->assignRole('supervisor');
+
+        $work = Work::create([
+            'status' => 'Sospeso',
+            'acception_date' => Carbon::parse('2026-03-31 08:00:00', 'UTC'),
+            'daphne' => false,
+        ]);
+        $work->workSuspensions()->create([
+            'started_at' => Carbon::parse('2026-03-31 10:00:00', 'UTC'),
+        ]);
+
+        Carbon::setTestNow(Carbon::parse('2026-03-31 16:30:00', 'UTC'));
+
+        $this->actingAs($supervisor);
+
+        Livewire::test(WorkEdit::class, ['work' => $work])
+            ->set('status', 'Fine Lavori')
+            ->set('daphne', false)
+            ->call('update')
+            ->assertHasNoErrors();
+
+        $work->refresh();
+        $suspension = $work->workSuspensions()->firstOrFail();
+
+        $this->assertSame('Fine Lavori', $work->status);
+        $this->assertSame('2026-03-31 16:30:00', $work->delivery_date->format('Y-m-d H:i:s'));
+        $this->assertSame('2026-03-31', $work->completion_date->format('Y-m-d'));
+        $this->assertSame('2026-03-31 16:30:00', $suspension->ended_at->format('Y-m-d H:i:s'));
+    }
+
+    public function test_supervisor_edit_to_final_status_does_not_override_existing_delivery_date(): void
+    {
+        $this->seed(RoleSeeder::class);
+
+        $supervisor = User::factory()->create();
+        $supervisor->assignRole('supervisor');
+
+        $work = Work::create([
+            'status' => 'In Lavorazione',
+            'acception_date' => Carbon::parse('2026-03-31 08:00:00', 'UTC'),
+            'delivery_date' => Carbon::parse('2026-03-31 14:00:00', 'UTC'),
+            'daphne' => false,
+        ]);
+
+        Carbon::setTestNow(Carbon::parse('2026-03-31 17:00:00', 'UTC'));
+
+        $this->actingAs($supervisor);
+
+        Livewire::test(WorkEdit::class, ['work' => $work])
+            ->set('status', 'Fine Lavori')
+            ->set('daphne', false)
+            ->call('update')
+            ->assertHasNoErrors();
+
+        $work->refresh();
+
+        $this->assertSame('Fine Lavori', $work->status);
+        $this->assertSame('2026-03-31 14:00:00', $work->delivery_date->format('Y-m-d H:i:s'));
+    }
+
+    public function test_supervisor_reopening_from_fine_lavori_clears_completion_and_delivery_dates(): void
+    {
+        $this->seed(RoleSeeder::class);
+
+        $supervisor = User::factory()->create();
+        $supervisor->assignRole('supervisor');
+
+        $work = Work::create([
+            'status' => 'Fine Lavori',
+            'acception_date' => Carbon::parse('2026-03-31 08:00:00', 'UTC'),
+            'delivery_date' => Carbon::parse('2026-03-31 14:00:00', 'UTC'),
+            'completion_date' => Carbon::parse('2026-03-31 15:00:00', 'UTC'),
+            'daphne' => false,
+        ]);
+
+        Carbon::setTestNow(Carbon::parse('2026-03-31 17:00:00', 'UTC'));
+
+        $this->actingAs($supervisor);
+
+        Livewire::test(WorkEdit::class, ['work' => $work])
+            ->set('status', 'In Lavorazione')
+            ->set('daphne', false)
+            ->call('update')
+            ->assertHasNoErrors();
+
+        $work->refresh();
+
+        $this->assertSame('In Lavorazione', $work->status);
+        $this->assertSame('2026-03-31 08:00:00', $work->acception_date->format('Y-m-d H:i:s'));
+        $this->assertNull($work->delivery_date);
+        $this->assertNull($work->completion_date);
+    }
+
+    public function test_supervisor_edit_to_da_lavorare_resets_workflow_dates_and_closes_open_suspension(): void
+    {
+        $this->seed(RoleSeeder::class);
+
+        $supervisor = User::factory()->create();
+        $supervisor->assignRole('supervisor');
+
+        $work = Work::create([
+            'status' => 'Sospeso',
+            'acception_date' => Carbon::parse('2026-03-31 08:00:00', 'UTC'),
+            'delivery_date' => Carbon::parse('2026-03-31 14:00:00', 'UTC'),
+            'completion_date' => Carbon::parse('2026-03-31 15:00:00', 'UTC'),
+            'daphne' => false,
+        ]);
+        $work->workSuspensions()->create([
+            'started_at' => Carbon::parse('2026-03-31 10:00:00', 'UTC'),
+        ]);
+
+        Carbon::setTestNow(Carbon::parse('2026-03-31 16:45:00', 'UTC'));
+
+        $this->actingAs($supervisor);
+
+        Livewire::test(WorkEdit::class, ['work' => $work])
+            ->set('status', 'Da Lavorare')
+            ->set('daphne', false)
+            ->call('update')
+            ->assertHasNoErrors();
+
+        $work->refresh();
+        $suspension = $work->workSuspensions()->firstOrFail();
+
+        $this->assertSame('Da Lavorare', $work->status);
+        $this->assertNull($work->acception_date);
+        $this->assertNull($work->delivery_date);
+        $this->assertNull($work->completion_date);
+        $this->assertSame('2026-03-31 16:45:00', $suspension->ended_at->format('Y-m-d H:i:s'));
+    }
+
     public function test_duplicate_work_resets_workflow_dates_and_does_not_copy_suspensions(): void
     {
         $work = Work::create([
@@ -250,6 +420,38 @@ class WorkSuspensionFeatureTest extends TestCase
         $this->assertNull($duplicate->expected_delivery_date);
         $this->assertNull($duplicate->suspension_history);
         $this->assertSame(0, $duplicate->workSuspensions()->count());
+    }
+
+    public function test_admin_end_work_action_uses_aligned_workflow_dates_and_suspensions(): void
+    {
+        $this->seed(RoleSeeder::class);
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $work = Work::create([
+            'status' => 'Sospeso',
+            'acception_date' => Carbon::parse('2026-03-31 08:00:00', 'UTC'),
+            'daphne' => false,
+        ]);
+        $work->workSuspensions()->create([
+            'started_at' => Carbon::parse('2026-03-31 11:00:00', 'UTC'),
+        ]);
+
+        Carbon::setTestNow(Carbon::parse('2026-03-31 18:10:00', 'UTC'));
+
+        $this->actingAs($admin);
+
+        Livewire::test(ViewWork::class)
+            ->call('endWork', $work->id);
+
+        $work->refresh();
+        $suspension = $work->workSuspensions()->firstOrFail();
+
+        $this->assertSame('Fine Lavori', $work->status);
+        $this->assertSame('2026-03-31 18:10:00', $work->delivery_date->format('Y-m-d H:i:s'));
+        $this->assertSame('2026-03-31', $work->completion_date->format('Y-m-d'));
+        $this->assertSame('2026-03-31 18:10:00', $suspension->ended_at->format('Y-m-d H:i:s'));
     }
 
     public function test_admin_can_create_work_with_expected_delivery_date(): void

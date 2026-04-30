@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Carbon\CarbonInterface;
+use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -197,6 +198,50 @@ class Work extends Model
         $this->unsetRelation('workSuspensions');
 
         return $openSuspension;
+    }
+
+    public function transitionToStatus(
+        string $targetStatus,
+        ?CarbonInterface $transitionedAt = null,
+        bool $forceAcceptanceDate = false,
+    ): void {
+        $transitionedAt ??= Carbon::now();
+
+        $this->status = $targetStatus;
+
+        if ($targetStatus === 'Sospeso') {
+            $this->openSuspension($transitionedAt);
+        } else {
+            $this->closeOpenSuspension($transitionedAt);
+        }
+
+        if ($targetStatus === 'Da Lavorare') {
+            $this->acception_date = null;
+            $this->delivery_date = null;
+            $this->completion_date = null;
+        }
+
+        if ($targetStatus === 'In Lavorazione' && ($forceAcceptanceDate || ! $this->acception_date)) {
+            $this->acception_date = $transitionedAt;
+        }
+
+        if (in_array($targetStatus, ['In Lavorazione', 'Sospeso', 'Attesa Fine Lavori'], true)) {
+            $this->delivery_date = null;
+        }
+
+        if (in_array($targetStatus, ['Consegnato', 'Fine Lavori'], true) && ! $this->delivery_date) {
+            $this->delivery_date = $transitionedAt;
+        }
+
+        if ($targetStatus === 'Fine Lavori' && ! $this->completion_date) {
+            $this->completion_date = $transitionedAt;
+        }
+
+        if ($targetStatus !== 'Fine Lavori') {
+            $this->completion_date = null;
+        }
+
+        $this->save();
     }
 
     public static function formatDuration(?int $seconds): ?string

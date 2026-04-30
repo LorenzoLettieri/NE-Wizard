@@ -300,6 +300,34 @@ class WorkPhaseFeatureTest extends TestCase
         $this->assertSame('30.00', $work->accounting_amount);
     }
 
+    public function test_work_update_persists_daphne_fields(): void
+    {
+        $this->seed(RoleSeeder::class);
+
+        $supervisor = User::factory()->create();
+        $supervisor->assignRole('supervisor');
+
+        $work = Work::create([
+            'status' => 'Da Lavorare',
+            'daphne' => false,
+            'tempo_daphne' => null,
+        ]);
+
+        $this->actingAs($supervisor);
+
+        Livewire::test(WorkEdit::class, ['work' => $work])
+            ->set('daphne', true)
+            ->set('tempo_daphne', '48h')
+            ->call('update')
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('works', [
+            'id' => $work->id,
+            'daphne' => true,
+            'tempo_daphne' => '48h',
+        ]);
+    }
+
     public function test_admin_can_save_company_work_phase_rate_from_base_tables(): void
     {
         $company = Company::create(['name' => 'SIRTI']);
