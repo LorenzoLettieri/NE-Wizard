@@ -452,10 +452,22 @@
                     chart: {
                         height: 550,
                         type: 'rangeBar',
-                        toolbar: { show: false },
-                        selection: { enabled: false },
-                        zoom: { enabled: false, allowMouseWheelZoom: false },
-                        pan: { enabled: false }
+                        toolbar: {
+                            show: true,
+                            tools: {
+                                download: false,
+                                selection: true,
+                                zoom: true,
+                                zoomin: true,
+                                zoomout: true,
+                                pan: true,
+                                reset: true
+                            },
+                            autoSelected: 'pan'
+                        },
+                        selection: { enabled: true },
+                        zoom: { enabled: true, allowMouseWheelZoom: true },
+                        pan: { enabled: true }
                     },
                     plotOptions: {
                         bar: {
