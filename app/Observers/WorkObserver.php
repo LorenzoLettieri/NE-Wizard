@@ -15,6 +15,13 @@ class WorkObserver
             'started_at' => $work->created_at ?? now(),
             'ended_at' => null,
         ]);
+
+        if ($work->status === 'In Lavorazione' && ! $work->acception_date) {
+            $work->timestamps = false;
+            $work->acception_date = $work->created_at ?? now();
+            $work->saveQuietly();
+            $work->timestamps = true;
+        }
     }
 
     public function updating(Work $work): void

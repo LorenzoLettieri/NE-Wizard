@@ -11,12 +11,49 @@ use App\Models\Work;
 use App\Models\WorkPhase;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Livewire\Component;
 
 class OperatorStats extends Component
 {
     private const MONTHLY_TARGET = 3500.0;
+    private const TIMEZONE = 'Europe/Rome';
+    private const WORK_STATUSES = [
+        'to_do_count' => 'Da Lavorare',
+        'in_progress_count' => 'In Lavorazione',
+        'suspended_count' => 'Sospeso',
+        'delivered_count' => 'Consegnato',
+        'completed_count' => 'Fine Lavori',
+        'ko_count' => 'KO',
+    ];
+    private const AVERAGE_PROCESSING_STATUSES = ['Consegnato', 'Fine Lavori'];
+    private const TIMELINE_MODE_OPTIONS = [
+        ['value' => 'day', 'label' => 'Giornaliera'],
+        ['value' => 'week', 'label' => 'Settimanale'],
+    ];
+    private const STATUS_OPTIONS = [
+        'Da Lavorare',
+        'In Lavorazione',
+        'Sospeso',
+        'Attesa Fine Lavori',
+        'KO',
+        'Consegnato',
+        'Fine Lavori',
+    ];
+    private const NTW_SCOPE_OPTIONS = [
+        'FTTH',
+        'FTTH PTE',
+        'FTTH PNRR',
+        '5G',
+        'REACTIVE',
+        'INCREMENTALE',
+        'DESATURAZIONE',
+        'NGAN',
+        'GIUNZIONE',
+        'SUB-LOOP',
+        'Altro',
+    ];
 
     public $startDate;
 
@@ -46,11 +83,7 @@ class OperatorStats extends Component
     {
         $this->lockedOperatorId = $lockedOperatorId;
         $this->hideOperatorFilterWhenLocked = $hideOperatorFilterWhenLocked;
-        $now = Carbon::now('Europe/Rome');
-        $this->startDate = $now->copy()->startOfMonth()->toDateString();
-        $this->endDate = $now->toDateString();
-        $this->selectedDay = $now->toDateString();
-        $this->selectedWeekStart = $now->copy()->startOfWeek()->toDateString();
+        $this->setDefaultDateFilters(Carbon::now(self::TIMEZONE));
 
         if ($this->lockedOperatorId !== null) {
             $this->operatorId = (string) $this->lockedOperatorId;
@@ -64,15 +97,7 @@ class OperatorStats extends Component
         [$startDate, $endDate] = $this->resolveReportRange($this->startDate, $this->endDate);
         [$viewWindowStart, $viewWindowEnd, $dayOptions, $weekOptions] = $this->resolveTimelineWindow($startDate, $endDate);
         $canViewEconomicReport = auth()->check() && auth()->user()->hasRole('admin');
-
-        $selectedOperatorId = $this->lockedOperatorId !== null
-            ? (string) $this->lockedOperatorId
-            : $this->operatorId;
-
-        $operators = User::permission('get works')
-            ->when($selectedOperatorId !== '', fn (Builder $query) => $query->whereKey($selectedOperatorId))
-            ->orderBy('name')
-            ->get();
+        $operators = $this->resolveOperators($this->selectedOperatorId());
 
         Log::debug('render: setup ' . round((microtime(true) - $t0) * 1000) . 'ms');
         $t0 = microtime(true);
@@ -87,40 +112,35 @@ class OperatorStats extends Component
         Log::debug('render: formatTimelineData ' . round((microtime(true) - $t0) * 1000) . 'ms, series=' . count($timelineData));
         $t0 = microtime(true);
 
-        $timelineConfig = [
-            'mode' => $this->viewMode,
-            'min' => $viewWindowStart->getTimestamp() * 1000,
-            'max' => $viewWindowEnd->getTimestamp() * 1000,
-        ];
+        $timelineConfig = $this->buildTimelineConfig($viewWindowStart, $viewWindowEnd);
 
         $this->dispatch('timeline-data', series: $timelineData, config: $timelineConfig);
 
-        $view = view('livewire.operator-stats', [
-            'rows' => $rows,
-            'economicSummary' => $this->buildEconomicSummary($rows),
-            'canViewEconomicReport' => $canViewEconomicReport,
-            'monthlyTarget' => self::MONTHLY_TARGET,
-            'operatorOptions' => User::permission('get works')->orderBy('name')->get(['id', 'name']),
-            'hideOperatorFilter' => $this->hideOperatorFilterWhenLocked && $this->lockedOperatorId !== null,
-            'companyOptions' => Company::orderBy('name')->get(['id', 'name']),
-            'workPhaseOptions' => WorkPhase::orderBy('name')->get(['id', 'name']),
-            'ntwScopeOptions' => $this->ntwScopeOptions(),
-            'statusOptions' => $this->statusOptions(),
-            'timelineData' => $timelineData,
-
-            'dayOptions' => $dayOptions,
-            'weekOptions' => $weekOptions,
-            'timelineModeOptions' => [
-                ['value' => 'day', 'label' => 'Giornaliera'],
-                ['value' => 'week', 'label' => 'Settimanale'],
-            ],
-            'timelineWindowLabel' => $this->timelineWindowLabel($viewWindowStart, $viewWindowEnd),
-            'timelineConfig' => $timelineConfig,
-        ]);
+        $view = view('livewire.operator-stats', $this->buildViewData(
+            $rows,
+            $timelineData,
+            $timelineConfig,
+            $dayOptions,
+            $weekOptions,
+            $viewWindowStart,
+            $viewWindowEnd,
+            $canViewEconomicReport,
+        ));
 
         Log::debug('render: view() ' . round((microtime(true) - $t0) * 1000) . 'ms');
 
         return $view;
+    }
+
+    public function resetFilters(): void
+    {
+        $this->operatorId = $this->lockedOperatorId !== null ? (string) $this->lockedOperatorId : '';
+        $this->status = '';
+        $this->companyId = '';
+        $this->workPhaseId = '';
+        $this->ntwScope = '';
+        $this->viewMode = 'day';
+        $this->setDefaultDateFilters(Carbon::now(self::TIMEZONE));
     }
 
     private function formatTimelineData(array $rows, Carbon $viewWindowStart, Carbon $viewWindowEnd): array
@@ -142,189 +162,234 @@ class OperatorStats extends Component
         return array_values($seriesByName);
     }
 
-    public function resetFilters(): void
-    {
-        $this->operatorId = $this->lockedOperatorId !== null ? (string) $this->lockedOperatorId : '';
-        $this->status = '';
-        $this->companyId = '';
-        $this->workPhaseId = '';
-        $this->ntwScope = '';
-        $now = Carbon::now('Europe/Rome');
-        $this->startDate = $now->copy()->startOfMonth()->toDateString();
-        $this->endDate = $now->toDateString();
-        $this->viewMode = 'day';
-        $this->selectedDay = $now->toDateString();
-        $this->selectedWeekStart = $now->copy()->startOfWeek()->toDateString();
-    }
-
     private function resolveReportRange(string $startDate, string $endDate): array
     {
         return [
-            Carbon::parse($startDate, 'Europe/Rome')->startOfDay()->setTimezone('UTC'),
-            Carbon::parse($endDate, 'Europe/Rome')->endOfDay()->setTimezone('UTC'),
+            Carbon::parse($startDate, self::TIMEZONE)->startOfDay()->setTimezone('UTC'),
+            Carbon::parse($endDate, self::TIMEZONE)->endOfDay()->setTimezone('UTC'),
         ];
     }
 
-    private function buildAllRows(\Illuminate\Support\Collection $operators, Carbon $startDate, Carbon $endDate): array
+    private function buildAllRows(Collection $operators, Carbon $startDate, Carbon $endDate): array
     {
         if ($operators->isEmpty()) {
             return [];
         }
 
+        $t0 = microtime(true);
+        $operatorData = $this->loadOperatorData($operators, $startDate, $endDate);
+        Log::debug('queries: ' . round((microtime(true) - $t0) * 1000) . 'ms');
+
+        $t0 = microtime(true);
+        $activityBuilder = app(OperatorActivityBuilder::class);
+        $chartFormatter = app(OperatorActivityChartFormatter::class);
+        $rows = [];
+
+        foreach ($operators as $operator) {
+            $rows[] = $this->buildOperatorRow(
+                $operator,
+                $operatorData['assignedWorks']->get($operator->id, collect()),
+                $operatorData['earnedWorks']->get($operator->id, collect()),
+                $operatorData['timesheets']->get($operator->id, collect()),
+                $activityBuilder,
+                $chartFormatter,
+                $startDate,
+                $endDate,
+            );
+        }
+
+        Log::debug('computation: ' . round((microtime(true) - $t0) * 1000) . 'ms');
+
+        return array_map(fn (array $row): array => $this->attachTimelineResolver($row), $rows);
+    }
+
+    private function loadOperatorData(Collection $operators, Carbon $startDate, Carbon $endDate): array
+    {
         $operatorIds = $operators->pluck('id')->all();
-        $startDateLocal = $startDate->copy()->timezone('Europe/Rome')->toDateString();
-        $endDateLocal = $endDate->copy()->timezone('Europe/Rome')->toDateString();
+        $startDateLocal = $startDate->copy()->timezone(self::TIMEZONE)->toDateString();
+        $endDateLocal = $endDate->copy()->timezone(self::TIMEZONE)->toDateString();
 
-        $t = microtime(true);
-            $allAssignedWorks = Work::query()
-                ->join('user_work', 'works.id', '=', 'user_work.work_id')
-                ->whereIn('user_work.user_id', $operatorIds)
-                ->where(function (Builder $query) use ($startDate, $endDate) {
-                    $query->whereBetween('user_work.created_at', [$startDate, $endDate])
-                        ->orWhere(function (Builder $nested) use ($startDate, $endDate) {
-                            $nested->whereNotNull('works.acception_date')
-                                ->where('works.acception_date', '<=', $endDate)
-                                ->where(function (Builder $window) use ($startDate) {
-                                    $window->whereNull('works.delivery_date')
-                                        ->orWhere('works.delivery_date', '>=', $startDate);
-                                });
-                        });
-                })
-                ->tap(fn (Builder $query) => $this->applyWorkFilters($query))
-                ->select('works.*', 'user_work.user_id as _operator_id')
-                ->with(['workSuspensions', 'workPhase', 'statusHistory'])
+        return [
+            'assignedWorks' => $this->assignedWorksQuery($operatorIds, $startDate, $endDate)
                 ->get()
-                ->groupBy('_operator_id');
-
-            $allEarnedWorks = Work::query()
-                ->join('user_work', 'works.id', '=', 'user_work.work_id')
-                ->whereIn('user_work.user_id', $operatorIds)
-                ->whereBetween('works.completion_date', [$startDateLocal, $endDateLocal])
-                ->tap(fn (Builder $query) => $this->applyWorkFilters($query))
-                ->select('works.*', 'user_work.user_id as _operator_id')
+                ->groupBy('_operator_id'),
+            'earnedWorks' => $this->earnedWorksQuery($operatorIds, $startDateLocal, $endDateLocal)
                 ->get()
-                ->groupBy('_operator_id');
-
-            $allTimesheets = Timesheet::query()
+                ->groupBy('_operator_id'),
+            'timesheets' => Timesheet::query()
                 ->whereIn('user_id', $operatorIds)
                 ->whereBetween('date', [$startDateLocal, $endDateLocal])
                 ->get()
-                ->groupBy('user_id');
+                ->groupBy('user_id'),
+        ];
+    }
 
-            Log::debug('queries: ' . round((microtime(true) - $t) * 1000) . 'ms');
-            $t = microtime(true);
+    private function assignedWorksQuery(array $operatorIds, Carbon $startDate, Carbon $endDate): Builder
+    {
+        return Work::query()
+            ->join('user_work', 'works.id', '=', 'user_work.work_id')
+            ->whereIn('user_work.user_id', $operatorIds)
+            ->where(function (Builder $query) use ($startDate, $endDate) {
+                $query->whereBetween('user_work.created_at', [$startDate, $endDate])
+                    ->orWhere(function (Builder $nested) use ($startDate, $endDate) {
+                        $nested->whereNotNull('works.acception_date')
+                            ->where('works.acception_date', '<=', $endDate)
+                            ->where(function (Builder $window) use ($startDate) {
+                                $window->whereNull('works.delivery_date')
+                                    ->orWhere('works.delivery_date', '>=', $startDate);
+                            });
+                    });
+            })
+            ->tap(fn (Builder $query) => $this->applyWorkFilters($query))
+            ->select('works.*', 'user_work.user_id as _operator_id')
+            ->with(['workSuspensions', 'workPhase', 'statusHistory']);
+    }
 
-            $rowsData = [];
+    private function earnedWorksQuery(array $operatorIds, string $startDateLocal, string $endDateLocal): Builder
+    {
+        return Work::query()
+            ->join('user_work', 'works.id', '=', 'user_work.work_id')
+            ->whereIn('user_work.user_id', $operatorIds)
+            ->whereBetween('works.completion_date', [$startDateLocal, $endDateLocal])
+            ->tap(fn (Builder $query) => $this->applyWorkFilters($query))
+            ->select('works.*', 'user_work.user_id as _operator_id');
+    }
 
-            foreach ($operators as $operator) {
-                $assignedWorks = $allAssignedWorks->get($operator->id, collect());
-                $earnedWorks = $allEarnedWorks->get($operator->id, collect());
-                $timesheets = $allTimesheets->get($operator->id, collect());
+    private function buildOperatorRow(
+        User $operator,
+        Collection $assignedWorks,
+        Collection $earnedWorks,
+        Collection $timesheets,
+        OperatorActivityBuilder $activityBuilder,
+        OperatorActivityChartFormatter $chartFormatter,
+        Carbon $startDate,
+        Carbon $endDate,
+    ): array {
+        $activity = $activityBuilder->build($operator, $assignedWorks, $timesheets, $startDate, $endDate);
+        $earnedMetrics = $this->earnedMetrics($earnedWorks);
+        $targetPercentage = self::MONTHLY_TARGET > 0
+            ? round(($earnedMetrics['earned_amount'] / self::MONTHLY_TARGET) * 100, 1)
+            : 0.0;
 
-                $activity = app(OperatorActivityBuilder::class)->build(
-                    $operator,
-                    $assignedWorks,
-                    $timesheets,
-                    $startDate,
-                    $endDate,
-                );
+        return [
+            'operator_id' => $operator->id,
+            'operator_name' => $operator->name,
+            'assigned_count' => $assignedWorks->count(),
+            ...$this->statusCounts($assignedWorks),
+            'average_processing_label' => $this->averageProcessingLabel($assignedWorks),
+            'presence_seconds' => $activity->presenceSeconds(),
+            'presence_label' => Work::formatDuration($activity->presenceSeconds()),
+            'break_seconds' => $activity->breakSeconds(),
+            'break_label' => Work::formatDuration($activity->breakSeconds()),
+            'active_work_seconds' => $activity->activeWorkSeconds(),
+            'active_work_label' => Work::formatDuration($activity->activeWorkSeconds()),
+            'suspension_seconds' => $activity->suspensionSeconds(),
+            'suspension_label' => Work::formatDuration($activity->suspensionSeconds()),
+            'overtime_seconds' => $activity->overtimeSeconds(),
+            'overtime_label' => Work::formatDuration($activity->overtimeSeconds()),
+            'leave_seconds' => $activity->leaveSeconds(),
+            'leave_label' => Work::formatDuration($activity->leaveSeconds()),
+            'utilization_percentage' => $activity->utilizationPercentage(),
+            'daily_breakdown' => $activity->dailyBreakdown(),
+            'weekly_summary' => $activity->aggregateBy('week'),
+            'monthly_summary' => $activity->aggregateBy('month'),
+            'nroe_total' => (int) $earnedWorks->sum(fn (Work $work) => (int) ($work->nroe ?? 0)),
+            ...$earnedMetrics,
+            'target_amount' => self::MONTHLY_TARGET,
+            'target_percentage' => $targetPercentage,
+            'target_bar_width' => min(100, $targetPercentage),
+            'target_class' => $this->targetClass($targetPercentage),
+            '_series' => $chartFormatter->forOperator($operator, $activity, $startDate, $endDate),
+        ];
+    }
 
-                $averageProcessingSeconds = $assignedWorks
-                    ->whereIn('status', ['Consegnato', 'Fine Lavori'])
-                    ->filter(fn (Work $work) => $work->effective_processing_seconds !== null)
-                    ->map(fn (Work $work) => $work->effective_processing_seconds)
-                    ->avg();
+    private function statusCounts(Collection $assignedWorks): array
+    {
+        $counts = [];
 
-                $earnedAmount = round((float) $earnedWorks
-                    ->filter(fn (Work $work) => $work->accounting_amount !== null)
-                    ->sum(fn (Work $work) => (float) $work->accounting_amount), 2);
+        foreach (self::WORK_STATUSES as $key => $status) {
+            $counts[$key] = $assignedWorks->where('status', $status)->count();
+        }
 
-                $targetPercentage = self::MONTHLY_TARGET > 0
-                    ? round(($earnedAmount / self::MONTHLY_TARGET) * 100, 1)
-                    : 0.0;
+        return $counts;
+    }
 
-                // Pre-format full-range timeline as plain int arrays — no Carbon objects, fast to serialize
-                $fullRangeSeries = app(OperatorActivityChartFormatter::class)
-                    ->forOperator($operator, $activity, $startDate, $endDate);
+    private function averageProcessingLabel(Collection $assignedWorks): string
+    {
+        $averageProcessingSeconds = $assignedWorks
+            ->whereIn('status', self::AVERAGE_PROCESSING_STATUSES)
+            ->filter(fn (Work $work) => $work->effective_processing_seconds !== null)
+            ->map(fn (Work $work) => $work->effective_processing_seconds)
+            ->avg();
 
-                $rowsData[] = [
-                    'operator_id' => $operator->id,
-                    'operator_name' => $operator->name,
-                    'assigned_count' => $assignedWorks->count(),
-                    'to_do_count' => $assignedWorks->where('status', 'Da Lavorare')->count(),
-                    'in_progress_count' => $assignedWorks->where('status', 'In Lavorazione')->count(),
-                    'suspended_count' => $assignedWorks->where('status', 'Sospeso')->count(),
-                    'delivered_count' => $assignedWorks->where('status', 'Consegnato')->count(),
-                    'completed_count' => $assignedWorks->where('status', 'Fine Lavori')->count(),
-                    'ko_count' => $assignedWorks->where('status', 'KO')->count(),
-                    'average_processing_label' => $averageProcessingSeconds === null
-                        ? '-'
-                        : Work::formatDuration((int) round($averageProcessingSeconds)),
-                    'presence_seconds' => $activity->presenceSeconds(),
-                    'presence_label' => Work::formatDuration($activity->presenceSeconds()),
-                    'break_seconds' => $activity->breakSeconds(),
-                    'break_label' => Work::formatDuration($activity->breakSeconds()),
-                    'active_work_seconds' => $activity->activeWorkSeconds(),
-                    'active_work_label' => Work::formatDuration($activity->activeWorkSeconds()),
-                    'suspension_seconds' => $activity->suspensionSeconds(),
-                    'suspension_label' => Work::formatDuration($activity->suspensionSeconds()),
-                    'overtime_seconds' => $activity->overtimeSeconds(),
-                    'overtime_label' => Work::formatDuration($activity->overtimeSeconds()),
-                    'leave_seconds' => $activity->leaveSeconds(),
-                    'leave_label' => Work::formatDuration($activity->leaveSeconds()),
-                    'utilization_percentage' => $activity->utilizationPercentage(),
-                    'daily_breakdown' => $activity->dailyBreakdown(),
-                    'weekly_summary' => $activity->aggregateBy('week'),
-                    'monthly_summary' => $activity->aggregateBy('month'),
-                    'nroe_total' => (int) $earnedWorks->sum(fn (Work $work) => (int) ($work->nroe ?? 0)),
-                    'earned_amount' => $earnedAmount,
-                    'earned_works_count' => $earnedWorks->filter(fn (Work $work) => $work->accounting_amount !== null)->count(),
-                    'missing_amount_count' => $earnedWorks->filter(fn (Work $work) => $work->accounting_amount === null)->count(),
-                    'target_amount' => self::MONTHLY_TARGET,
-                    'target_percentage' => $targetPercentage,
-                    'target_bar_width' => min(100, $targetPercentage),
-                    'target_class' => $this->targetClass($targetPercentage),
-                    '_series' => $fullRangeSeries,
-                ];
+        return $averageProcessingSeconds === null
+            ? '-'
+            : Work::formatDuration((int) round($averageProcessingSeconds));
+    }
+
+    private function earnedMetrics(Collection $earnedWorks): array
+    {
+        $valuedWorks = $earnedWorks->filter(fn (Work $work) => $work->accounting_amount !== null);
+        $missingAmountWorks = $earnedWorks->filter(fn (Work $work) => $work->accounting_amount === null);
+
+        return [
+            'earned_amount' => round((float) $valuedWorks->sum(fn (Work $work) => (float) $work->accounting_amount), 2),
+            'earned_works_count' => $valuedWorks->count(),
+            'missing_amount_count' => $missingAmountWorks->count(),
+        ];
+    }
+
+    private function attachTimelineResolver(array $row): array
+    {
+        $series = $row['_series'];
+        unset($row['_series']);
+
+        $row['timeline'] = fn (Carbon $windowStart, Carbon $windowEnd): array => $this->clipSeriesToWindow(
+            $series,
+            $windowStart,
+            $windowEnd,
+        );
+
+        return $row;
+    }
+
+    private function clipSeriesToWindow(array $series, Carbon $windowStart, Carbon $windowEnd): array
+    {
+        $windowStartMs = $windowStart->getTimestamp() * 1000;
+        $windowEndMs = $windowEnd->getTimestamp() * 1000;
+        $result = [];
+
+        foreach ($series as $entry) {
+            if (($entry['name'] ?? '') === 'Sospensione') {
+                continue;
             }
 
-            Log::debug('computation: ' . round((microtime(true) - $t) * 1000) . 'ms');
+            $clippedData = [];
 
-        foreach ($rowsData as &$rowData) {
-            $series = $rowData['_series'];
-            unset($rowData['_series']);
-            $rowData['timeline'] = function (Carbon $windowStart, Carbon $windowEnd) use ($series): array {
-                $wsMs = $windowStart->getTimestamp() * 1000;
-                $weMs = $windowEnd->getTimestamp() * 1000;
-                $result = [];
-                foreach ($series as $s) {
-                    if (($s['name'] ?? '') === 'Sospensione') {
-                        continue;
-                    }
+            foreach ($entry['data'] as $point) {
+                [$startMs, $endMs] = $point['y'];
 
-                    $clippedData = [];
-                    foreach ($s['data'] as $point) {
-                        [$startMs, $endMs] = $point['y'];
-                        if ($startMs >= $weMs || $endMs <= $wsMs) {
-                            continue;
-                        }
-                        $clippedStart = max($startMs, $wsMs);
-                        $clippedEnd = min($endMs, $weMs);
-                        $point['y'] = [$clippedStart, $clippedEnd];
-                        $point['meta']['duration_label'] = Work::formatDuration((int) (($clippedEnd - $clippedStart) / 1000));
-                        $clippedData[] = $point;
-                    }
-                    if (! empty($clippedData)) {
-                        $result[] = ['name' => $s['name'], 'color' => $s['color'], 'data' => $clippedData];
-                    }
+                if ($startMs >= $windowEndMs || $endMs <= $windowStartMs) {
+                    continue;
                 }
 
-                return $result;
-            };
-        }
-        unset($rowData);
+                $clippedStart = max($startMs, $windowStartMs);
+                $clippedEnd = min($endMs, $windowEndMs);
+                $point['y'] = [$clippedStart, $clippedEnd];
+                $point['meta']['duration_label'] = Work::formatDuration((int) (($clippedEnd - $clippedStart) / 1000));
+                $clippedData[] = $point;
+            }
 
-        return $rowsData;
+            if (! empty($clippedData)) {
+                $result[] = [
+                    'name' => $entry['name'],
+                    'color' => $entry['color'],
+                    'data' => $clippedData,
+                ];
+            }
+        }
+
+        return $result;
     }
 
     private function applyWorkFilters(Builder $query): void
@@ -365,40 +430,20 @@ class OperatorStats extends Component
 
     private function statusOptions(): array
     {
-        return [
-            'Da Lavorare',
-            'In Lavorazione',
-            'Sospeso',
-            'Attesa Fine Lavori',
-            'KO',
-            'Consegnato',
-            'Fine Lavori',
-        ];
+        return self::STATUS_OPTIONS;
     }
 
     private function ntwScopeOptions(): array
     {
-        return [
-            'FTTH',
-            'FTTH PTE',
-            'FTTH PNRR',
-            '5G',
-            'REACTIVE',
-            'INCREMENTALE',
-            'DESATURAZIONE',
-            'NGAN',
-            'GIUNZIONE',
-            'SUB-LOOP',
-            'Altro',
-        ];
+        return self::NTW_SCOPE_OPTIONS;
     }
 
     private function resolveTimelineWindow(Carbon $startDate, Carbon $endDate): array
     {
         $dayOptions = [];
         $weekOptions = [];
-        $rangeStart = $startDate->copy()->timezone('Europe/Rome')->startOfDay();
-        $rangeEnd = $endDate->copy()->timezone('Europe/Rome')->endOfDay();
+        $rangeStart = $startDate->copy()->timezone(self::TIMEZONE)->startOfDay();
+        $rangeEnd = $endDate->copy()->timezone(self::TIMEZONE)->endOfDay();
         $cursor = $rangeStart->copy();
 
         while ($cursor->lte($rangeEnd)) {
@@ -435,11 +480,11 @@ class OperatorStats extends Component
         }
 
         if ($this->viewMode === 'week') {
-            $weekStart = Carbon::parse($this->selectedWeekStart, 'Europe/Rome')
+            $weekStart = Carbon::parse($this->selectedWeekStart, self::TIMEZONE)
                 ->startOfWeek()
                 ->startOfDay()
                 ->setTimezone('UTC');
-            $weekEnd = Carbon::parse($this->selectedWeekStart, 'Europe/Rome')
+            $weekEnd = Carbon::parse($this->selectedWeekStart, self::TIMEZONE)
                 ->endOfWeek()
                 ->endOfDay()
                 ->setTimezone('UTC');
@@ -447,7 +492,7 @@ class OperatorStats extends Component
             return [$weekStart, $weekEnd, $dayOptions, $weekOptions];
         }
 
-        $day = Carbon::parse($this->selectedDay, 'Europe/Rome');
+        $day = Carbon::parse($this->selectedDay, self::TIMEZONE);
 
         return [
             $day->copy()->setTime(7, 0, 0)->setTimezone('UTC'),
@@ -462,14 +507,76 @@ class OperatorStats extends Component
         if ($this->viewMode === 'week') {
             return sprintf(
                 'Settimana %s - %s',
-                $viewWindowStart->copy()->timezone('Europe/Rome')->format('d/m/Y'),
-                $viewWindowEnd->copy()->timezone('Europe/Rome')->format('d/m/Y'),
+                $viewWindowStart->copy()->timezone(self::TIMEZONE)->format('d/m/Y'),
+                $viewWindowEnd->copy()->timezone(self::TIMEZONE)->format('d/m/Y'),
             );
         }
 
         return sprintf(
             '%s, fascia 07:00 - 19:00',
-            $viewWindowStart->copy()->timezone('Europe/Rome')->format('d/m/Y'),
+            $viewWindowStart->copy()->timezone(self::TIMEZONE)->format('d/m/Y'),
         );
+    }
+
+    private function setDefaultDateFilters(Carbon $now): void
+    {
+        $this->startDate = $now->copy()->startOfMonth()->toDateString();
+        $this->endDate = $now->toDateString();
+        $this->selectedDay = $now->toDateString();
+        $this->selectedWeekStart = $now->copy()->startOfWeek()->toDateString();
+    }
+
+    private function selectedOperatorId(): string
+    {
+        return $this->lockedOperatorId !== null
+            ? (string) $this->lockedOperatorId
+            : $this->operatorId;
+    }
+
+    private function resolveOperators(string $selectedOperatorId): Collection
+    {
+        return User::permission('get works')
+            ->when($selectedOperatorId !== '', fn (Builder $query) => $query->whereKey($selectedOperatorId))
+            ->orderBy('name')
+            ->get();
+    }
+
+    private function buildTimelineConfig(Carbon $viewWindowStart, Carbon $viewWindowEnd): array
+    {
+        return [
+            'mode' => $this->viewMode,
+            'min' => $viewWindowStart->getTimestamp() * 1000,
+            'max' => $viewWindowEnd->getTimestamp() * 1000,
+        ];
+    }
+
+    private function buildViewData(
+        array $rows,
+        array $timelineData,
+        array $timelineConfig,
+        array $dayOptions,
+        array $weekOptions,
+        Carbon $viewWindowStart,
+        Carbon $viewWindowEnd,
+        bool $canViewEconomicReport,
+    ): array {
+        return [
+            'rows' => $rows,
+            'economicSummary' => $this->buildEconomicSummary($rows),
+            'canViewEconomicReport' => $canViewEconomicReport,
+            'monthlyTarget' => self::MONTHLY_TARGET,
+            'operatorOptions' => User::permission('get works')->orderBy('name')->get(['id', 'name']),
+            'hideOperatorFilter' => $this->hideOperatorFilterWhenLocked && $this->lockedOperatorId !== null,
+            'companyOptions' => Company::orderBy('name')->get(['id', 'name']),
+            'workPhaseOptions' => WorkPhase::orderBy('name')->get(['id', 'name']),
+            'ntwScopeOptions' => $this->ntwScopeOptions(),
+            'statusOptions' => $this->statusOptions(),
+            'timelineData' => $timelineData,
+            'dayOptions' => $dayOptions,
+            'weekOptions' => $weekOptions,
+            'timelineModeOptions' => self::TIMELINE_MODE_OPTIONS,
+            'timelineWindowLabel' => $this->timelineWindowLabel($viewWindowStart, $viewWindowEnd),
+            'timelineConfig' => $timelineConfig,
+        ];
     }
 }
