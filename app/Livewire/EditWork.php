@@ -61,9 +61,9 @@ class EditWork extends Component
         $this->wo_number = $this->work->wo_number;
         $this->unica_number = $this->work->unica_number;
         $this->notes = $this->work->notes;
-        $this->daphne = $this->work->daphne;
+        $this->daphne = $this->work->daphne === null ? '' : (int) $this->work->daphne;
         $this->tempo_daphne = $this->work->tempo_daphne;
-        $this->go_live = $this->work->go_live;
+        $this->go_live = $this->work->go_live === null ? '' : (int) $this->work->go_live;
         $this->date_in_str = $this->work->date_in_str;
         $this->date_out_str = $this->work->date_out_str;
         $this->expected_delivery_date = $this->work->expected_delivery_date?->format('Y-m-d');

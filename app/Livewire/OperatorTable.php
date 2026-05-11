@@ -216,6 +216,8 @@ class OperatorTable extends DataTableComponent
                 ->sortable()->searchable()->secondaryHeaderFilter('unica_number'),
             Column::make("AO/CNO", "ao_cno")->setCustomSlug('AO CNO')
                 ->sortable()->searchable()->secondaryHeaderFilter('ao_cno'),
+            Column::make('Daphne', 'daphne')
+                ->format(fn($value) => $value ? 'SI' : 'NO'),
             Column::make("Data prevista consegna", "expected_delivery_date")->format(
                 function ($value, $row, Column $column) {
                     if ($value) {
