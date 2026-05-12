@@ -215,6 +215,12 @@ class DecommissioningTable extends DataTableComponent
                 ->format(fn ($value) => $value ? 'SI' : 'NO')
                 ->hideIf(! Auth::user()->hasRole('admin')),
 
+            Column::make('Val', 'val')
+                ->label(fn ($row) => $row->val
+                    ? '<span class="badge rounded-pill text-bg-success" title="Vero"><i class="bi bi-check-lg"></i></span>'
+                    : '<span class="badge rounded-pill text-bg-danger" title="Falso"><i class="bi bi-x-lg"></i></span>')
+                ->html(),
+
             Column::make('Azioni')
                 ->label(fn ($row) => view('decommissionings.decommissionings-table-actions', ['row' => $row]))
                 ->html(),

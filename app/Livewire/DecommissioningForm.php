@@ -81,6 +81,7 @@ class DecommissioningForm extends Component
     public $agio = 0;
     public $pagata_prog = '0';
     public $pagata_ne = '0';
+    public $val = '0';
 
     public $isEdit = false;
     public $isShow = false;
@@ -198,6 +199,7 @@ class DecommissioningForm extends Component
             'ne_amount_6' => 'nullable|numeric|min:0',
             'pagata_prog' => 'nullable|in:0,1',
             'pagata_ne' => 'nullable|in:0,1',
+            'val' => 'nullable|in:0,1',
         ] + $this->mediaUploadValidationRules();
     }
 
@@ -227,6 +229,7 @@ class DecommissioningForm extends Component
             'status' => $this->status ?: 'Da Lavorare',
             'data_il' => $this->emptyToNull($this->data_il),
             'data_fl' => $this->emptyToNull($this->data_fl),
+            'val' => $this->stringToBool($this->val),
         ];
 
         foreach ($this->quantityFields() as $field) {
@@ -316,6 +319,7 @@ class DecommissioningForm extends Component
         $this->agio = $decommissioning->agio ?? 0;
         $this->pagata_prog = $this->boolToString($decommissioning->pagata_prog);
         $this->pagata_ne = $this->boolToString($decommissioning->pagata_ne);
+        $this->val = $this->boolToString($decommissioning->val);
 
         $this->refreshExistingMedia();
         $this->files = [];

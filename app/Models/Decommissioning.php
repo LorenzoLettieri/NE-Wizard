@@ -43,6 +43,7 @@ class Decommissioning extends Model
         'agio',
         'pagata_prog',
         'pagata_ne',
+        'val',
     ];
 
     protected $casts = [
@@ -72,6 +73,7 @@ class Decommissioning extends Model
         'agio' => 'decimal:2',
         'pagata_prog' => 'boolean',
         'pagata_ne' => 'boolean',
+        'val' => 'boolean',
     ];
 
     public function central(): BelongsTo

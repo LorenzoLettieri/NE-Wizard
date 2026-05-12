@@ -80,6 +80,7 @@ class DecommissioningExport implements FromQuery, WithMapping, WithHeadings, Sho
             'Agio',
             'Pagata Prog',
             'Pagata NE',
+            'Val',
         ];
     }
 
@@ -123,6 +124,7 @@ class DecommissioningExport implements FromQuery, WithMapping, WithHeadings, Sho
             $decommissioning->agio,
             $decommissioning->pagata_prog ? 'SI' : 'NO',
             $decommissioning->pagata_ne ? 'SI' : 'NO',
+            $decommissioning->val ? 'Vero' : 'Falso',
         ];
     }
 
