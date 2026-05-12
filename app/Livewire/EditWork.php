@@ -185,10 +185,10 @@ class EditWork extends Component
             'notes' => $this->notes,
             'suspension_history' => $this->suspension_history,
             'tempo_daphne' => $this->tempo_daphne,
-            'go_live' => $this->go_live,
+            'go_live' => $this->go_live !== '' ? (int) $this->go_live : null,
             'date_in_str' => $this->date_in_str,
             'date_out_str' => $this->date_out_str,
-            'daphne' => $this->daphne,
+            'daphne' => $this->daphne !== '' ? (int) $this->daphne : null,
         ], $this->accountingPayload());
 
         if ($this->canManageAdministrativeFields()) {

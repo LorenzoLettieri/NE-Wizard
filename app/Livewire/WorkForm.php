@@ -82,7 +82,7 @@ class WorkForm extends Component
             'nroe' => $this->nroe,
             'wo_number' => $this->wo_number,
             'unica_number' => $this->unica_number,
-            'go_live' => $this->go_live,
+            'go_live' => $this->go_live !== '' ? (int) $this->go_live : null,
             'date_in_str' => $this->date_in_str,
             'date_out_str' => $this->date_out_str,
             'notes' => $this->notes,
