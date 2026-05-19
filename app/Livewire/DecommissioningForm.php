@@ -4,6 +4,8 @@ namespace App\Livewire;
 
 use App\Livewire\Concerns\HandlesMediaUploads;
 use App\Models\Central;
+use App\Models\Company;
+use App\Models\CompanyDecommissioningRate;
 use App\Models\Comune;
 use App\Models\Decommissioning;
 use App\Models\Regione;
@@ -20,34 +22,8 @@ class DecommissioningForm extends Component
     use HandlesMediaUploads;
     use WithFileUploads;
 
-    private const PROG_RATES = [
-        1 => 120,
-        2 => 120,
-        3 => 30,
-        4 => 120,
-        5 => 12,
-        6 => 12,
-    ];
-
-    private const NE_RATES = [
-        1 => 185,
-        2 => 185,
-        3 => 49,
-        4 => 185,
-        5 => 12,
-        6 => 12,
-    ];
-
-    private const QTY_LABELS = [
-        1 => '(1) Progettazione Esecutiva Rete FTTC',
-        2 => '(2) Prog Esecutiva ripresa Rete Rigida con ARL',
-        3 => '(3) Prog Esecutiva ripresa settore cavo 100CP su ARL esistente',
-        4 => '(4) Prog Esecutiva adeguamenti Rete Trasporto',
-        5 => '(5) Prog Voice GW su FTTCab e ARL compreso compattamento',
-        6 => '(6) Prog capparato CDX su ARL compreso compattamento',
-    ];
-
     public $central_id;
+    public $company_id;
     public $clli;
     public $comune_id;
     public $regione_id;
@@ -97,6 +73,14 @@ class DecommissioningForm extends Component
     }
 
     #[Computed]
+    public function companies()
+    {
+        return cache()->remember('deco_companies_list', 3600, function () {
+            return Company::orderBy('name')->pluck('name', 'id')->toArray();
+        });
+    }
+
+    #[Computed]
     public function comuni()
     {
         return cache()->remember('deco_comuni_list', 3600, function () {
@@ -121,7 +105,7 @@ class DecommissioningForm extends Component
     #[Computed]
     public function quantityLabels()
     {
-        return self::QTY_LABELS;
+        return CompanyDecommissioningRate::ITEM_LABELS;
     }
 
     #[On('view-decommissioning')]
@@ -159,7 +143,7 @@ class DecommissioningForm extends Component
         if (
             auth()->check() &&
             auth()->user()->hasRole('admin') &&
-            in_array($property, $this->quantityFields(), true)
+            in_array($property, array_merge(['company_id'], $this->quantityFields()), true)
         ) {
             $this->syncEconomicFieldsWithQuantities();
         }
@@ -168,6 +152,7 @@ class DecommissioningForm extends Component
     protected function rules(): array
     {
         return [
+            'company_id' => ['nullable', Rule::exists('companies', 'id')],
             'central_id' => ['nullable', Rule::exists('centrals', 'id')],
             'clli' => 'nullable|string|max:255',
             'comune_id' => ['nullable', Rule::exists('comuni', 'id')],
@@ -218,6 +203,7 @@ class DecommissioningForm extends Component
             : new Decommissioning();
 
         $data = [
+            'company_id' => $this->emptyToNull($this->company_id),
             'clli' => $this->emptyToNull($this->clli),
             'central_id' => $this->emptyToNull($this->central_id),
             'comune_id' => $this->emptyToNull($this->comune_id),
@@ -290,6 +276,7 @@ class DecommissioningForm extends Component
         $decommissioning = Decommissioning::with('media')->findOrFail($id);
 
         $this->decommissioningId = $decommissioning->id;
+        $this->company_id = $decommissioning->company_id;
         $this->clli = $decommissioning->clli;
         $this->central_id = $decommissioning->central_id;
         $this->comune_id = $decommissioning->comune_id;
@@ -353,10 +340,13 @@ class DecommissioningForm extends Component
         $totProg = 0;
         $totNe = 0;
 
-        foreach (self::PROG_RATES as $index => $rate) {
+        $rates = $this->decommissioningRatesByItem();
+
+        foreach (CompanyDecommissioningRate::ITEM_LABELS as $index => $label) {
             $quantity = $this->normalizeIntegerField($this->{'qty_' . $index}) ?? 0;
-            $progAmount = round($quantity * $rate, 2);
-            $neAmount = round($quantity * self::NE_RATES[$index], 2);
+            $rate = $rates[$index] ?? null;
+            $progAmount = round($quantity * (float) ($rate?->prog_price ?? 0), 2);
+            $neAmount = round($quantity * (float) ($rate?->ne_price ?? 0), 2);
 
             $data['prog_amount_' . $index] = $progAmount;
             $data['ne_amount_' . $index] = $neAmount;
@@ -370,6 +360,18 @@ class DecommissioningForm extends Component
         $data['agio'] = round($totNe - $totProg, 2);
 
         return $data;
+    }
+
+    private function decommissioningRatesByItem()
+    {
+        if (! $this->company_id) {
+            return collect();
+        }
+
+        return CompanyDecommissioningRate::query()
+            ->where('company_id', $this->company_id)
+            ->get()
+            ->keyBy('item_index');
     }
 
     private function syncEconomicFieldsWithQuantities(): void

@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 class Decommissioning extends Model
 {
     protected $fillable = [
+        'company_id',
         'clli',
         'central_id',
         'comune_id',
@@ -79,6 +80,11 @@ class Decommissioning extends Model
     public function central(): BelongsTo
     {
         return $this->belongsTo(Central::class);
+    }
+
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class);
     }
 
     public function comune(): BelongsTo

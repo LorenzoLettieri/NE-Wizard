@@ -15,8 +15,18 @@ class Company extends Model
         return $this->hasMany(Work::class);
     }
 
+    public function decommissionings(): HasMany
+    {
+        return $this->hasMany(Decommissioning::class);
+    }
+
     public function workPhaseRates(): HasMany
     {
         return $this->hasMany(CompanyWorkPhaseRate::class);
+    }
+
+    public function decommissioningRates(): HasMany
+    {
+        return $this->hasMany(CompanyDecommissioningRate::class);
     }
 }

@@ -29,13 +29,25 @@
             <a class="nav-link cursor-pointer {{ $activeTab === 'CompanyWorkPhaseRate' ? 'active' : '' }}"
                wire:click="setTab('CompanyWorkPhaseRate')">Matrice Prezzi</a>
         </li>
+        <li class="nav-item">
+            <a class="nav-link cursor-pointer {{ $activeTab === 'CompanyDecommissioningRate' ? 'active' : '' }}"
+               wire:click="setTab('CompanyDecommissioningRate')">Matrice Prezzi Decommissioning</a>
+        </li>
     </ul>
 
     <!-- Action Bar -->
     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-        <h4>{{ $activeTab === 'CompanyWorkPhaseRate' ? 'Matrice Prezzi' : $activeTab }}</h4>
+        <h4>
+            @if($activeTab === 'CompanyWorkPhaseRate')
+                Matrice Prezzi
+            @elseif($activeTab === 'CompanyDecommissioningRate')
+                Matrice Prezzi Decommissioning
+            @else
+                {{ $activeTab }}
+            @endif
+        </h4>
         <div class="d-flex align-items-center gap-2">
-            @if($activeTab !== 'CompanyWorkPhaseRate')
+            @if(! in_array($activeTab, ['CompanyWorkPhaseRate', 'CompanyDecommissioningRate'], true))
                 <input
                     type="text"
                     class="form-control"
@@ -44,7 +56,7 @@
                     placeholder="{{ $searchPlaceholder }}"
                 >
             @endif
-            @if($activeTab !== 'CompanyWorkPhaseRate')
+            @if(! in_array($activeTab, ['CompanyWorkPhaseRate', 'CompanyDecommissioningRate'], true))
                 <button class="btn btn-success text-nowrap" wire:click="openCreateModal">
                     <i class="bi bi-plus-lg me-1"></i> Aggiungi Nuovo
                 </button>
@@ -103,6 +115,64 @@
                         <tr>
                             <td colspan="{{ max(1, $workPhasesForRates->count() + 1) }}" class="text-center py-4 text-muted">
                                 Aggiungi almeno una company e una fase lavoro per compilare la matrice.
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    @elseif($activeTab === 'CompanyDecommissioningRate')
+        <div class="alert alert-info">
+            Inserisci i valori unitari PROG e NE per ogni combinazione Company/voce decommissioning. Il decommissioning salver&agrave; gli importi calcolati come tariffa unitaria &times; quantit&agrave;.
+        </div>
+
+        <div class="table-responsive bg-body-tertiary rounded shadow-sm">
+            <table class="table table-bordered table-sm align-middle mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th scope="col" class="text-nowrap">Company</th>
+                        @foreach($decommissioningRateItems as $itemIndex => $itemLabel)
+                            <th scope="col" class="text-nowrap text-center">{{ $itemLabel }}</th>
+                        @endforeach
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($companiesForRates as $company)
+                        <tr>
+                            <th scope="row" class="text-nowrap">{{ $company->name }}</th>
+                            @foreach($decommissioningRateItems as $itemIndex => $itemLabel)
+                                <td style="min-width: 190px;">
+                                    <div class="vstack gap-1">
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text">PROG &euro;</span>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                step="0.01"
+                                                class="form-control text-end"
+                                                wire:model.blur="decommissioningRateValues.{{ $company->id }}.{{ $itemIndex }}.prog_price"
+                                                wire:blur="saveDecommissioningRate({{ $company->id }}, {{ $itemIndex }})"
+                                            >
+                                        </div>
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text">NE &euro;</span>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                step="0.01"
+                                                class="form-control text-end"
+                                                wire:model.blur="decommissioningRateValues.{{ $company->id }}.{{ $itemIndex }}.ne_price"
+                                                wire:blur="saveDecommissioningRate({{ $company->id }}, {{ $itemIndex }})"
+                                            >
+                                        </div>
+                                    </div>
+                                </td>
+                            @endforeach
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="{{ max(1, count($decommissioningRateItems) + 1) }}" class="text-center py-4 text-muted">
+                                Aggiungi almeno una company per compilare la matrice decommissioning.
                             </td>
                         </tr>
                     @endforelse

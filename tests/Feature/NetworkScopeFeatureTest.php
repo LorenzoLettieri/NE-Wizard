@@ -6,6 +6,7 @@ use App\Livewire\AdminBaseTables;
 use App\Livewire\OperatorTable;
 use App\Livewire\WorkForm;
 use App\Livewire\WorksTable;
+use App\Models\Company;
 use App\Models\NetworkScope;
 use App\Models\User;
 use App\Models\Work;
@@ -194,5 +195,37 @@ class NetworkScopeFeatureTest extends TestCase
 
         Livewire::test(OperatorTable::class)
             ->assertSee('Ambito NTW');
+    }
+
+    public function test_operator_table_filters_by_company(): void
+    {
+        $this->seed(RoleSeeder::class);
+
+        $operator = User::factory()->create();
+        $operator->assignRole('operator');
+
+        $matchingCompany = Company::create(['name' => 'Impresa Visibile']);
+        $otherCompany = Company::create(['name' => 'Impresa Nascosta']);
+
+        $matchingWork = Work::create([
+            'company_id' => $matchingCompany->id,
+            'network' => 'NTW-COMPANY-MATCH',
+            'status' => 'Da Lavorare',
+        ]);
+        $otherWork = Work::create([
+            'company_id' => $otherCompany->id,
+            'network' => 'NTW-COMPANY-OTHER',
+            'status' => 'Da Lavorare',
+        ]);
+
+        $matchingWork->users()->attach($operator->id);
+        $otherWork->users()->attach($operator->id);
+
+        $this->actingAs($operator);
+
+        Livewire::test(OperatorTable::class)
+            ->call('setFilter', 'company', 'Impresa Visibile')
+            ->assertSee('NTW-COMPANY-MATCH')
+            ->assertDontSee('NTW-COMPANY-OTHER');
     }
 }

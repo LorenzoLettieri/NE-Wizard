@@ -8,6 +8,7 @@ use App\Models\Central;
 use App\Models\Comune;
 use App\Models\Regione;
 use App\Models\Company;
+use App\Models\CompanyDecommissioningRate;
 use App\Models\CompanyWorkPhaseRate;
 use App\Models\NetworkScope;
 use App\Models\WorkPhase;
@@ -31,6 +32,7 @@ class AdminBaseTables extends Component
     // Form data (we use a generic array to hold fields based on active tab)
     public $formData = [];
     public array $rateValues = [];
+    public array $decommissioningRateValues = [];
 
     // All possible fields across our models for resetting
     protected $defaultForm = [
@@ -60,6 +62,10 @@ class AdminBaseTables extends Component
 
         if ($this->activeTab === 'CompanyWorkPhaseRate') {
             $this->loadRateValues();
+        }
+
+        if ($this->activeTab === 'CompanyDecommissioningRate') {
+            $this->loadDecommissioningRateValues();
         }
     }
 
@@ -114,6 +120,7 @@ class AdminBaseTables extends Component
             'WorkPhase' => WorkPhase::class,
             'NetworkScope' => NetworkScope::class,
             'CompanyWorkPhaseRate' => CompanyWorkPhaseRate::class,
+            'CompanyDecommissioningRate' => CompanyDecommissioningRate::class,
             default => null,
         };
     }
@@ -159,7 +166,7 @@ class AdminBaseTables extends Component
             $rules = [
                 'formData.name' => 'required|string|max:255|unique:network_scopes,name' . $ignoreId,
             ];
-        } elseif ($this->activeTab === 'CompanyWorkPhaseRate') {
+        } elseif ($this->activeTab === 'CompanyWorkPhaseRate' || $this->activeTab === 'CompanyDecommissioningRate') {
             return;
         }
 
@@ -226,6 +233,7 @@ class AdminBaseTables extends Component
             'WorkPhase' => 'Cerca fase lavoro...',
             'NetworkScope' => 'Cerca ambito network...',
             'CompanyWorkPhaseRate' => 'Cerca company o fase lavoro...',
+            'CompanyDecommissioningRate' => 'Cerca company o voce decommissioning...',
             default => 'Cerca...',
         };
     }
@@ -275,6 +283,73 @@ class AdminBaseTables extends Component
         }
     }
 
+    public function saveDecommissioningRate(int $companyId, int $itemIndex): void
+    {
+        abort_unless(array_key_exists($itemIndex, CompanyDecommissioningRate::ITEM_LABELS), 404);
+
+        $values = $this->decommissioningRateValues[$companyId][$itemIndex] ?? [];
+        $progPrice = $this->normalizeDecimalInput($values['prog_price'] ?? null);
+        $nePrice = $this->normalizeDecimalInput($values['ne_price'] ?? null);
+
+        validator(
+            [
+                'prog_price' => $progPrice,
+                'ne_price' => $nePrice,
+            ],
+            [
+                'prog_price' => 'nullable|numeric|min:0|max:99999999.99',
+                'ne_price' => 'nullable|numeric|min:0|max:99999999.99',
+            ]
+        )->validate();
+
+        if (($progPrice === null || $progPrice === '') && ($nePrice === null || $nePrice === '')) {
+            CompanyDecommissioningRate::query()
+                ->where('company_id', $companyId)
+                ->where('item_index', $itemIndex)
+                ->delete();
+
+            $this->decommissioningRateValues[$companyId][$itemIndex]['prog_price'] = '';
+            $this->decommissioningRateValues[$companyId][$itemIndex]['ne_price'] = '';
+            session()->flash('message', 'Tariffa decommissioning rimossa.');
+
+            return;
+        }
+
+        $rate = CompanyDecommissioningRate::updateOrCreate(
+            [
+                'company_id' => $companyId,
+                'item_index' => $itemIndex,
+            ],
+            [
+                'prog_price' => $progPrice === null || $progPrice === '' ? null : round((float) $progPrice, 2),
+                'ne_price' => $nePrice === null || $nePrice === '' ? null : round((float) $nePrice, 2),
+            ]
+        );
+
+        $this->decommissioningRateValues[$companyId][$itemIndex]['prog_price'] = $rate->prog_price;
+        $this->decommissioningRateValues[$companyId][$itemIndex]['ne_price'] = $rate->ne_price;
+        session()->flash('message', 'Tariffa decommissioning salvata.');
+    }
+
+    private function loadDecommissioningRateValues(): void
+    {
+        $this->decommissioningRateValues = [];
+
+        $rates = CompanyDecommissioningRate::query()->get();
+
+        foreach ($rates as $rate) {
+            $this->decommissioningRateValues[$rate->company_id][$rate->item_index] = [
+                'prog_price' => $rate->prog_price,
+                'ne_price' => $rate->ne_price,
+            ];
+        }
+    }
+
+    private function normalizeDecimalInput($value)
+    {
+        return is_string($value) ? str_replace(',', '.', trim($value)) : $value;
+    }
+
     private function applySearch($query)
     {
         $search = trim($this->search);
@@ -319,6 +394,18 @@ class AdminBaseTables extends Component
                 'searchPlaceholder' => $this->getSearchPlaceholder(),
                 'companiesForRates' => Company::orderBy('name')->get(),
                 'workPhasesForRates' => WorkPhase::orderBy('name')->get(),
+                'decommissioningRateItems' => [],
+            ]);
+        }
+
+        if ($this->activeTab === 'CompanyDecommissioningRate') {
+            return view('livewire.admin-base-tables', [
+                'records' => collect([]),
+                'regioni' => Regione::orderBy('nome')->pluck('nome', 'id'),
+                'searchPlaceholder' => $this->getSearchPlaceholder(),
+                'companiesForRates' => Company::orderBy('name')->get(),
+                'workPhasesForRates' => collect([]),
+                'decommissioningRateItems' => CompanyDecommissioningRate::ITEM_LABELS,
             ]);
         }
 
@@ -336,6 +423,7 @@ class AdminBaseTables extends Component
             'searchPlaceholder' => $this->getSearchPlaceholder(),
             'companiesForRates' => collect([]),
             'workPhasesForRates' => collect([]),
+            'decommissioningRateItems' => [],
         ]);
     }
 }

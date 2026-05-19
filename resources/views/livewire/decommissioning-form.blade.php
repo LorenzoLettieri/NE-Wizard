@@ -25,6 +25,7 @@
                     <h6 class="text-muted text-uppercase small fw-bold">Informazioni Generali</h6>
                     <ul class="list-group list-group-flush">
                         <li class="list-group-item d-flex justify-content-between"><span>CLLI</span><strong>{{ $clli ?? '-' }}</strong></li>
+                        <li class="list-group-item d-flex justify-content-between"><span>Impresa</span><strong>{{ $this->companies[$company_id] ?? '-' }}</strong></li>
                         <li class="list-group-item d-flex justify-content-between"><span>Centrale</span><strong>{{ $this->centrali[$central_id] ?? '-' }}</strong></li>
                         <li class="list-group-item d-flex justify-content-between"><span>Comune</span><strong>{{ $this->comuni[$comune_id] ?? '-' }}</strong></li>
                         <li class="list-group-item d-flex justify-content-between"><span>Regione</span><strong>{{ $this->regioni[$regione_id] ?? '-' }}</strong></li>
@@ -151,6 +152,15 @@
                         <div class="col-md-4">
                             <label class="form-label">CLLI</label>
                             <input type="text" class="form-control shadow-sm" wire:model="clli">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Impresa</label>
+                            <select class="form-select tom-select shadow-sm" wire:model="company_id">
+                                <option value="">-- Seleziona --</option>
+                                @foreach ($this->companies as $id => $name)
+                                    <option value="{{ $id }}">{{ $name }}</option>
+                                @endforeach
+                            </select>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">Centrale</label>

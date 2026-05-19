@@ -3,7 +3,10 @@
 namespace Tests\Feature;
 
 use App\Livewire\DecommissioningForm;
+use App\Livewire\AdminBaseTables;
 use App\Models\Central;
+use App\Models\Company;
+use App\Models\CompanyDecommissioningRate;
 use App\Models\Comune;
 use App\Models\Decommissioning;
 use App\Models\Regione;
@@ -44,10 +47,24 @@ class DecommissioningFeatureTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_deco_users_have_server_side_economic_values_recalculated_from_quantities(): void
+    public function test_deco_users_have_server_side_economic_values_recalculated_from_company_decommissioning_rates(): void
     {
         $this->seed(RoleSeeder::class);
         [$regione, $comune, $central] = $this->createLookups();
+
+        $company = Company::create(['name' => 'Impresa Tariffe']);
+        CompanyDecommissioningRate::create([
+            'company_id' => $company->id,
+            'item_index' => 1,
+            'prog_price' => 135.50,
+            'ne_price' => 205.25,
+        ]);
+        CompanyDecommissioningRate::create([
+            'company_id' => $company->id,
+            'item_index' => 3,
+            'prog_price' => 40.00,
+            'ne_price' => 55.00,
+        ]);
 
         $deco = User::factory()->create();
         $deco->assignRole('Deco');
@@ -55,6 +72,7 @@ class DecommissioningFeatureTest extends TestCase
         $this->actingAs($deco);
 
         Livewire::test(DecommissioningForm::class)
+            ->set('company_id', $company->id)
             ->set('regione_id', $regione->id)
             ->set('comune_id', $comune->id)
             ->set('central_id', $central->id)
@@ -68,15 +86,57 @@ class DecommissioningFeatureTest extends TestCase
 
         $this->assertSame(2, $record->qty_1);
         $this->assertSame(1, $record->qty_3);
-        $this->assertSame('240.00', $record->prog_amount_1);
-        $this->assertSame('30.00', $record->prog_amount_3);
-        $this->assertSame('370.00', $record->ne_amount_1);
-        $this->assertSame('49.00', $record->ne_amount_3);
-        $this->assertSame('270.00', $record->tot_prog);
-        $this->assertSame('419.00', $record->tot_ne);
-        $this->assertSame('149.00', $record->agio);
+        $this->assertSame('271.00', $record->prog_amount_1);
+        $this->assertSame('40.00', $record->prog_amount_3);
+        $this->assertSame('410.50', $record->ne_amount_1);
+        $this->assertSame('55.00', $record->ne_amount_3);
+        $this->assertSame('311.00', $record->tot_prog);
+        $this->assertSame('465.50', $record->tot_ne);
+        $this->assertSame('154.50', $record->agio);
         $this->assertFalse($record->pagata_prog);
         $this->assertFalse($record->pagata_ne);
+    }
+
+    public function test_admin_can_save_company_decommissioning_rate_from_base_tables(): void
+    {
+        $company = Company::create(['name' => 'Impresa Deco']);
+
+        Livewire::test(AdminBaseTables::class)
+            ->call('setTab', 'CompanyDecommissioningRate')
+            ->set("decommissioningRateValues.{$company->id}.2.prog_price", '88,50')
+            ->set("decommissioningRateValues.{$company->id}.2.ne_price", '120.75')
+            ->call('saveDecommissioningRate', $company->id, 2);
+
+        $this->assertDatabaseHas('company_decommissioning_rates', [
+            'company_id' => $company->id,
+            'item_index' => 2,
+            'prog_price' => 88.50,
+            'ne_price' => 120.75,
+        ]);
+    }
+
+    public function test_decommissioning_can_be_associated_to_a_company(): void
+    {
+        $this->seed(RoleSeeder::class);
+        [, , $central] = $this->createLookups();
+
+        $company = Company::create(['name' => 'Impresa Test']);
+
+        $deco = User::factory()->create();
+        $deco->assignRole('Deco');
+
+        $this->actingAs($deco);
+
+        Livewire::test(DecommissioningForm::class)
+            ->set('company_id', $company->id)
+            ->set('central_id', $central->id)
+            ->set('progettista_id', $deco->id)
+            ->call('save')
+            ->assertRedirect(route('decommissionings.table'));
+
+        $record = Decommissioning::with('company')->firstOrFail();
+
+        $this->assertTrue($record->company->is($company));
     }
 
     public function test_admin_can_override_economic_values_and_flags(): void

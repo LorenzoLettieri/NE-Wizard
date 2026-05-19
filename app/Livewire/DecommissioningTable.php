@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use App\Models\Central;
+use App\Models\Company;
 use App\Models\Comune;
 use App\Models\Decommissioning;
 use App\Models\Regione;
@@ -21,7 +22,7 @@ class DecommissioningTable extends DataTableComponent
     public function builder(): Builder
     {
         return Decommissioning::query()
-            ->with(['central', 'comune', 'regione', 'progettista'])
+            ->with(['company', 'central', 'comune', 'regione', 'progettista'])
             ->withCount('media');
     }
 
@@ -58,6 +59,10 @@ class DecommissioningTable extends DataTableComponent
 
             TextFilter::make('CLLI', 'clli')
                 ->filter(fn (Builder $builder, string $value) => $builder->where('clli', 'like', "%{$value}%")),
+
+            SelectFilter::make('Impresa', 'company_id')
+                ->options(['' => 'Tutte'] + Company::orderBy('name')->pluck('name', 'id')->toArray())
+                ->filter(fn (Builder $builder, string $value) => $builder->where('company_id', $value)),
 
             SelectFilter::make('Centrale', 'central_id')
                 ->options(['' => 'Tutte'] + Central::orderBy('central')->pluck('central', 'id')->toArray())
@@ -141,6 +146,11 @@ class DecommissioningTable extends DataTableComponent
                 ->sortable()
                 ->searchable()
                 ->secondaryHeaderFilter('clli'),
+
+            Column::make('Impresa', 'company.name')
+                ->sortable()
+                ->searchable()
+                ->secondaryHeaderFilter('company_id'),
 
             Column::make('Centrale', 'central.central')
                 ->sortable()

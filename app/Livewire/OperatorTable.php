@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use Carbon\Carbon;
+use App\Models\Company;
 use App\Models\NetworkScope;
 use App\Models\Work;
 use App\Models\WorkPhase;
@@ -63,6 +64,9 @@ class OperatorTable extends DataTableComponent
 
     public function filters(): array
     {
+        $companies = ['' => 'Tutte'];
+        $companies = array_merge($companies, Company::pluck('name', 'name')->toArray());
+
         return [
             DateRangeFilter::make('Data Creazione', 'created_at')->config([
             'allowInput' => true,   // Allow manual input of dates
@@ -91,6 +95,14 @@ class OperatorTable extends DataTableComponent
 
             ])->filter(function(Builder $builder, string $value){
                 $builder->where('status', $value);
+            }),
+
+        SelectFilter::make('Impresa', 'company')
+            ->options($companies)
+            ->filter(function(Builder $builder, string $value){
+                $builder->whereHas('company', function ($query) use ($value) {
+                    $query->where('name', 'like', "%$value%");
+                });
             }),
 
         SelectFilter::make('Fase', 'work_phase_id')
@@ -158,7 +170,7 @@ class OperatorTable extends DataTableComponent
             })
             ->sortable()->secondaryHeaderFilter(filterKey: 'created_at'),
             Column::make("Impresa", "company.name")
-                ->sortable()->searchable(),
+                ->sortable()->searchable()->secondaryHeaderFilter(filterKey: 'company'),
             Column::make("Centrale", "central.central")
                 ->sortable()->searchable(),
             Column::make("Regione", "central.region")
