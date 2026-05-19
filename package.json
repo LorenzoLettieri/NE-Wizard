@@ -15,6 +15,7 @@
     },
     "dependencies": {
         "bootstrap": "^5.3.5",
+        "filepond": "^4.32.12",
         "tom-select": "^2.4.3"
     }
 }

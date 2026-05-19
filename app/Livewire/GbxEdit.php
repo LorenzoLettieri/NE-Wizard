@@ -32,6 +32,7 @@ class GbxEdit extends Component
         $this->gbx = Gbx::with('media')->find($id);
         $this->fill($this->gbx->toArray());
         $this->files = [];
+        $this->initializeChunkedMediaUploads('gbx', $this->gbx->id);
         $this->clearUploadFeedback();
         $this->clearPendingMediaRemovals();
     }
@@ -56,6 +57,10 @@ class GbxEdit extends Component
             'files',
             'uploadMessage',
             'uploadMessageType',
+            'mediaUploadContext',
+            'mediaUploadModelId',
+            'mediaUploadFormToken',
+            'completedUploadSessionIds',
         ]));
 
         $uploadedCount = 0;

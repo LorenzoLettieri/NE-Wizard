@@ -76,7 +76,7 @@ class DecommissioningForm extends Component
     public function companies()
     {
         return cache()->remember('deco_companies_list', 3600, function () {
-            return Company::orderBy('name')->pluck('name', 'id')->toArray();
+            return Company::orderBy('id')->pluck('name', 'id')->toArray();
         });
     }
 
@@ -136,6 +136,8 @@ class DecommissioningForm extends Component
         if (auth()->check() && auth()->user()->hasRole('admin')) {
             $this->syncEconomicFieldsWithQuantities();
         }
+
+        $this->initializeChunkedMediaUploads('decommissioning');
     }
 
     public function updated($property): void
@@ -243,6 +245,8 @@ class DecommissioningForm extends Component
             $uploadedCount = $this->persistUploadedFiles($decommissioning, 'decommissioning_media');
         }
 
+        $uploadedCount += $this->claimCompletedUploadSessions($decommissioning);
+
         $removedCount = $this->commitPendingMediaRemovals($decommissioning);
 
         $message = $this->isEdit ? 'Decommissioning aggiornato con successo!' : 'Decommissioning creato con successo!';
@@ -310,6 +314,7 @@ class DecommissioningForm extends Component
 
         $this->refreshExistingMedia();
         $this->files = [];
+        $this->initializeChunkedMediaUploads('decommissioning', $decommissioning->id);
         $this->clearUploadFeedback();
         $this->clearPendingMediaRemovals();
     }

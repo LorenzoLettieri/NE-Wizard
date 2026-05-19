@@ -23,4 +23,9 @@ class HandlesMediaUploadsHarness
     {
         $this->deleteMediaFromModel($model, $mediaId);
     }
+
+    public function claimChunkedMediaForModel(Model $model): int
+    {
+        return $this->claimCompletedUploadSessions($model);
+    }
 }

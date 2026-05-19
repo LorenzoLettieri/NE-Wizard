@@ -71,6 +71,7 @@ class EditWork extends Component
         $this->suspension_history = $this->work->suspension_history;
         $this->loadStructuredSuspensions($this->work);
         $this->files = [];
+        $this->initializeChunkedMediaUploads('work', $this->work->id);
         $this->clearUploadFeedback();
         $this->clearPendingMediaRemovals();
     }

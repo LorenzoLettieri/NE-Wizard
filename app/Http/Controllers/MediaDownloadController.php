@@ -32,13 +32,38 @@ class MediaDownloadController extends Controller
 
         abort_if($disk === null, 404);
 
-        $headers = [];
+        $storage = Storage::disk($disk);
+        $headers = [
+            'Content-Length' => (string) $storage->size($media->file_path),
+        ];
 
         if ($media->mime_type) {
             $headers['Content-Type'] = $media->mime_type;
         }
 
-        return Storage::disk($disk)->download($media->file_path, $media->file_name, $headers);
+        return response()->streamDownload(function () use ($storage, $media): void {
+            $stream = $storage->readStream($media->file_path);
+
+            if ($stream === false) {
+                throw new RuntimeException("Unable to stream media [{$media->id}] from disk.");
+            }
+
+            try {
+                while (! feof($stream)) {
+                    echo fread($stream, 1024 * 1024);
+
+                    if (ob_get_level() > 0) {
+                        ob_flush();
+                    }
+
+                    flush();
+                }
+            } finally {
+                if (is_resource($stream)) {
+                    fclose($stream);
+                }
+            }
+        }, $media->file_name, $headers);
     }
 
     private function authorizeDownload(Request $request, mixed $mediable): void

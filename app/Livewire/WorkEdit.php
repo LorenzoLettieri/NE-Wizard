@@ -133,6 +133,7 @@ class WorkEdit extends Component
         $this->suspension_history = $work->suspension_history;
         $this->loadStructuredSuspensions($this->work);
         $this->files = [];
+        $this->initializeChunkedMediaUploads('work', $work->id);
         $this->clearUploadFeedback();
         $this->clearPendingMediaRemovals();
 

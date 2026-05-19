@@ -1,7 +1,106 @@
 import './bootstrap';
 import 'bootstrap';
 import { Modal } from 'bootstrap';
+import * as FilePond from 'filepond';
+import 'filepond/dist/filepond.min.css';
 import '../../vendor/rappasoft/laravel-livewire-tables/resources/imports/laravel-livewire-tables-all.js';
+
+const MAX_CHUNKED_UPLOAD_BYTES = 500 * 1024 * 1024;
+const CHUNKED_UPLOAD_SIZE = 10 * 1024 * 1024;
+
+function csrfToken() {
+  return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
+}
+
+function livewireComponentFor(element) {
+  const root = element.closest('[wire\\:id]');
+  const componentId = root?.getAttribute('wire:id');
+
+  return componentId && window.Livewire ? window.Livewire.find(componentId) : null;
+}
+
+function initChunkedMediaUploads(container = document) {
+  container.querySelectorAll('.js-chunked-media-upload').forEach((input) => {
+    if (input.dataset.filepondInitialized === '1') {
+      return;
+    }
+
+    const component = livewireComponentFor(input);
+    const context = input.dataset.mediaUploadContext;
+    const modelId = input.dataset.mediaUploadModelId;
+    const formToken = input.dataset.mediaUploadFormToken;
+
+    if (!context || (!modelId && !formToken)) {
+      return;
+    }
+
+    const params = new URLSearchParams({ context });
+
+    if (modelId) {
+      params.set('model_id', modelId);
+    }
+
+    if (formToken) {
+      params.set('form_token', formToken);
+    }
+
+    input.dataset.filepondInitialized = '1';
+    const uploadHeaders = {
+      'X-CSRF-TOKEN': csrfToken(),
+      Accept: 'application/json',
+    };
+
+    FilePond.create(input, {
+      allowMultiple: true,
+      credits: false,
+      chunkUploads: true,
+      chunkForce: true,
+      chunkSize: CHUNKED_UPLOAD_SIZE,
+      maxParallelUploads: 2,
+      labelIdle: 'Trascina qui gli allegati o <span class="filepond--label-action">selezionali</span>',
+      labelFileProcessing: 'Caricamento',
+      labelFileProcessingComplete: 'Caricamento completato',
+      labelFileProcessingAborted: 'Caricamento annullato',
+      labelFileProcessingError: 'Errore durante il caricamento',
+      labelTapToCancel: 'tocca per annullare',
+      labelTapToRetry: 'tocca per riprovare',
+      beforeAddFile: (fileItem) => {
+        if (fileItem.fileSize > MAX_CHUNKED_UPLOAD_BYTES) {
+          window.alert('Ogni allegato puo pesare al massimo 500 MB.');
+
+          return false;
+        }
+
+        return true;
+      },
+      server: {
+        headers: uploadHeaders,
+        process: {
+          url: `/media/uploads/process?${params.toString()}`,
+          method: 'POST',
+        },
+        patch: {
+          url: '/media/uploads/process/',
+          method: 'PATCH',
+        },
+        revert: {
+          url: '/media/uploads/revert',
+          method: 'DELETE',
+        },
+      },
+      onprocessfile: (error, file) => {
+        if (!error && file.serverId && component) {
+          component.call('registerCompletedUploadSession', file.serverId);
+        }
+      },
+      onremovefile: (error, file) => {
+        if (!error && file.serverId && component) {
+          component.call('unregisterCompletedUploadSession', file.serverId);
+        }
+      },
+    });
+  });
+}
 
 if (window.flatpickr && !window.flatpickr.l10ns.it) {
   window.flatpickr.l10ns.it = {
@@ -112,10 +211,28 @@ if(localStorage.getItem("mode")){
 
   document.addEventListener('DOMContentLoaded', () => {    
     initTomSelect(); // pagine “statiche”
+    initChunkedMediaUploads();
+
+    const mediaUploadObserver = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        mutation.addedNodes.forEach((node) => {
+          if (node instanceof HTMLElement) {
+            initChunkedMediaUploads(node);
+          }
+        });
+      });
+    });
+
+    mediaUploadObserver.observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
+
     const editModal = document.getElementById('editModal');
     if(editModal){
       editModal.addEventListener('shown.bs.modal', () => {
         initTomSelect(editModal);
+        initChunkedMediaUploads(editModal);
       });
     }
 

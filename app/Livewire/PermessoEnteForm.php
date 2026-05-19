@@ -162,6 +162,7 @@ class PermessoEnteForm extends Component
         $this->operator_id = $permesso->users->pluck('id')->toArray();
         $this->refreshExistingMedia();
         $this->files = [];
+        $this->initializeChunkedMediaUploads('permesso_ente', $permesso->id);
         $this->clearUploadFeedback();
         $this->clearPendingMediaRemovals();
     }
@@ -178,7 +179,11 @@ class PermessoEnteForm extends Component
     {
         if ($permessoEnte && $permessoEnte->exists) {
             $this->loadPermesso($permessoEnte->id);
+
+            return;
         }
+
+        $this->initializeChunkedMediaUploads('permesso_ente');
     }
 
     protected function rules()
@@ -280,6 +285,8 @@ class PermessoEnteForm extends Component
         if ($this->files) {
             $uploadedCount = $this->persistUploadedFiles($permesso, 'permessi_ente_media');
         }
+
+        $uploadedCount += $this->claimCompletedUploadSessions($permesso);
 
         $removedCount = $this->commitPendingMediaRemovals($permesso);
         $this->refreshExistingMedia();

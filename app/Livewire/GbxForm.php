@@ -29,6 +29,7 @@ class GbxForm extends Component
         $this->centrals = Central::all();
         $this->companies = Company::all();
         $this->date = date('Y-m-d');
+        $this->initializeChunkedMediaUploads('gbx');
     }
 
     public function store()
@@ -50,11 +51,17 @@ class GbxForm extends Component
             'files',
             'uploadMessage',
             'uploadMessageType',
+            'mediaUploadContext',
+            'mediaUploadModelId',
+            'mediaUploadFormToken',
+            'completedUploadSessionIds',
         ]));
 
         if ($this->files) {
             $this->persistUploadedFiles($gbx, 'gbx_media');
         }
+
+        $this->claimCompletedUploadSessions($gbx);
 
         session()->flash('success', 'GBX aggiunto con successo!');
         $this->redirect(route('gbxes-table'));

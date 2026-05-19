@@ -39,6 +39,8 @@ class WorkForm extends Component
             $this->persistUploadedFiles($work, 'works_media');
         }
 
+        $this->claimCompletedUploadSessions($work);
+
         session()->flash('success', 'Lavorazione Aggiunta con successo!');
 
         $this->redirect(route('addWork'));
@@ -51,6 +53,7 @@ class WorkForm extends Component
         $this->workPhases = WorkPhase::orderBy('name')->get();
         $this->networkScopes = NetworkScope::orderBy('name')->get();
         $this->operators = User::permission('get works')->get();
+        $this->initializeChunkedMediaUploads('work');
     }
 
     protected function rules(): array

@@ -3,11 +3,12 @@
 namespace App\Livewire\Concerns;
 
 use App\Models\Media;
+use App\Services\ChunkedMediaUploadService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
-use Illuminate\Validation\Rules\File as FileRule;
+use Illuminate\Support\Str;
 use RuntimeException;
 use Throwable;
 
@@ -17,6 +18,10 @@ trait HandlesMediaUploads
     public $uploadMessage = null;
     public $uploadMessageType = 'info';
     public $pendingMediaRemovalIds = [];
+    public ?string $mediaUploadContext = null;
+    public ?int $mediaUploadModelId = null;
+    public ?string $mediaUploadFormToken = null;
+    public array $completedUploadSessionIds = [];
 
     protected function mediaUploadValidationRules(): array
     {
@@ -103,6 +108,47 @@ trait HandlesMediaUploads
         $this->clearUploadFeedback();
 
         return $uploadedCount;
+    }
+
+    public function initializeChunkedMediaUploads(string $context, ?int $modelId = null): void
+    {
+        $this->mediaUploadContext = $context;
+        $this->mediaUploadModelId = $modelId;
+        $this->mediaUploadFormToken ??= (string) Str::uuid();
+        $this->completedUploadSessionIds = [];
+    }
+
+    public function registerCompletedUploadSession(string $sessionId): void
+    {
+        if (! in_array($sessionId, $this->completedUploadSessionIds, true)) {
+            $this->completedUploadSessionIds[] = $sessionId;
+        }
+    }
+
+    public function unregisterCompletedUploadSession(string $sessionId): void
+    {
+        $this->completedUploadSessionIds = array_values(array_filter(
+            $this->completedUploadSessionIds,
+            fn (string $id) => $id !== $sessionId
+        ));
+    }
+
+    protected function claimCompletedUploadSessions(Model $model): int
+    {
+        if (! auth()->check() || ! $this->mediaUploadContext || ! $this->mediaUploadFormToken) {
+            return 0;
+        }
+
+        $claimed = app(ChunkedMediaUploadService::class)->claimCompletedSessions(
+            $model,
+            auth()->user(),
+            $this->mediaUploadContext,
+            $this->mediaUploadFormToken
+        );
+
+        $this->completedUploadSessionIds = [];
+
+        return $claimed;
     }
 
     protected function deleteMediaFromModel(Model $model, int $mediaId): void

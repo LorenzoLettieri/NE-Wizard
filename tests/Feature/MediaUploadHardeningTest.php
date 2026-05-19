@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Work;
+use App\Models\MediaUploadSession;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -65,5 +66,50 @@ class MediaUploadHardeningTest extends TestCase
             $this->assertDatabaseCount('media', 0);
             Storage::disk('local')->assertMissing('works_media/ok.pdf');
         }
+    }
+
+    public function test_trait_claims_completed_chunked_upload_sessions(): void
+    {
+        Storage::fake('local');
+
+        $work = Work::create([
+            'status' => 'Da Lavorare',
+            'notes' => 'Trait claim coverage',
+        ]);
+
+        $user = \App\Models\User::factory()->create();
+        $this->actingAs($user);
+
+        Storage::disk('local')->put('works_media/trait-claim.txt', 'trait');
+
+        MediaUploadSession::create([
+            'id' => 'trait-session',
+            'user_id' => $user->id,
+            'context' => 'work',
+            'mediable_type' => Work::class,
+            'form_token' => 'trait-token',
+            'original_name' => 'trait-claim.txt',
+            'mime_type' => 'text/plain',
+            'size' => 5,
+            'chunk_size' => 1024,
+            'chunk_count' => 1,
+            'received_chunks' => 1,
+            'status' => 'completed',
+            'final_path' => 'works_media/trait-claim.txt',
+            'completed_at' => now(),
+            'expires_at' => now()->addDay(),
+        ]);
+
+        $harness = new HandlesMediaUploadsHarness();
+        $harness->initializeChunkedMediaUploads('work');
+        $harness->mediaUploadFormToken = 'trait-token';
+
+        $this->assertSame(1, $harness->claimChunkedMediaForModel($work));
+
+        $this->assertDatabaseHas('media', [
+            'mediable_type' => Work::class,
+            'mediable_id' => $work->id,
+            'file_path' => 'works_media/trait-claim.txt',
+        ]);
     }
 }

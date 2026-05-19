@@ -4,6 +4,7 @@ use App\Http\Controllers\OperatorController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DecommissioningController;
 use App\Http\Controllers\Admin\OperatorWorkspaceController;
+use App\Http\Controllers\ChunkedMediaUploadController;
 use App\Http\Controllers\MediaDownloadController;
 use App\Http\Controllers\UsersController;
 use App\Http\Controllers\WorkController;
@@ -17,6 +18,10 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'index'])->name('profile');
     Route::post('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::get('/media/{media}/download', MediaDownloadController::class)->name('media.download');
+    Route::post('/media/uploads/process', [ChunkedMediaUploadController::class, 'process'])->name('media.uploads.process');
+    Route::patch('/media/uploads/process/{session}', [ChunkedMediaUploadController::class, 'patch'])->name('media.uploads.patch');
+    Route::match(['HEAD'], '/media/uploads/process/{session}', [ChunkedMediaUploadController::class, 'head'])->name('media.uploads.head');
+    Route::delete('/media/uploads/revert', [ChunkedMediaUploadController::class, 'revert'])->name('media.uploads.revert');
 });
 
 
