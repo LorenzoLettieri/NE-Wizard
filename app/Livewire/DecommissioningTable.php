@@ -62,7 +62,7 @@ class DecommissioningTable extends DataTableComponent
 
             SelectFilter::make('Impresa', 'company_id')
                 ->options(['' => 'Tutte'] + Company::orderBy('name')->pluck('name', 'id')->toArray())
-                ->filter(fn (Builder $builder, string $value) => $builder->where('company_id', $value)),
+                ->filter(fn (Builder $builder, string $value) => $builder->where('decommissionings.company_id', $value)),
 
             SelectFilter::make('Centrale', 'central_id')
                 ->options(['' => 'Tutte'] + Central::orderBy('central')->pluck('central', 'id')->toArray())

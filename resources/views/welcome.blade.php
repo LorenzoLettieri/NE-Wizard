@@ -110,7 +110,7 @@
                     <div class="row my-3">
                         @role('admin')
                         <div class="col-12 col-md-4">
-                            <a href="{{route('users-table')}}" class="text-decoration-none">
+                            <a href="{{route('accounts-table')}}" class="text-decoration-none">
                                 <div
                                     class="border shadow-lg border-black rounded-4 p-4 d-flex justify-content-between hover-lighten">
                                     <h3 class="display-5">Utenti</h3>

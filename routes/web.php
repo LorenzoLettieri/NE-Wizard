@@ -40,6 +40,7 @@ Route::group(['middleware' => ['role:admin']], function () {
 
 Route::middleware(['auth', 'role:admin|supervisor'])->group(function () {
     Route::get("/users/table", [UsersController::class, "index"])->name("users-table");
+    Route::view('/reports/operators', 'reports.operators')->name('reports.operators');
     Route::get('/works/table', [WorkController::class, 'index'])->name('works-table');
     Route::get('/works/create', [WorkController::class, 'create'])->name('addWork');
     Route::get('/works/edit/{id}', [WorkController::class, 'edit'])->name('editWork');
@@ -74,4 +75,8 @@ Route::middleware(['auth', 'role:admin|Deco'])->group(function () {
     Route::get('/decommissionings/edit/{id}', [DecommissioningController::class, 'edit'])->name('editDecommissioning');
     Route::delete('/decommissionings/delete/{decommissioning}', [DecommissioningController::class, 'delete'])->name('deleteDecommissioning');
     Route::get('/exports/decommissionings', [DecommissioningController::class, 'download'])->name('exports.decommissionings')->middleware('role:admin');
+});
+
+Route::middleware(['auth', 'role:admin'])->group(function () {
+    Route::view('/reports/decommissioning', 'reports.decommissioning')->name('reports.decommissioning');
 });

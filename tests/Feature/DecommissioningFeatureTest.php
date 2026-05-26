@@ -2,8 +2,9 @@
 
 namespace Tests\Feature;
 
-use App\Livewire\DecommissioningForm;
 use App\Livewire\AdminBaseTables;
+use App\Livewire\DecommissioningForm;
+use App\Livewire\DecommissioningTable;
 use App\Models\Central;
 use App\Models\Company;
 use App\Models\CompanyDecommissioningRate;
@@ -137,6 +138,35 @@ class DecommissioningFeatureTest extends TestCase
         $record = Decommissioning::with('company')->firstOrFail();
 
         $this->assertTrue($record->company->is($company));
+    }
+
+    public function test_decommissioning_table_filters_by_company(): void
+    {
+        $this->seed(RoleSeeder::class);
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $matchingCompany = Company::create(['name' => 'Impresa Visibile']);
+        $otherCompany = Company::create(['name' => 'Impresa Nascosta']);
+
+        Decommissioning::create([
+            'company_id' => $matchingCompany->id,
+            'clli' => 'DECO-COMPANY-MATCH',
+            'status' => 'Da Lavorare',
+        ]);
+        Decommissioning::create([
+            'company_id' => $otherCompany->id,
+            'clli' => 'DECO-COMPANY-OTHER',
+            'status' => 'Da Lavorare',
+        ]);
+
+        $this->actingAs($admin);
+
+        Livewire::test(DecommissioningTable::class)
+            ->call('setFilter', 'company_id', (string) $matchingCompany->id)
+            ->assertSee('DECO-COMPANY-MATCH')
+            ->assertDontSee('DECO-COMPANY-OTHER');
     }
 
     public function test_admin_can_override_economic_values_and_flags(): void
