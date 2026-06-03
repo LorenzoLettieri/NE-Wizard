@@ -12,6 +12,7 @@ use App\Models\CompanyDecommissioningRate;
 use App\Models\CompanyWorkPhaseRate;
 use App\Models\NetworkScope;
 use App\Models\WorkPhase;
+use Illuminate\Support\Facades\Cache;
 
 class AdminBaseTables extends Component
 {
@@ -195,6 +196,8 @@ class AdminBaseTables extends Component
             $modelClass::create($dataToSave);
         }
 
+        $this->forgetLookupCachesFor($modelClass);
+
         $this->resetModal();
         $this->resetPage();
         session()->flash('message', 'Record salvato con successo!');
@@ -217,6 +220,7 @@ class AdminBaseTables extends Component
                 }
 
                 $record->delete();
+                $this->forgetLookupCachesFor($modelClass);
                 $this->resetPage();
                 session()->flash('message', 'Record eliminato!');
             }
@@ -348,6 +352,21 @@ class AdminBaseTables extends Component
     private function normalizeDecimalInput($value)
     {
         return is_string($value) ? str_replace(',', '.', trim($value)) : $value;
+    }
+
+    private function forgetLookupCachesFor(string $modelClass): void
+    {
+        $keys = match ($modelClass) {
+            Central::class => ['deco_centrali_list', 'centrali_list'],
+            Company::class => ['deco_companies_list'],
+            Comune::class => ['deco_comuni_list', 'comuni_list'],
+            Regione::class => ['deco_regioni_list', 'regioni_list'],
+            default => [],
+        };
+
+        foreach ($keys as $key) {
+            Cache::forget($key);
+        }
     }
 
     private function applySearch($query)

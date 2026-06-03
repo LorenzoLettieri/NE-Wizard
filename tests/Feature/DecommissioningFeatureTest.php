@@ -14,6 +14,7 @@ use App\Models\Regione;
 use App\Models\User;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -114,6 +115,30 @@ class DecommissioningFeatureTest extends TestCase
             'prog_price' => 88.50,
             'ne_price' => 120.75,
         ]);
+    }
+
+    public function test_base_table_central_changes_refresh_decommissioning_form_options(): void
+    {
+        $this->seed(RoleSeeder::class);
+
+        Central::create([
+            'central' => 'OLD-CENTRAL',
+            'region' => 'Lazio',
+        ]);
+
+        Livewire::test(DecommissioningForm::class)
+            ->assertSee('OLD-CENTRAL')
+            ->assertDontSee('NEW-CENTRAL');
+
+        $this->assertTrue(Cache::has('deco_centrali_list'));
+
+        Livewire::test(AdminBaseTables::class)
+            ->set('formData.central', 'NEW-CENTRAL')
+            ->set('formData.region', 'Lazio')
+            ->call('saveRecord');
+
+        Livewire::test(DecommissioningForm::class)
+            ->assertSee('NEW-CENTRAL');
     }
 
     public function test_decommissioning_can_be_associated_to_a_company(): void
