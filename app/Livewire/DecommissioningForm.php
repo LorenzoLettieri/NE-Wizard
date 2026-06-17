@@ -163,7 +163,7 @@ class DecommissioningForm extends Component
             'permesso_ente' => 'nullable|string|max:255',
             'fl_permesso' => 'nullable|date',
             'note_permesso' => 'nullable|string',
-            'status' => ['required', Rule::in(['Da Lavorare', 'In Lavorazione', 'Sospeso', 'Fine Lavori'])],
+            'status' => ['required', Rule::in(['Da Lavorare', 'In Lavorazione', 'Sospeso', 'Fine Lavori', 'Annullato'])],
             'data_il' => 'nullable|date',
             'data_fl' => 'nullable|date',
             'qty_1' => 'nullable|integer|min:0',
@@ -217,8 +217,11 @@ class DecommissioningForm extends Component
             'status' => $this->status ?: 'Da Lavorare',
             'data_il' => $this->emptyToNull($this->data_il),
             'data_fl' => $this->emptyToNull($this->data_fl),
-            'val' => $this->stringToBool($this->val),
         ];
+
+        if (auth()->user()->hasRole('admin')) {
+            $data['val'] = $this->stringToBool($this->val);
+        }
 
         foreach ($this->quantityFields() as $field) {
             $data[$field] = $this->normalizeIntegerField($this->$field);

@@ -165,6 +165,74 @@ class DecommissioningFeatureTest extends TestCase
         $this->assertTrue($record->company->is($company));
     }
 
+    public function test_annullato_decommissioning_status_is_available_and_red(): void
+    {
+        $this->seed(RoleSeeder::class);
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $this->actingAs($admin);
+
+        Livewire::test(DecommissioningForm::class)
+            ->assertSee('Annullato')
+            ->set('status', 'Annullato')
+            ->call('save')
+            ->assertRedirect(route('decommissionings.table'));
+
+        $this->assertDatabaseHas('decommissionings', [
+            'status' => 'Annullato',
+        ]);
+
+        Livewire::test(DecommissioningTable::class)
+            ->assertSee('Annullato')
+            ->assertSeeHtml('text-bg-danger');
+    }
+
+    public function test_val_field_and_column_are_admin_only(): void
+    {
+        $this->seed(RoleSeeder::class);
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $deco = User::factory()->create();
+        $deco->assignRole('Deco');
+
+        Decommissioning::create([
+            'clli' => 'VAL-HIDDEN',
+            'status' => 'Da Lavorare',
+            'val' => true,
+        ]);
+
+        $this->actingAs($deco);
+
+        Livewire::test(DecommissioningForm::class)
+            ->assertDontSeeHtml('<label class="form-label">Val</label>')
+            ->set('val', '1')
+            ->call('save')
+            ->assertRedirect(route('decommissionings.table'));
+
+        $this->assertDatabaseHas('decommissionings', [
+            'id' => Decommissioning::latest('id')->first()->id,
+            'val' => false,
+        ]);
+
+        Livewire::test(DecommissioningTable::class)
+            ->assertSee('VAL-HIDDEN')
+            ->assertDontSee('Vero');
+
+        $this->actingAs($admin);
+
+        Livewire::test(DecommissioningForm::class)
+            ->assertSeeHtml('<label class="form-label">Val</label>');
+
+        Livewire::test(DecommissioningTable::class)
+            ->assertSee('Val')
+            ->assertSee('VAL-HIDDEN')
+            ->assertSee('Vero');
+    }
+
     public function test_decommissioning_table_filters_by_company(): void
     {
         $this->seed(RoleSeeder::class);

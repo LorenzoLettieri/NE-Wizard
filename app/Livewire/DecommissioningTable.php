@@ -54,6 +54,7 @@ class DecommissioningTable extends DataTableComponent
                     'In Lavorazione' => 'In Lavorazione',
                     'Sospeso' => 'Sospeso',
                     'Fine Lavori' => 'Fine Lavori',
+                    'Annullato' => 'Annullato',
                 ])
                 ->filter(fn (Builder $builder, string $value) => $builder->where('status', $value)),
 
@@ -135,6 +136,7 @@ class DecommissioningTable extends DataTableComponent
                         'In Lavorazione' => "<span class='badge rounded-pill text-bg-primary'>{$value}</span>",
                         'Sospeso' => "<span class='badge rounded-pill text-bg-warning'>{$value}</span>",
                         'Fine Lavori' => "<span class='badge rounded-pill text-bg-success'>{$value}</span>",
+                        'Annullato' => "<span class='badge rounded-pill text-bg-danger'>{$value}</span>",
                         default => "<span class='badge rounded-pill text-bg-secondary'>{$value}</span>",
                     };
                 })
@@ -229,6 +231,7 @@ class DecommissioningTable extends DataTableComponent
                 ->label(fn ($row) => $row->val
                     ? '<span class="badge rounded-pill text-bg-success" title="Vero"><i class="bi bi-check-lg"></i></span>'
                     : '<span class="badge rounded-pill text-bg-danger" title="Falso"><i class="bi bi-x-lg"></i></span>')
+                ->hideIf(! Auth::user()->hasRole('admin'))
                 ->html(),
 
             Column::make('Azioni')
