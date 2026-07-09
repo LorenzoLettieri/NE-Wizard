@@ -36,6 +36,7 @@ class PermessiEnteExport implements FromQuery, WithMapping, WithHeadings, Should
                 'central:id,central,region',
                 'comune:id,name',
                 'regione:id,nome',
+                'users:id,name',
             ])
             ->whereBetween($this->dateField, [$this->start, $this->end])
             ->orderBy('id');
@@ -76,6 +77,7 @@ class PermessiEnteExport implements FromQuery, WithMapping, WithHeadings, Should
             'Data PiC',                 // AD
             'Data Consegna',            // AE (delivery_date)
             'Data Completamento',       // AF (completion_date)
+            'Operatori Assegnati',      // AG
         ];
     }
 
@@ -116,6 +118,7 @@ class PermessiEnteExport implements FromQuery, WithMapping, WithHeadings, Should
             $dt($permesso->acception_date),         // Data PiC
             $dt($permesso->delivery_date),          // Data Consegna
             $dt($permesso->completion_date),        // Data Completamento
+            $permesso->users->pluck('name')->implode(', '), // Operatori Assegnati
         ];
     }
 
