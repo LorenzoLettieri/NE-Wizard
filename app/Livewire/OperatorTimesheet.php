@@ -80,9 +80,73 @@ class OperatorTimesheet extends Component
         $this->showModal = true;
     }
 
+    /**
+     * Validation rules for the leave/overtime modal, built dynamically
+     * from the current action type and (for leaves) the selected leave type.
+     */
+    protected function leaveOvertimeRules(): array
+    {
+        if ($this->actionType === 'overtime') {
+            return [
+                'selectedDate' => 'required|date',
+                'overtimeHours' => 'required|numeric|min:0.5|max:24',
+            ];
+        }
+
+        $rules = [
+            'leaveType' => 'required|in:ferie,permesso,malattia',
+            'selectedDate' => 'required|date',
+        ];
+
+        if ($this->leaveType === 'ferie') {
+            $rules['selectedEndDate'] = 'required|date|after_or_equal:selectedDate';
+        }
+
+        if (in_array($this->leaveType, ['permesso', 'malattia'], true)) {
+            $rules['inputTime'] = 'required|date_format:H:i';
+            $rules['leaveHours'] = 'required|numeric|min:0.5|max:24';
+        }
+
+        return $rules;
+    }
+
+    protected function leaveOvertimeMessages(): array
+    {
+        return [
+            'leaveType.required' => 'Seleziona il tipo di permesso.',
+            'leaveType.in' => 'Tipo di permesso non valido.',
+            'selectedDate.required' => 'Indica la data.',
+            'selectedEndDate.required' => 'Indica la data di fine.',
+            'selectedEndDate.after_or_equal' => 'La data di fine deve essere uguale o successiva alla data di inizio.',
+            'inputTime.required' => 'Indica l\'orario di inizio.',
+            'inputTime.date_format' => 'Orario non valido.',
+            'leaveHours.required' => 'Indica le ore di permesso.',
+            'leaveHours.min' => 'Le ore di permesso devono essere maggiori di zero.',
+            'leaveHours.max' => 'Le ore di permesso non possono superare 24.',
+            'overtimeHours.required' => 'Indica le ore di straordinario.',
+            'overtimeHours.min' => 'Le ore di straordinario devono essere maggiori di zero.',
+            'overtimeHours.max' => 'Le ore di straordinario non possono superare 24.',
+        ];
+    }
+
     public function saveAction()
     {
         $this->resetErrorBag();
+
+        // Leave/overtime come from free-form inputs and must be validated.
+        // Shift/break actions use "now" and are gated by the state machine below.
+        if (in_array($this->actionType, ['leave', 'overtime'], true)) {
+            $this->validate($this->leaveOvertimeRules(), $this->leaveOvertimeMessages());
+
+            if ($this->actionType === 'leave' && $this->leaveType === 'ferie') {
+                $start = Carbon::parse($this->selectedDate);
+                $end = Carbon::parse($this->selectedEndDate);
+                if ($start->diffInDays($end) + 1 > 15) {
+                    $this->addError('selectedEndDate', 'Il periodo di ferie non può superare 15 giorni.');
+                    return;
+                }
+            }
+        }
 
         $startDate = Carbon::parse($this->selectedDate, 'Europe/Rome')->startOfDay();
         $endDate = ($this->actionType === 'leave' && $this->leaveType === 'ferie')

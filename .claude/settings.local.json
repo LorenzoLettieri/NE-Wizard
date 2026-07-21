@@ -3,7 +3,9 @@
     "allow": [
       "Skill(update-config)",
       "Skill(update-config:*)",
-      "Bash(php artisan *)"
+      "Bash(php artisan *)",
+      "Skill(impeccable)",
+      "Skill(impeccable:*)"
     ]
   }
 }

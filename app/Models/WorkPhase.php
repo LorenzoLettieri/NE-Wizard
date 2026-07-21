@@ -34,7 +34,15 @@ class WorkPhase extends Model
 
     protected $fillable = [
         'name',
+        'score_coefficient',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'score_coefficient' => 'decimal:2',
+        ];
+    }
 
     public function works(): HasMany
     {

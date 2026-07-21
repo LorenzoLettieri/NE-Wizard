@@ -11,6 +11,7 @@ use App\Models\Company;
 use App\Models\CompanyDecommissioningRate;
 use App\Models\CompanyWorkPhaseRate;
 use App\Models\NetworkScope;
+use App\Models\ProductionTarget;
 use App\Models\WorkPhase;
 use Illuminate\Support\Facades\Cache;
 
@@ -34,6 +35,7 @@ class AdminBaseTables extends Component
     public $formData = [];
     public array $rateValues = [];
     public array $decommissioningRateValues = [];
+    public array $productionTargetValues = [];
 
     // All possible fields across our models for resetting
     protected $defaultForm = [
@@ -47,6 +49,7 @@ class AdminBaseTables extends Component
         'catasto_code' => '',
         'regione_id' => '',
         'nome' => '',
+        'score_coefficient' => '',
     ];
 
     public function mount()
@@ -67,6 +70,10 @@ class AdminBaseTables extends Component
 
         if ($this->activeTab === 'CompanyDecommissioningRate') {
             $this->loadDecommissioningRateValues();
+        }
+
+        if ($this->activeTab === 'ProductionTarget') {
+            $this->loadProductionTargetValues();
         }
     }
 
@@ -122,6 +129,7 @@ class AdminBaseTables extends Component
             'NetworkScope' => NetworkScope::class,
             'CompanyWorkPhaseRate' => CompanyWorkPhaseRate::class,
             'CompanyDecommissioningRate' => CompanyDecommissioningRate::class,
+            'ProductionTarget' => ProductionTarget::class,
             default => null,
         };
     }
@@ -161,7 +169,11 @@ class AdminBaseTables extends Component
             $ignoreId = $this->isEditing && $this->editingId ? ',' . $this->editingId : '';
             $rules = [
                 'formData.name' => 'required|string|max:255|unique:work_phases,name' . $ignoreId,
+                'formData.score_coefficient' => 'nullable|numeric|min:0|max:999999.99',
             ];
+
+            $coefficient = $this->normalizeDecimalInput($this->formData['score_coefficient'] ?? null);
+            $this->formData['score_coefficient'] = ($coefficient === null || $coefficient === '') ? 0 : $coefficient;
         } elseif ($this->activeTab === 'NetworkScope') {
             $ignoreId = $this->isEditing && $this->editingId ? ',' . $this->editingId : '';
             $rules = [
@@ -238,6 +250,7 @@ class AdminBaseTables extends Component
             'NetworkScope' => 'Cerca ambito network...',
             'CompanyWorkPhaseRate' => 'Cerca company o fase lavoro...',
             'CompanyDecommissioningRate' => 'Cerca company o voce decommissioning...',
+            'ProductionTarget' => '',
             default => 'Cerca...',
         };
     }
@@ -349,6 +362,42 @@ class AdminBaseTables extends Component
         }
     }
 
+    private function loadProductionTargetValues(): void
+    {
+        $target = ProductionTarget::current();
+
+        $this->productionTargetValues = [
+            'monthly_amount_target' => $target->monthly_amount_target,
+            'daily_score_target' => $target->daily_score_target,
+        ];
+    }
+
+    public function saveProductionTarget(): void
+    {
+        $amount = $this->normalizeDecimalInput($this->productionTargetValues['monthly_amount_target'] ?? null);
+        $score = $this->normalizeDecimalInput($this->productionTargetValues['daily_score_target'] ?? null);
+
+        validator(
+            [
+                'monthly_amount_target' => $amount,
+                'daily_score_target' => $score,
+            ],
+            [
+                'monthly_amount_target' => 'required|numeric|min:0|max:99999999.99',
+                'daily_score_target' => 'required|numeric|min:0|max:99999999.99',
+            ]
+        )->validate();
+
+        $target = ProductionTarget::current();
+        $target->update([
+            'monthly_amount_target' => round((float) $amount, 2),
+            'daily_score_target' => round((float) $score, 2),
+        ]);
+
+        $this->loadProductionTargetValues();
+        session()->flash('message', 'Target produzione salvati.');
+    }
+
     private function normalizeDecimalInput($value)
     {
         return is_string($value) ? str_replace(',', '.', trim($value)) : $value;
@@ -425,6 +474,21 @@ class AdminBaseTables extends Component
                 'companiesForRates' => Company::orderBy('name')->get(),
                 'workPhasesForRates' => collect([]),
                 'decommissioningRateItems' => CompanyDecommissioningRate::ITEM_LABELS,
+            ]);
+        }
+
+        if ($this->activeTab === 'ProductionTarget') {
+            if ($this->productionTargetValues === []) {
+                $this->loadProductionTargetValues();
+            }
+
+            return view('livewire.admin-base-tables', [
+                'records' => collect([]),
+                'regioni' => collect([]),
+                'searchPlaceholder' => $this->getSearchPlaceholder(),
+                'companiesForRates' => collect([]),
+                'workPhasesForRates' => collect([]),
+                'decommissioningRateItems' => [],
             ]);
         }
 

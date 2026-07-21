@@ -4,7 +4,9 @@ namespace App\Livewire;
 
 use App\Domain\OperatorActivity\OperatorActivityBuilder;
 use App\Domain\OperatorActivity\OperatorActivityChartFormatter;
+use App\Domain\ScoreReport\DailyScoreEvaluator;
 use App\Models\Company;
+use App\Models\ProductionTarget;
 use App\Models\Timesheet;
 use App\Models\User;
 use App\Models\Work;
@@ -17,8 +19,11 @@ use Livewire\Component;
 
 class OperatorStats extends Component
 {
-    private const MONTHLY_TARGET = 3500.0;
     private const TIMEZONE = 'Europe/Rome';
+    private const METRIC_MODE_OPTIONS = [
+        ['value' => 'amount', 'label' => 'Monetaria'],
+        ['value' => 'score', 'label' => 'Punteggio'],
+    ];
     private const WORK_STATUSES = [
         'to_do_count' => 'Da Lavorare',
         'in_progress_count' => 'In Lavorazione',
@@ -71,6 +76,8 @@ class OperatorStats extends Component
 
     public $viewMode = 'day';
 
+    public $metricMode = 'amount';
+
     public $selectedDay = '';
 
     public $selectedWeekStart = '';
@@ -78,6 +85,10 @@ class OperatorStats extends Component
     public ?int $lockedOperatorId = null;
 
     public bool $hideOperatorFilterWhenLocked = false;
+
+    private ?float $amountTarget = null;
+
+    private ?float $dailyScoreTarget = null;
 
     public function mount(?int $lockedOperatorId = null, bool $hideOperatorFilterWhenLocked = false)
     {
@@ -93,6 +104,8 @@ class OperatorStats extends Component
     public function render()
     {
         $t0 = microtime(true);
+
+        $this->loadProductionTargets();
 
         [$startDate, $endDate] = $this->resolveReportRange($this->startDate, $this->endDate);
         [$viewWindowStart, $viewWindowEnd, $dayOptions, $weekOptions] = $this->resolveTimelineWindow($startDate, $endDate);
@@ -132,6 +145,13 @@ class OperatorStats extends Component
         return $view;
     }
 
+    private function loadProductionTargets(): void
+    {
+        $target = ProductionTarget::current();
+        $this->amountTarget = (float) $target->monthly_amount_target;
+        $this->dailyScoreTarget = (float) $target->daily_score_target;
+    }
+
     public function resetFilters(): void
     {
         $this->operatorId = $this->lockedOperatorId !== null ? (string) $this->lockedOperatorId : '';
@@ -140,6 +160,7 @@ class OperatorStats extends Component
         $this->workPhaseId = '';
         $this->ntwScope = '';
         $this->viewMode = 'day';
+        $this->metricMode = 'amount';
         $this->setDefaultDateFilters(Carbon::now(self::TIMEZONE));
     }
 
@@ -183,6 +204,7 @@ class OperatorStats extends Component
         $t0 = microtime(true);
         $activityBuilder = app(OperatorActivityBuilder::class);
         $chartFormatter = app(OperatorActivityChartFormatter::class);
+        $scoreEvaluator = app(DailyScoreEvaluator::class);
         $rows = [];
 
         foreach ($operators as $operator) {
@@ -193,6 +215,7 @@ class OperatorStats extends Component
                 $operatorData['timesheets']->get($operator->id, collect()),
                 $activityBuilder,
                 $chartFormatter,
+                $scoreEvaluator,
                 $startDate,
                 $endDate,
             );
@@ -252,7 +275,8 @@ class OperatorStats extends Component
             ->whereIn('user_work.user_id', $operatorIds)
             ->whereBetween('works.completion_date', [$startDateLocal, $endDateLocal])
             ->tap(fn (Builder $query) => $this->applyWorkFilters($query))
-            ->select('works.*', 'user_work.user_id as _operator_id');
+            ->select('works.*', 'user_work.user_id as _operator_id')
+            ->with('workPhase');
     }
 
     private function buildOperatorRow(
@@ -262,14 +286,19 @@ class OperatorStats extends Component
         Collection $timesheets,
         OperatorActivityBuilder $activityBuilder,
         OperatorActivityChartFormatter $chartFormatter,
+        DailyScoreEvaluator $scoreEvaluator,
         Carbon $startDate,
         Carbon $endDate,
     ): array {
         $activity = $activityBuilder->build($operator, $assignedWorks, $timesheets, $startDate, $endDate);
         $earnedMetrics = $this->earnedMetrics($earnedWorks);
-        $targetPercentage = self::MONTHLY_TARGET > 0
-            ? round(($earnedMetrics['earned_amount'] / self::MONTHLY_TARGET) * 100, 1)
+        $scoreReport = $scoreEvaluator->evaluate($earnedWorks, $timesheets, $this->dailyScoreTarget ?? 0.0);
+
+        $amountTarget = $this->amountTarget ?? 0.0;
+        $targetPercentage = $amountTarget > 0
+            ? round(($earnedMetrics['earned_amount'] / $amountTarget) * 100, 1)
             : 0.0;
+        $scorePercentage = $scoreReport->achievementPercentage();
 
         return [
             'operator_id' => $operator->id,
@@ -290,17 +319,46 @@ class OperatorStats extends Component
             'leave_seconds' => $activity->leaveSeconds(),
             'leave_label' => Work::formatDuration($activity->leaveSeconds()),
             'utilization_percentage' => $activity->utilizationPercentage(),
-            'daily_breakdown' => $activity->dailyBreakdown(),
+            'daily_breakdown' => $this->mergeScoreIntoBreakdown($activity->dailyBreakdown(), $scoreReport->daysByDate()),
             'weekly_summary' => $activity->aggregateBy('week'),
             'monthly_summary' => $activity->aggregateBy('month'),
             'nroe_total' => (int) $earnedWorks->sum(fn (Work $work) => (int) ($work->nroe ?? 0)),
             ...$earnedMetrics,
-            'target_amount' => self::MONTHLY_TARGET,
+            'target_amount' => $amountTarget,
             'target_percentage' => $targetPercentage,
             'target_bar_width' => min(100, $targetPercentage),
             'target_class' => $this->targetClass($targetPercentage),
+            'daily_score_target' => $this->dailyScoreTarget ?? 0.0,
+            'score_target' => $scoreReport->targetTotal(),
+            'score_percentage' => $scorePercentage,
+            'score_bar_width' => min(100, $scorePercentage),
+            'score_class' => $this->targetClass($scorePercentage),
+            'score_expected_days' => $scoreReport->expectedDays(),
+            'score_days_met' => $scoreReport->daysMet(),
+            'score_days_below' => $scoreReport->daysBelow(),
             '_series' => $chartFormatter->forOperator($operator, $activity, $startDate, $endDate),
         ];
+    }
+
+    /**
+     * Enrich the activity daily breakdown with per-day score evaluation.
+     *
+     * @param  array<int, array<string, mixed>>  $breakdown
+     * @param  array<string, array<string, mixed>>  $scoreByDate
+     * @return array<int, array<string, mixed>>
+     */
+    private function mergeScoreIntoBreakdown(array $breakdown, array $scoreByDate): array
+    {
+        return array_map(function (array $day) use ($scoreByDate): array {
+            $score = $scoreByDate[$day['date']] ?? null;
+
+            return $day + [
+                'score_present' => $score !== null,
+                'score_earned' => $score['earned_score'] ?? null,
+                'score_target' => $score['target_score'] ?? null,
+                'score_met' => $score['met'] ?? null,
+            ];
+        }, $breakdown);
     }
 
     private function statusCounts(Collection $assignedWorks): array
@@ -336,6 +394,9 @@ class OperatorStats extends Component
             'earned_amount' => round((float) $valuedWorks->sum(fn (Work $work) => (float) $work->accounting_amount), 2),
             'earned_works_count' => $valuedWorks->count(),
             'missing_amount_count' => $missingAmountWorks->count(),
+            'earned_score' => round((float) $earnedWorks->sum(
+                fn (Work $work) => (float) ($work->workPhase->score_coefficient ?? 0)
+            ), 2),
         ];
     }
 
@@ -404,12 +465,17 @@ class OperatorStats extends Component
     private function buildEconomicSummary(array $rows): array
     {
         $totalEarned = round(array_sum(array_column($rows, 'earned_amount')), 2);
-        $totalTarget = count($rows) * self::MONTHLY_TARGET;
+        $totalTarget = count($rows) * ($this->amountTarget ?? 0.0);
+        $totalScore = round(array_sum(array_column($rows, 'earned_score')), 2);
+        $totalScoreTarget = round((float) array_sum(array_column($rows, 'score_target')), 2);
 
         return [
             'total_earned' => $totalEarned,
             'total_target' => $totalTarget,
             'target_percentage' => $totalTarget > 0 ? round(($totalEarned / $totalTarget) * 100, 1) : 0.0,
+            'total_score' => $totalScore,
+            'total_score_target' => $totalScoreTarget,
+            'score_percentage' => $totalScoreTarget > 0 ? round(($totalScore / $totalScoreTarget) * 100, 1) : 0.0,
             'earned_works_count' => array_sum(array_column($rows, 'earned_works_count')),
             'missing_amount_count' => array_sum(array_column($rows, 'missing_amount_count')),
         ];
@@ -564,7 +630,10 @@ class OperatorStats extends Component
             'rows' => $rows,
             'economicSummary' => $this->buildEconomicSummary($rows),
             'canViewEconomicReport' => $canViewEconomicReport,
-            'monthlyTarget' => self::MONTHLY_TARGET,
+            'monthlyTarget' => $this->amountTarget ?? 0.0,
+            'dailyScoreTarget' => $this->dailyScoreTarget ?? 0.0,
+            'metricMode' => $this->metricMode,
+            'metricModeOptions' => self::METRIC_MODE_OPTIONS,
             'operatorOptions' => User::permission('get works')->orderBy('name')->get(['id', 'name']),
             'hideOperatorFilter' => $this->hideOperatorFilterWhenLocked && $this->lockedOperatorId !== null,
             'companyOptions' => Company::orderBy('name')->get(['id', 'name']),

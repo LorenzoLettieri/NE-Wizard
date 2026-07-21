@@ -111,18 +111,37 @@
             </div>
         </div>
 
+        @php $scoreMode = $metricMode === 'score'; @endphp
         <div class="mb-4">
-            <div class="d-flex justify-content-between align-items-end mb-3">
+            <div class="d-flex justify-content-between align-items-end flex-wrap gap-2 mb-3">
                 <div>
                     <h5 class="mb-1">Contachilometri operatori</h5>
                     <p class="text-muted small mb-0">
-                        Quota mensile fissa: {{ number_format($monthlyTarget, 2, ',', '.') }} €.
+                        @if ($scoreMode)
+                            Soglia punteggio giornaliera: {{ number_format($dailyScoreTarget, 2, ',', '.') }} punti. Obiettivo del periodo proporzionato ai giorni di presenza (ferie/malattia escluse).
+                        @else
+                            Quota mensile: {{ number_format($monthlyTarget, 2, ',', '.') }} €.
+                        @endif
                     </p>
+                </div>
+                <div class="btn-group btn-group-sm" role="group" aria-label="Modalità contachilometri">
+                    @foreach ($metricModeOptions as $option)
+                        <input type="radio" class="btn-check" name="metricMode" id="metricMode-{{ $option['value'] }}"
+                            value="{{ $option['value'] }}" wire:model.live="metricMode"
+                            {{ $metricMode === $option['value'] ? 'checked' : '' }}>
+                        <label class="btn btn-outline-primary" for="metricMode-{{ $option['value'] }}">{{ $option['label'] }}</label>
+                    @endforeach
                 </div>
             </div>
 
             <div class="row g-3">
                 @foreach ($rows as $row)
+                    @php
+                        $earnedValue = $scoreMode ? $row['earned_score'] : $row['earned_amount'];
+                        $percentage = $scoreMode ? $row['score_percentage'] : $row['target_percentage'];
+                        $barWidth = $scoreMode ? $row['score_bar_width'] : $row['target_bar_width'];
+                        $barClass = $scoreMode ? $row['score_class'] : $row['target_class'];
+                    @endphp
                     <div class="col-12 col-md-6 col-xl-4">
                         <div class="card border-0 shadow-sm h-100">
                             <div class="card-body">
@@ -130,22 +149,38 @@
                                     <div>
                                         <div class="fw-semibold">{{ $row['operator_name'] }}</div>
                                         <div class="text-muted small">
-                                            {{ $row['earned_works_count'] }} lavori valorizzati
+                                            @if ($scoreMode)
+                                                {{ $row['score_days_met'] }}/{{ $row['score_expected_days'] }} giorni sopra soglia
+                                            @else
+                                                {{ $row['earned_works_count'] }} lavori valorizzati
+                                            @endif
                                         </div>
                                     </div>
                                     <div class="text-end">
                                         <div class="fw-bold">
-                                            {{ number_format($row['earned_amount'], 2, ',', '.') }} €
+                                            @if ($scoreMode)
+                                                {{ number_format($earnedValue, 2, ',', '.') }} pt
+                                            @else
+                                                {{ number_format($earnedValue, 2, ',', '.') }} €
+                                            @endif
                                         </div>
                                         <div class="text-muted small">
-                                            {{ number_format($row['target_percentage'], 1, ',', '.') }}%
+                                            {{ number_format($percentage, 1, ',', '.') }}%
                                         </div>
                                     </div>
                                 </div>
-                                <div class="progress" role="progressbar" aria-label="Avanzamento quota {{ $row['operator_name'] }}" aria-valuenow="{{ $row['target_percentage'] }}" aria-valuemin="0" aria-valuemax="100" style="height: 1rem;">
-                                    <div class="progress-bar {{ $row['target_class'] }}" style="width: {{ $row['target_bar_width'] }}%"></div>
+                                <div class="progress" role="progressbar" aria-label="Avanzamento {{ $scoreMode ? 'punteggio' : 'quota' }} {{ $row['operator_name'] }}" aria-valuenow="{{ $percentage }}" aria-valuemin="0" aria-valuemax="100" style="height: 1rem;">
+                                    <div class="progress-bar {{ $barClass }}" style="width: {{ $barWidth }}%"></div>
                                 </div>
-                                @if ($row['missing_amount_count'] > 0)
+                                @if ($scoreMode)
+                                    <div class="small text-muted mt-2">
+                                        Obiettivo periodo: {{ number_format($row['score_target'], 2, ',', '.') }} pt
+                                        @if ($row['score_days_below'] > 0)
+                                            &middot; <span class="text-danger">{{ $row['score_days_below'] }} giorni sotto soglia</span>
+                                        @endif
+                                    </div>
+                                @endif
+                                @if (! $scoreMode && $row['missing_amount_count'] > 0)
                                     <div class="small text-warning mt-2">
                                         {{ $row['missing_amount_count'] }} lavorazioni con Data FL senza importo.
                                     </div>
@@ -311,6 +346,9 @@
                                                                 <th class="text-end">Permessi</th>
                                                                 <th class="text-end">Straordinari</th>
                                                                 <th class="text-end">Utilizzo</th>
+                                                                <th class="text-end">Punteggio</th>
+                                                                <th class="text-end">Soglia</th>
+                                                                <th class="text-center">Esito</th>
                                                             </tr>
                                                         </thead>
                                                         <tbody>
@@ -323,10 +361,25 @@
                                                                     <td class="text-end">{{ $day['leave_label'] }}</td>
                                                                     <td class="text-end">{{ $day['overtime_label'] }}</td>
                                                                     <td class="text-end">{{ number_format($day['utilization_percentage'], 1, ',', '.') }}%</td>
+                                                                    @if (($day['score_present'] ?? false))
+                                                                        <td class="text-end">{{ number_format($day['score_earned'], 2, ',', '.') }}</td>
+                                                                        <td class="text-end">{{ number_format($day['score_target'], 2, ',', '.') }}</td>
+                                                                        <td class="text-center">
+                                                                            @if ($day['score_met'])
+                                                                                <span class="badge bg-success"><i class="bi bi-check-lg"></i></span>
+                                                                            @else
+                                                                                <span class="badge bg-danger"><i class="bi bi-x-lg"></i></span>
+                                                                            @endif
+                                                                        </td>
+                                                                    @else
+                                                                        <td class="text-end text-muted">-</td>
+                                                                        <td class="text-end text-muted">-</td>
+                                                                        <td class="text-center text-muted">-</td>
+                                                                    @endif
                                                                 </tr>
                                                             @empty
                                                                 <tr>
-                                                                    <td colspan="7" class="text-center text-muted py-3">Nessun dettaglio disponibile nel periodo selezionato.</td>
+                                                                    <td colspan="10" class="text-center text-muted py-3">Nessun dettaglio disponibile nel periodo selezionato.</td>
                                                                 </tr>
                                                             @endforelse
                                                         </tbody>

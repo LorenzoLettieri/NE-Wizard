@@ -170,27 +170,36 @@
                             aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
+                        @error('actionType')
+                            <div class="alert alert-danger py-2">
+                                <i class="bi bi-exclamation-circle me-1"></i>{{ $message }}
+                            </div>
+                        @enderror
+
                         @if($actionType == 'leave')
                             <div class="mb-3">
                                 <label class="form-label">Tipo Permesso</label>
-                                <select wire:model.live="leaveType" class="form-select">
+                                <select wire:model.live="leaveType" class="form-select @error('leaveType') is-invalid @enderror">
                                     <option value="">Seleziona...</option>
                                     <option value="ferie">Ferie</option>
                                     <option value="permesso">Permesso orario</option>
                                     <option value="malattia">Malattia</option>
                                 </select>
+                                @error('leaveType') <div class="invalid-feedback">{{ $message }}</div> @enderror
                             </div>
 
                             <div class="row mb-3">
                                 <div class="col-@if($leaveType == 'ferie') 6 @else 12 @endif">
                                     <label class="form-label">@if($leaveType == 'ferie') Data Inizio @else Data @endif</label>
-                                    <input type="date" wire:model.live="selectedDate" class="form-control">
+                                    <input type="date" wire:model.live="selectedDate" class="form-control @error('selectedDate') is-invalid @enderror">
+                                    @error('selectedDate') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                 </div>
                                 @if($leaveType == 'ferie')
                                     <div class="col-6">
                                         <label class="form-label">Data Fine</label>
-                                        <input type="date" wire:model.live="selectedEndDate" class="form-control"
+                                        <input type="date" wire:model.live="selectedEndDate" class="form-control @error('selectedEndDate') is-invalid @enderror"
                                             min="{{ $selectedDate }}">
+                                        @error('selectedEndDate') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                         <div class="form-text">
                                             @php
                                                 $start = \Carbon\Carbon::parse($selectedDate);
@@ -207,11 +216,13 @@
                                 <div class="row mb-3">
                                     <div class="col-6">
                                         <label class="form-label">Orario Inizio</label>
-                                        <input type="time" wire:model="inputTime" class="form-control">
+                                        <input type="time" wire:model="inputTime" class="form-control @error('inputTime') is-invalid @enderror">
+                                        @error('inputTime') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                     </div>
                                     <div class="col-6">
                                         <label class="form-label">Ore Totali</label>
-                                        <input type="number" step="0.5" wire:model="leaveHours" class="form-control">
+                                        <input type="number" step="0.5" min="0.5" max="24" wire:model="leaveHours" class="form-control @error('leaveHours') is-invalid @enderror">
+                                        @error('leaveHours') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                     </div>
                                 </div>
                             @endif
@@ -220,15 +231,13 @@
                         @if($actionType == 'overtime')
                             <div class="mb-3">
                                 <label class="form-label">Data</label>
-                                <input type="date" wire:model.live="selectedDate" class="form-control">
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">Orario</label>
-                                <input type="time" wire:model="inputTime" class="form-control">
+                                <input type="date" wire:model.live="selectedDate" class="form-control @error('selectedDate') is-invalid @enderror">
+                                @error('selectedDate') <div class="invalid-feedback">{{ $message }}</div> @enderror
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Ore Straordinario</label>
-                                <input type="number" step="0.5" wire:model="overtimeHours" class="form-control">
+                                <input type="number" step="0.5" min="0.5" max="24" wire:model="overtimeHours" class="form-control @error('overtimeHours') is-invalid @enderror">
+                                @error('overtimeHours') <div class="invalid-feedback">{{ $message }}</div> @enderror
                             </div>
                         @endif
 
