@@ -48,6 +48,8 @@ class PermessoEnteForm extends Component
     public $data_ra;
     public $evaso_dal_dl;
     public $mese_saldo;
+    public $pagato_dl;
+    public $pagato_ne;
     public $al_dl;
     public $a_ne;
     public $delta;
@@ -132,6 +134,8 @@ class PermessoEnteForm extends Component
         $this->data_fl = $permesso->data_fl ? Carbon::parse($permesso->data_fl)->format('Y-m-d') : null;
         $this->data_ra = $permesso->data_ra ? Carbon::parse($permesso->data_ra)->format('Y-m-d') : null;
         $this->evaso_dal_dl = $permesso->evaso_dal_dl ? Carbon::parse($permesso->evaso_dal_dl)->format('Y-m-d') : null;
+        $this->pagato_dl = $permesso->pagato_dl ? Carbon::parse($permesso->pagato_dl)->format('Y-m-d') : null;
+        $this->pagato_ne = $permesso->pagato_ne ? Carbon::parse($permesso->pagato_ne)->format('Y-m-d') : null;
 
         // FORMATTA IL MESE per input type="month" (yyyy-MM)
         $this->mese_saldo = $permesso->mese_saldo ? Carbon::parse($permesso->mese_saldo)->format('Y-m') : null;
@@ -215,6 +219,8 @@ class PermessoEnteForm extends Component
             'data_ra' => 'nullable|date',
             'evaso_dal_dl' => 'nullable|date',
             'mese_saldo' => 'nullable|date',
+            'pagato_dl' => 'nullable|date',
+            'pagato_ne' => 'nullable|date',
             'al_dl' => 'nullable|numeric',
             'a_ne' => 'nullable|numeric',
             'delta' => 'nullable|numeric',
@@ -254,6 +260,8 @@ class PermessoEnteForm extends Component
             'data_ra' => $this->emptyToNull($this->data_ra),
             'evaso_dal_dl' => $this->emptyToNull($this->evaso_dal_dl),
             'mese_saldo' => $this->emptyToNull($this->mese_saldo),
+            'pagato_dl' => $this->emptyToNull($this->pagato_dl),
+            'pagato_ne' => $this->emptyToNull($this->pagato_ne),
             'al_dl' => $this->emptyToNull($this->al_dl),
             'a_ne' => $this->emptyToNull($this->a_ne),
             'delta' => $this->emptyToNull($this->delta),

@@ -230,6 +230,14 @@ class PermessiEnteTable extends DataTableComponent
             DateRangeFilter::make('Mese Saldo', 'mese_saldo_filter')
                 ->filter(fn(Builder $builder, array $v) => $builder->whereDate('mese_saldo', '>=', $v['minDate'])->whereDate('mese_saldo', '<=', $v['maxDate'])),
 
+            DateRangeFilter::make('Pagato DL', 'pagato_dl_filter')
+                ->config(['locale' => 'it'])
+                ->filter(fn(Builder $builder, array $v) => $builder->whereDate('pagato_dl', '>=', $v['minDate'])->whereDate('pagato_dl', '<=', $v['maxDate'])),
+
+            DateRangeFilter::make('Pagato NE', 'pagato_ne_filter')
+                ->config(['locale' => 'it'])
+                ->filter(fn(Builder $builder, array $v) => $builder->whereDate('pagato_ne', '>=', $v['minDate'])->whereDate('pagato_ne', '<=', $v['maxDate'])),
+
             TextFilter::make('Al DL', 'al_dl_filter')
                 ->filter(fn(Builder $builder, $value) => $builder->where('al_dl', $value)),
 
@@ -389,6 +397,18 @@ class PermessiEnteTable extends DataTableComponent
                 ->format(fn($v) => number_format((float) $v, 2, ',', '.'))
                 ->hideIf(!Auth::user()->hasRole('admin'))
                 ->secondaryHeaderFilter('delta_filter'),
+
+            Column::make('Pagato DL', 'pagato_dl')
+                ->format(fn($v) => $v ? Carbon::parse($v)->format('d/m/Y') : '')
+                ->hideIf(!Auth::user()->hasRole('admin'))
+                ->sortable()
+                ->secondaryHeaderFilter('pagato_dl_filter'),
+
+            Column::make('Pagato NE', 'pagato_ne')
+                ->format(fn($v) => $v ? Carbon::parse($v)->format('d/m/Y') : '')
+                ->hideIf(!Auth::user()->hasRole('admin'))
+                ->sortable()
+                ->secondaryHeaderFilter('pagato_ne_filter'),
 
             Column::make('VDC1', 'vdc1')
                 ->format(fn($v) => $v ?? 0)

@@ -125,6 +125,16 @@
                             <div class="fw-bold fs-5">{{ number_format((float)$vdc1 + (float)$vdc2 + (float)$vdc3 + (float)$vdc4, 2, ',', '.') }} €</div>
                         </div>
                     </div>
+                    <div class="row text-center mt-3">
+                        <div class="col-md-3 border-end">
+                            <div class="small text-muted">Pagato DL</div>
+                            <div class="fw-bold fs-5">{{ $pagato_dl ? \Carbon\Carbon::parse($pagato_dl)->format('d/m/Y') : '-' }}</div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="small text-muted">Pagato NE</div>
+                            <div class="fw-bold fs-5">{{ $pagato_ne ? \Carbon\Carbon::parse($pagato_ne)->format('d/m/Y') : '-' }}</div>
+                        </div>
+                    </div>
                 </div>
                 @endrole
             </div>
@@ -281,6 +291,14 @@
                         <div class="col-md-4">
                             <label class="form-label">Mese Saldo</label>
                             <input type="month" class="form-control shadow-sm" wire:model="mese_saldo">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Pagato DL</label>
+                            <input type="date" class="form-control shadow-sm" wire:model="pagato_dl">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Pagato NE</label>
+                            <input type="date" class="form-control shadow-sm" wire:model="pagato_ne">
                         </div>
                     </div>
 
