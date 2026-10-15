@@ -82,10 +82,10 @@
                     state.overlay.style.display = 'block';
                     state.overlay.style.left = `${wrapperRect.left}px`;
                     state.overlay.style.width = `${wrapper.clientWidth}px`;
+                    state.overlay.classList.toggle('table-sticky-actions', wrapper.classList.contains('table-sticky-actions'));
 
                     state.cloneTable.className = table.className;
                     state.cloneTable.style.width = `${table.getBoundingClientRect().width}px`;
-                    state.cloneTable.style.transform = `translateX(${-wrapper.scrollLeft}px)`;
 
                     sourceHeads.forEach((th, index) => {
                         const width = th.getBoundingClientRect().width;
@@ -94,6 +94,9 @@
                         clone.style.minWidth = `${width}px`;
                         clone.style.maxWidth = `${width}px`;
                     });
+
+                    // scrollLeft (non transform) così la colonna azioni sticky resta ancorata anche nel clone
+                    state.overlay.scrollLeft = wrapper.scrollLeft;
                 };
 
                 const rebuildStickyTable = (wrapper) => {
@@ -184,6 +187,28 @@
                 document.addEventListener('DOMContentLoaded', initStickyTables);
                 document.addEventListener('livewire:navigated', initStickyTables);
                 document.addEventListener('livewire:init', initStickyTables);
+
+                // Le celle sticky creano uno stacking context: un modal al loro interno finirebbe
+                // sotto il backdrop, quindi lo spostiamo nel body finché resta aperto.
+                document.addEventListener('show.bs.modal', (event) => {
+                    const modal = event.target;
+                    if (modal.parentElement === document.body || !modal.closest('.table-sticky-actions')) {
+                        return;
+                    }
+
+                    const parent = modal.parentElement;
+                    const next = modal.nextSibling;
+                    document.body.appendChild(modal);
+
+                    modal.addEventListener('hidden.bs.modal', () => {
+                        // Se nel frattempo Livewire ha ri-renderizzato la riga, il modal originale non serve più
+                        if (parent.isConnected && !parent.querySelector('.modal')) {
+                            parent.insertBefore(modal, next?.parentNode === parent ? next : null);
+                        } else {
+                            modal.remove();
+                        }
+                    }, { once: true });
+                });
             })();
         </script>
     </body>

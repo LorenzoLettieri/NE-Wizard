@@ -9,9 +9,9 @@
     @endif
 
     <div class="{{ $isShow || $isEdit ? 'modal-body' : 'card shadow-sm border-0 rounded-3 p-4' }}">
-        @if (session('success'))
+        @if ($successMessage)
             <div class="alert alert-success">
-                {{ session('success') }}
+                {{ $successMessage }}
             </div>
         @endif
 

@@ -20,6 +20,14 @@
         @endrole
       </div>
 
+      @if (session('success'))
+        <div class="col-12 col-xl-10">
+          <div class="alert alert-success mt-3">
+            {{ session('success') }}
+          </div>
+        </div>
+      @endif
+
       <div class="col-12">
         <livewire:notification-center></livewire:notification-center>
         <livewire:permessi-ente-table></livewire:permessi-ente-table>

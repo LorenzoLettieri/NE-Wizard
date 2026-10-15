@@ -68,6 +68,7 @@ class PermessoEnteForm extends Component
     public $isShow = false;
     public $permessoEnteId = null;
     public $existingMedia = [];
+    public $successMessage = null;
 
     #[Computed]
     public function regioni()
@@ -118,6 +119,7 @@ class PermessoEnteForm extends Component
     private function loadPermesso($id)
     {
         $permesso = PermessoEnte::findOrFail($id);
+        $this->successMessage = null;
         $this->permessoEnteId = $permesso->id;
 
         // Popola le proprietà
@@ -312,6 +314,16 @@ class PermessoEnteForm extends Component
             }
 
             $message .= ' ' . implode(', ', $details) . '.';
+        }
+
+        if ($this->isEdit) {
+            // Resta nel modale e aggiorna solo la tabella, così filtri e paginazione non si perdono
+            $this->mediaUploadFormToken = null;
+            $this->loadPermesso($permesso->id);
+            $this->successMessage = $message;
+            $this->dispatch('permessoUpdated');
+
+            return null;
         }
 
         session()->flash('success', $message);

@@ -57,6 +57,10 @@ class OperatorTable extends DataTableComponent
         $this->setDefaultSort('created_at', 'desc');
 
         //style
+        $this->setTableWrapperAttributes([
+            'class' => 'table-sticky-actions'
+        ]);
+
         $this->setTableAttributes([
             'class' => 'table-hover'
         ]);

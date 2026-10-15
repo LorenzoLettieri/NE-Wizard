@@ -19,6 +19,12 @@
             </div>
         @endif
 
+        @if ($successMessage)
+            <div class="alert alert-success">
+                {{ $successMessage }}
+            </div>
+        @endif
+
         @if ($isShow && $decommissioningId)
             <div class="row g-4">
                 <div class="col-md-6">

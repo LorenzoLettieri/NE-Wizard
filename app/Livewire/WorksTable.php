@@ -52,7 +52,7 @@ class WorksTable extends DataTableComponent
         $this->setPerPageAccepted([10, 25, 50, 100, 200, 300]);
 
         $this->setTableWrapperAttributes([
-            'class' => 'table-sticky-head-wrapper',
+            'class' => 'table-sticky-head-wrapper table-sticky-actions',
         ]);
 
         $this->setTableAttributes([

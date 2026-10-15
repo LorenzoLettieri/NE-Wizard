@@ -63,6 +63,7 @@ class DecommissioningForm extends Component
     public $isShow = false;
     public $decommissioningId = null;
     public $existingMedia = [];
+    public $successMessage = null;
 
     #[Computed]
     public function centrali()
@@ -268,6 +269,16 @@ class DecommissioningForm extends Component
             $message .= ' ' . implode(', ', $details) . '.';
         }
 
+        if ($this->isEdit) {
+            // Resta nel modale e aggiorna solo la tabella, così filtri e paginazione non si perdono
+            $this->mediaUploadFormToken = null;
+            $this->loadDecommissioning($decommissioning->id);
+            $this->successMessage = $message;
+            $this->dispatch('decommissioningUpdated');
+
+            return null;
+        }
+
         session()->flash('success', $message);
 
         return redirect()->route('decommissionings.table');
@@ -282,6 +293,7 @@ class DecommissioningForm extends Component
     {
         $decommissioning = Decommissioning::with('media')->findOrFail($id);
 
+        $this->successMessage = null;
         $this->decommissioningId = $decommissioning->id;
         $this->company_id = $decommissioning->company_id;
         $this->clli = $decommissioning->clli;
