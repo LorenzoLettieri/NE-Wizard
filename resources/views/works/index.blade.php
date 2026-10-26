@@ -20,7 +20,7 @@
             </div>
 
             <div class="col-12">
-                <livewire:notification-center></livewire:notification-center>
+                @include('partials.page-alerts')
                 <livewire:WorksTable></livewire:WorksTable>
             </div>
         </div>
@@ -28,14 +28,14 @@
 </x-layout>
 
 <!-- View Modal -->
-<div class="modal fade" id="viewModal" tabindex="-1" aria-labelledby="viewModalLabel" aria-hidden="true">
+<div class="modal fade" id="viewModal" tabindex="-1" aria-labelledby="viewModalLabel" aria-hidden="true" data-livewire-modal>
   <div class="modal-dialog modal-xl">
     <livewire:view-work></livewire:view-work>
   </div>
 </div>
 
 <!-- edit Modal -->
-<div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+<div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true" data-livewire-modal>
   <div class="modal-dialog modal-xl">
     <livewire:edit-work></livewire:edit-work>
   </div>

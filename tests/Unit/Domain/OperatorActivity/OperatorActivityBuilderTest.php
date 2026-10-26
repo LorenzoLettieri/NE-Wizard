@@ -101,6 +101,8 @@ class OperatorActivityBuilderTest extends TestCase
         $work->id = 123;
         $work->setRelation('workPhase', $phase);
         $work->setRelation('workSuspensions', collect());
+        // Il builder legge lo storico stati: senza storico usa le date di presa in carico e consegna
+        $work->setRelation('statusHistory', collect());
 
         $timesheet = Timesheet::make([
             'date' => '2026-04-10',

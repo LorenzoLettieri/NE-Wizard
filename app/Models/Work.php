@@ -16,6 +16,25 @@ class Work extends Model
     use HasFactory;
     use SoftDeletes;
 
+    public const STATUSES = [
+        'Da Lavorare',
+        'In Lavorazione',
+        'Sospeso',
+        'Attesa Fine Lavori',
+        'KO',
+        'Consegnato',
+        'Fine Lavori',
+    ];
+
+    // Consegnato e Fine Lavori si raggiungono dalle azioni dedicate, non dalla select dei form
+    public const FORM_STATUSES = [
+        'Da Lavorare',
+        'In Lavorazione',
+        'Sospeso',
+        'Attesa Fine Lavori',
+        'KO',
+    ];
+
     protected $fillable = [
         'company_id',
         'central_id',

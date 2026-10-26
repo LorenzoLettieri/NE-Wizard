@@ -9,12 +9,15 @@ class WorkObserver
 {
     public function created(Work $work): void
     {
-        WorkStatusHistory::create([
-            'work_id' => $work->id,
-            'status' => $work->status,
-            'started_at' => $work->created_at ?? now(),
-            'ended_at' => null,
-        ]);
+        // work_status_history.status è NOT NULL: senza stato non c'è nulla da storicizzare
+        if (filled($work->status)) {
+            WorkStatusHistory::create([
+                'work_id' => $work->id,
+                'status' => $work->status,
+                'started_at' => $work->created_at ?? now(),
+                'ended_at' => null,
+            ]);
+        }
 
         if ($work->status === 'In Lavorazione' && ! $work->acception_date) {
             $work->timestamps = false;
@@ -37,7 +40,7 @@ class WorkObserver
 
     public function updated(Work $work): void
     {
-        if (! $work->wasChanged('status')) {
+        if (! $work->wasChanged('status') || blank($work->status)) {
             return;
         }
 

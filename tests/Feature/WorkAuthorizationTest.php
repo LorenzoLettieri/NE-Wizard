@@ -289,11 +289,10 @@ class WorkAuthorizationTest extends TestCase
         Livewire::test(ViewWork::class)
             ->call('endWork', $work->id);
 
-        $this->assertDatabaseHas('works', [
-            'id' => $work->id,
-            'status' => 'Fine Lavori',
-            'completion_date' => '2026-04-14',
-        ]);
+        // Confronto sul modello: sqlite e MySQL salvano le date in formati diversi
+        $work->refresh();
+        $this->assertSame('Fine Lavori', $work->status);
+        $this->assertSame('2026-04-14', $work->completion_date->toDateString());
     }
 
     public function test_operator_cannot_duplicate_work_through_view_work(): void

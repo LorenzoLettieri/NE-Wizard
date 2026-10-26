@@ -6,47 +6,32 @@
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
         <title>NEWizard</title>
+        <script>
+            // Applica il tema prima del primo paint, così non si vede il passaggio scuro -> chiaro
+            (() => {
+                let theme = null;
+                try {
+                    theme = localStorage.getItem('bs-theme');
+                } catch (e) {}
+                if (!theme) {
+                    theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                }
+                document.documentElement.setAttribute('data-bs-theme', theme);
+            })();
+        </script>
         <!-- Styles / Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.12.1/font/bootstrap-icons.min.css">
-        <style>
-            .table-sticky-head-wrapper {
-                overflow-y: visible;
-            }
-
-            .table-sticky-head-wrapper .table-sticky-head th {
-                position: sticky;
-                top: 0;
-                z-index: 2;
-                background-color: var(--bs-tertiary-bg);
-                box-shadow: inset 0 -1px 0 var(--bs-border-color);
-            }
-
-            .table-sticky-head-overlay {
-                position: fixed;
-                top: 0;
-                z-index: 1030;
-                display: none;
-                overflow: hidden;
-                pointer-events: auto;
-                background-color: var(--bs-body-bg);
-            }
-
-            .table-sticky-head-overlay table {
-                margin-bottom: 0;
-            }
-
-            .table-sticky-head-overlay th {
-                background-color: var(--bs-tertiary-bg);
-                box-shadow: inset 0 -1px 0 var(--bs-border-color);
-            }
-        </style>
     </head>
     <body class="">
         <x-navbar></x-navbar>
         {{$slot}}
+        <div id="app-toasts" class="toast-container position-fixed bottom-0 end-0 p-3"></div>
         <script>
             (() => {
+                const readHeaderWidths = (thead) => Array.from(thead.querySelectorAll('th'))
+                    .map((th) => th.getBoundingClientRect().width);
+
                 const syncStickyTable = (wrapper) => {
                     const state = wrapper.__stickyHeadState;
                     if (!state) {
@@ -61,14 +46,9 @@
                         return;
                     }
 
-                    const sourceHeads = Array.from(thead.querySelectorAll('th'));
                     const cloneHeads = Array.from(state.cloneTable.querySelectorAll('th'));
 
-                    if (sourceHeads.length !== cloneHeads.length) {
-                        rebuildStickyTable(wrapper);
-                        return;
-                    }
-
+                    // Prima tutte le letture di layout...
                     const headerRect = thead.getBoundingClientRect();
                     const tableRect = table.getBoundingClientRect();
                     const wrapperRect = wrapper.getBoundingClientRect();
@@ -79,16 +59,26 @@
                         return;
                     }
 
+                    const widths = readHeaderWidths(thead);
+
+                    if (widths.length !== cloneHeads.length) {
+                        scheduleRebuild(wrapper);
+                        return;
+                    }
+
+                    const clientWidth = wrapper.clientWidth;
+                    const scrollLeft = wrapper.scrollLeft;
+
+                    // ...poi tutte le scritture, per non forzare un reflow per ogni colonna
                     state.overlay.style.display = 'block';
                     state.overlay.style.left = `${wrapperRect.left}px`;
-                    state.overlay.style.width = `${wrapper.clientWidth}px`;
+                    state.overlay.style.width = `${clientWidth}px`;
                     state.overlay.classList.toggle('table-sticky-actions', wrapper.classList.contains('table-sticky-actions'));
 
                     state.cloneTable.className = table.className;
-                    state.cloneTable.style.width = `${table.getBoundingClientRect().width}px`;
+                    state.cloneTable.style.width = `${tableRect.width}px`;
 
-                    sourceHeads.forEach((th, index) => {
-                        const width = th.getBoundingClientRect().width;
+                    widths.forEach((width, index) => {
                         const clone = cloneHeads[index];
                         clone.style.width = `${width}px`;
                         clone.style.minWidth = `${width}px`;
@@ -96,7 +86,7 @@
                     });
 
                     // scrollLeft (non transform) così la colonna azioni sticky resta ancorata anche nel clone
-                    state.overlay.scrollLeft = wrapper.scrollLeft;
+                    state.overlay.scrollLeft = scrollLeft;
                 };
 
                 const rebuildStickyTable = (wrapper) => {
@@ -119,9 +109,34 @@
                     syncStickyTable(wrapper);
                 };
 
+                // Scroll e mutazioni arrivano a raffica: si lavora al massimo una volta per frame
+                const scheduleSync = (wrapper) => {
+                    const state = wrapper.__stickyHeadState;
+                    if (!state || state.syncFrame) {
+                        return;
+                    }
+
+                    state.syncFrame = window.requestAnimationFrame(() => {
+                        state.syncFrame = null;
+                        syncStickyTable(wrapper);
+                    });
+                };
+
+                const scheduleRebuild = (wrapper) => {
+                    const state = wrapper.__stickyHeadState;
+                    if (!state || state.rebuildFrame) {
+                        return;
+                    }
+
+                    state.rebuildFrame = window.requestAnimationFrame(() => {
+                        state.rebuildFrame = null;
+                        rebuildStickyTable(wrapper);
+                    });
+                };
+
                 const attachStickyTable = (wrapper) => {
                     if (wrapper.__stickyHeadState) {
-                        rebuildStickyTable(wrapper);
+                        scheduleRebuild(wrapper);
                         return;
                     }
 
@@ -135,7 +150,9 @@
                     const state = {
                         overlay,
                         cloneTable,
-                        sync: () => syncStickyTable(wrapper),
+                        syncFrame: null,
+                        rebuildFrame: null,
+                        sync: () => scheduleSync(wrapper),
                     };
 
                     overlay.addEventListener('click', (event) => {
@@ -167,7 +184,7 @@
                     window.addEventListener('resize', state.sync);
 
                     state.observer = new MutationObserver(() => {
-                        rebuildStickyTable(wrapper);
+                        scheduleRebuild(wrapper);
                     });
                     state.observer.observe(wrapper, {
                         childList: true,
@@ -176,7 +193,7 @@
                     });
 
                     wrapper.__stickyHeadState = state;
-                    rebuildStickyTable(wrapper);
+                    scheduleRebuild(wrapper);
                 };
 
                 const initStickyTables = () => {

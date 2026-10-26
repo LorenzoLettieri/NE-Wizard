@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
@@ -53,5 +54,21 @@ class Gbx extends Model
     public function company()
     {
         return $this->belongsTo(Company::class);
+    }
+
+    // Stessa regola della policy: chi non gestisce tutti i GBX vede solo quelli della propria impresa
+    public function scopeVisibleTo(Builder $query, User $user): Builder
+    {
+        if ($user->canManageAllGbx()) {
+            return $query;
+        }
+
+        $companyName = $user->company?->name;
+
+        if ($companyName === null) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->whereHas('company', fn (Builder $company) => $company->where('name', $companyName));
     }
 }

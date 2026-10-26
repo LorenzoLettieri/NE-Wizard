@@ -144,7 +144,7 @@ return [
     */
 
     'features' => [
-        Features::registration(),
+        // Gli account li crea solo l'admin da Gestisci Utenti: niente registrazione pubblica
         Features::resetPasswords(),
         // Features::emailVerification(),
         Features::updateProfileInformation(),

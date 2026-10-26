@@ -16,12 +16,7 @@
             <div class="row g-3">
                 <div class="col-md-4">
                     <label class="form-label">Impresa</label>
-                    <select wire:model="company_id" class="form-select tom-select">
-                        <option value="">-- Seleziona --</option>
-                        @foreach($companies as $company)
-                            <option value="{{ $company->id }}">{{ $company->name }}</option>
-                        @endforeach
-                    </select>
+                    <x-tom-select model="company_id" :options="$companies->pluck('name', 'id')" />
                 </div>
                 <div class="col-md-4">
                     <label class="form-label">Network</label>
@@ -33,12 +28,7 @@
                 </div>
                 <div class="col-md-4">
                     <label for="" class="form-label">Centrale:</label>
-                    <select wire:model="central_id" class="form-select tom-select">
-                        <option value="">-- Seleziona --</option>
-                        @foreach($centrals as $central)
-                            <option value="{{ $central->id }}">{{ $central->central }}</option>
-                        @endforeach
-                    </select>
+                    <x-tom-select model="central_id" remote="centrals" placeholder="-- Cerca centrale --" />
                 </div>
                 <div class="col-md-4">
                     <label class="form-label">Comune</label>

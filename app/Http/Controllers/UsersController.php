@@ -54,7 +54,7 @@ class UsersController extends Controller
 
     public function edit($id)
     {
-        $user = User::find($id);
+        $user = User::findOrFail($id);
         $roles = Role::all();
         $companies = Company::all();
         return view('users.edit', compact('user', 'roles', 'companies'));

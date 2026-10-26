@@ -2,12 +2,11 @@
 
 namespace App\Livewire;
 
-use App\Models\Central;
 use App\Models\Company;
-use App\Models\Comune;
 use App\Models\Decommissioning;
 use App\Models\Regione;
 use App\Models\User;
+use App\Support\StatusBadge;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
@@ -25,9 +24,15 @@ class DecommissioningTable extends DataTableComponent
 
     public function builder(): Builder
     {
-        return Decommissioning::query()
+        $query = Decommissioning::query()
             ->with(['company', 'central', 'comune', 'regione', 'progettista'])
             ->withCount('media');
+
+        if (Auth::user()->hasRole('admin')) {
+            return $query;
+        }
+
+        return $query->where('decommissionings.progettista_id', Auth::id());
     }
 
     public function configure(): void
@@ -69,13 +74,14 @@ class DecommissioningTable extends DataTableComponent
                 ->options(['' => 'Tutte'] + Company::orderBy('name')->pluck('name', 'id')->toArray())
                 ->filter(fn (Builder $builder, string $value) => $builder->where('decommissionings.company_id', $value)),
 
-            SelectFilter::make('Centrale', 'central_id')
-                ->options(['' => 'Tutte'] + Central::orderBy('central')->pluck('central', 'id')->toArray())
-                ->filter(fn (Builder $builder, string $value) => $builder->where('central_id', $value)),
+            // Comuni e centrali sono migliaia: filtro testuale invece di una select con tutte le voci
+            TextFilter::make('Centrale', 'central_filter')
+                ->config(['placeholder' => 'Centrale'])
+                ->filter(fn (Builder $builder, string $value) => $builder->whereHas('central', fn (Builder $query) => $query->where('central', 'like', "%{$value}%"))),
 
-            SelectFilter::make('Comune', 'comune_id')
-                ->options(['' => 'Tutti'] + Comune::orderBy('name')->pluck('name', 'id')->toArray())
-                ->filter(fn (Builder $builder, string $value) => $builder->where('comune_id', $value)),
+            TextFilter::make('Comune', 'comune_filter')
+                ->config(['placeholder' => 'Comune'])
+                ->filter(fn (Builder $builder, string $value) => $builder->whereHas('comune', fn (Builder $query) => $query->where('name', 'like', "%{$value}%"))),
 
             SelectFilter::make('Regione', 'regione_id')
                 ->options(['' => 'Tutte'] + Regione::orderBy('nome')->pluck('nome', 'id')->toArray())
@@ -135,15 +141,7 @@ class DecommissioningTable extends DataTableComponent
                 ->secondaryHeaderFilter('created_at'),
 
             Column::make('Stato', 'status')
-                ->format(function ($value) {
-                    return match ($value) {
-                        'In Lavorazione' => "<span class='badge rounded-pill text-bg-primary'>{$value}</span>",
-                        'Sospeso' => "<span class='badge rounded-pill text-bg-warning'>{$value}</span>",
-                        'Fine Lavori' => "<span class='badge rounded-pill text-bg-success'>{$value}</span>",
-                        'Annullato' => "<span class='badge rounded-pill text-bg-danger'>{$value}</span>",
-                        default => "<span class='badge rounded-pill text-bg-secondary'>{$value}</span>",
-                    };
-                })
+                ->format(fn ($value) => StatusBadge::decommissioning($value))
                 ->html()
                 ->sortable()
                 ->secondaryHeaderFilter('status'),
@@ -161,12 +159,12 @@ class DecommissioningTable extends DataTableComponent
             Column::make('Centrale', 'central.central')
                 ->sortable()
                 ->searchable()
-                ->secondaryHeaderFilter('central_id'),
+                ->secondaryHeaderFilter('central_filter'),
 
             Column::make('Comune', 'comune.name')
                 ->sortable()
                 ->searchable()
-                ->secondaryHeaderFilter('comune_id'),
+                ->secondaryHeaderFilter('comune_filter'),
 
             Column::make('Regione', 'regione.nome')
                 ->sortable()

@@ -3,7 +3,6 @@
 namespace App\Livewire;
 
 use App\Models\Gbx;
-use App\Models\Central;
 use App\Models\Company;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -14,7 +13,7 @@ class GbxForm extends Component
     use WithFileUploads;
     use HandlesMediaUploads;
 
-    public $centrals, $companies;
+    public $companies;
     public $company_id, $network, $SDF, $central_id, $comune, $client, $coordinates;
     public $appointment_date, $inspection_date, $verbal_date, $obligation_date, $release_date, $project_date,
     $speedark_date;
@@ -26,7 +25,6 @@ class GbxForm extends Component
 
     public function mount()
     {
-        $this->centrals = Central::all();
         $this->companies = Company::all();
         $this->date = date('Y-m-d');
         $this->initializeChunkedMediaUploads('gbx');

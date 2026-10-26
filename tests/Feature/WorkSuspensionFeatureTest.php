@@ -393,6 +393,12 @@ class WorkSuspensionFeatureTest extends TestCase
 
     public function test_duplicate_work_resets_workflow_dates_and_does_not_copy_suspensions(): void
     {
+        // Duplicare passa dalla WorkPolicy: serve un utente che possa farlo
+        $this->seed(RoleSeeder::class);
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+        $this->actingAs($admin);
+
         $work = Work::create([
             'status' => 'Consegnato',
             'acception_date' => Carbon::parse('2026-03-30 08:00:00', 'UTC'),
@@ -474,10 +480,11 @@ class WorkSuspensionFeatureTest extends TestCase
             ->set('expected_delivery_date', '2026-04-15')
             ->call('store');
 
-        $this->assertDatabaseHas('works', [
-            'network' => 'NTW-001',
-            'expected_delivery_date' => '2026-04-15',
-        ]);
+        // Confronto sul modello: sqlite e MySQL salvano le date in formati diversi
+        $this->assertSame(
+            '2026-04-15',
+            Work::where('network', 'NTW-001')->firstOrFail()->expected_delivery_date->toDateString()
+        );
     }
 
     public function test_supervisor_can_update_expected_delivery_date(): void
@@ -499,10 +506,7 @@ class WorkSuspensionFeatureTest extends TestCase
             ->call('update')
             ->assertHasNoErrors();
 
-        $this->assertDatabaseHas('works', [
-            'id' => $work->id,
-            'expected_delivery_date' => '2026-04-20',
-        ]);
+        $this->assertSame('2026-04-20', $work->fresh()->expected_delivery_date->toDateString());
     }
 
     public function test_operator_cannot_force_update_expected_delivery_date_via_livewire_request(): void
@@ -529,10 +533,7 @@ class WorkSuspensionFeatureTest extends TestCase
             ->call('update')
             ->assertHasNoErrors();
 
-        $this->assertDatabaseHas('works', [
-            'id' => $work->id,
-            'expected_delivery_date' => '2026-04-10',
-        ]);
+        $this->assertSame('2026-04-10', $work->fresh()->expected_delivery_date->toDateString());
     }
 
     public function test_works_table_renders_expected_delivery_date_column_and_value(): void
@@ -579,6 +580,12 @@ class WorkSuspensionFeatureTest extends TestCase
 
     public function test_view_work_shows_expected_delivery_date(): void
     {
+        // Il dettaglio passa dalla WorkPolicy: serve un utente che possa vederlo
+        $this->seed(RoleSeeder::class);
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+        $this->actingAs($admin);
+
         $work = Work::create([
             'status' => 'Da Lavorare',
             'expected_delivery_date' => '2026-04-15',
@@ -626,10 +633,15 @@ class WorkSuspensionFeatureTest extends TestCase
         $this->assertSame(12.5, $export->map($work)[11]);
         $this->assertSame('4h', $export->map($work)[20]);
 
+        // Il dettaglio per operatore è riservato agli admin; Work::formatDuration produce "4h" (senza spazio)
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+        $this->actingAs($admin);
+
         Livewire::test(OperatorStats::class)
             ->set('startDate', '2026-03-01')
             ->set('endDate', '2026-03-31')
             ->assertSee('Mario Rossi')
-            ->assertSee('4 h');
+            ->assertSee('4h');
     }
 }

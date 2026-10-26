@@ -27,7 +27,7 @@
         </div>
     </div>
 
-    <div class="modal fade" id="viewModal" tabindex="-1" aria-labelledby="viewModalLabel" aria-hidden="true">
+    <div class="modal fade" id="viewModal" tabindex="-1" aria-labelledby="viewModalLabel" aria-hidden="true" data-livewire-modal>
         <div class="modal-dialog modal-xl">
             <livewire:view-work></livewire:view-work>
         </div>

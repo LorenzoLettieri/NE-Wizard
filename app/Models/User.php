@@ -81,4 +81,38 @@ class User extends Authenticatable
 
         return $this->works()->whereKey($work->getKey())->exists();
     }
+
+    public function canManageAllPermessiEnte(): bool
+    {
+        // I supervisor sono esclusi dalla sezione Permessi Ente
+        return $this->hasRole('admin');
+    }
+
+    public function isAssignedToPermessoEnte(PermessoEnte $permesso): bool
+    {
+        if ($permesso->relationLoaded('users')) {
+            return $permesso->users->contains(fn (User $user) => $user->is($this));
+        }
+
+        return $this->permessiEnte()->whereKey($permesso->getKey())->exists();
+    }
+
+    public function canManageAllGbx(): bool
+    {
+        return $this->hasAnyRole(['admin', 'GBX Supervisor']);
+    }
+
+    public function belongsToGbxCompany(Gbx $gbx): bool
+    {
+        // Confronto per nome come il filtro della tabella GBX, così le due regole non divergono
+        $companyName = $this->company?->name;
+
+        return $companyName !== null && $gbx->company?->name === $companyName;
+    }
+
+    public function isAssignedToDecommissioning(Decommissioning $decommissioning): bool
+    {
+        return $decommissioning->progettista_id !== null
+            && (int) $decommissioning->progettista_id === (int) $this->getKey();
+    }
 }

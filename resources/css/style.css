@@ -42,7 +42,7 @@ ul.dropdown-menu[role="menu"] {
 }
 
 .hover-lighten:hover {
-  background-color: #292929 !important; /* un po’ più chiaro di bg-dark (#212529) */
+  background-color: var(--bs-tertiary-bg) !important; /* segue il tema: prima era un grigio scuro fisso anche nel tema chiaro */
 }
 
 .hero-header {
@@ -213,6 +213,56 @@ ul.dropdown-menu[role="menu"] {
   z-index: 2;
   background-color: var(--bs-tertiary-bg);
   box-shadow: inset 0 -1px 0 var(--bs-border-color);
+}
+
+/* Clone dell'intestazione mostrato in alto quando la tabella scorre sotto la viewport */
+.table-sticky-head-overlay {
+  position: fixed;
+  top: 0;
+  z-index: 1030;
+  display: none;
+  overflow: hidden;
+  pointer-events: auto;
+  background-color: var(--bs-body-bg);
+}
+
+.table-sticky-head-overlay table {
+  margin-bottom: 0;
+}
+
+.table-sticky-head-overlay th {
+  background-color: var(--bs-tertiary-bg);
+  box-shadow: inset 0 -1px 0 var(--bs-border-color);
+}
+
+/* Modali di dettaglio/modifica: spinner finché Livewire non ha caricato il record scelto */
+.modal[data-livewire-modal].is-loading .modal-content {
+  position: relative;
+  min-height: 12rem;
+}
+
+.modal[data-livewire-modal].is-loading .modal-content > * {
+  visibility: hidden;
+}
+
+.modal[data-livewire-modal].is-loading .modal-content::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 2.5rem;
+  height: 2.5rem;
+  margin: -1.25rem 0 0 -1.25rem;
+  border: 0.25em solid var(--bs-secondary-color);
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spinner-border 0.75s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal[data-livewire-modal].is-loading .modal-content::after {
+    animation-duration: 1.5s;
+  }
 }
 
 /* Colonna azioni (ultima) sempre visibile durante lo scroll orizzontale */

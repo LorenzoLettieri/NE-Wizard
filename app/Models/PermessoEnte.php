@@ -11,7 +11,22 @@ class PermessoEnte extends Model
 {
     use HasFactory;
 
+    public const STATUS_DELIVERED = 'Consegnato';
+
+    // Valore salvato in passato dalla select admin: va letto come Consegnato, senza riscrivere i dati
+    public const LEGACY_DELIVERED_STATUSES = ['Consegnata'];
+
     protected $table = 'permessi_ente';
+
+    public static function normalizeStatus(?string $status): ?string
+    {
+        return in_array($status, self::LEGACY_DELIVERED_STATUSES, true) ? self::STATUS_DELIVERED : $status;
+    }
+
+    public static function deliveredStatuses(): array
+    {
+        return [self::STATUS_DELIVERED, ...self::LEGACY_DELIVERED_STATUSES];
+    }
 
     protected $fillable = [
         'network',

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 use App\Exports\GbxExport;
 use App\Models\Gbx;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Maatwebsite\Excel\Facades\Excel;
@@ -22,6 +23,8 @@ class GbxController extends Controller
 
     public function delete(Request $request, Gbx $gbx)
     {
+        Gate::authorize('delete', $gbx);
+
         $gbx->delete();
         return redirect()->back()->with('success', 'Gbx eliminato con successo!');
     }

@@ -5,6 +5,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DecommissioningController;
 use App\Http\Controllers\Admin\OperatorWorkspaceController;
 use App\Http\Controllers\ChunkedMediaUploadController;
+use App\Http\Controllers\LookupController;
 use App\Http\Controllers\MediaDownloadController;
 use App\Http\Controllers\UsersController;
 use App\Http\Controllers\WorkController;
@@ -22,10 +23,14 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('/media/uploads/process/{session}', [ChunkedMediaUploadController::class, 'patch'])->name('media.uploads.patch');
     Route::match(['HEAD'], '/media/uploads/process/{session}', [ChunkedMediaUploadController::class, 'head'])->name('media.uploads.head');
     Route::delete('/media/uploads/revert', [ChunkedMediaUploadController::class, 'revert'])->name('media.uploads.revert');
+    Route::get('/lookups/{type}', LookupController::class)
+        ->whereIn('type', array_keys(LookupController::SOURCES))
+        ->middleware('throttle:240,1')
+        ->name('lookups.show');
 });
 
 
-Route::group(['middleware' => ['role:admin']], function () {
+Route::group(['middleware' => ['auth', 'role:admin']], function () {
     Route::get("/users/accounts/table", [UsersController::class, "accountsTable"])->name("accounts-table");
     Route::get("/users/create", [UsersController::class, "create"])->name("addUser");
     Route::post('/users/store', [UsersController::class, 'store'])->name('registerUser');
@@ -48,10 +53,10 @@ Route::middleware(['auth', 'role:admin|supervisor'])->group(function () {
     Route::get('/exports/works', [WorkController::class, 'download'])->name('exports.works');
 });
 
-Route::group(['middleware' => ['permission:get works']], function () {
+Route::group(['middleware' => ['auth', 'permission:get works']], function () {
     Route::get('/operator/table', [OperatorController::class, 'index'])->name('operator-table');
 });
-Route::group(['middleware' => ['role:operator|supervisor']], function () {
+Route::group(['middleware' => ['auth', 'role:operator|supervisor']], function () {
     Route::get('/operator/timesheet', [\App\Http\Controllers\OperatorTimesheetController::class, 'index'])->name('operator-timesheet');
 });
 Route::middleware(['auth', 'role:admin|GBX|GBX Supervisor'])->group(function () {

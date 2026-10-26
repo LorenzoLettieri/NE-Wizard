@@ -10,11 +10,13 @@ use App\Models\Company;
 use App\Models\CompanyDecommissioningRate;
 use App\Models\Comune;
 use App\Models\Decommissioning;
+use App\Models\Media;
 use App\Models\Regione;
 use App\Models\User;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -117,28 +119,33 @@ class DecommissioningFeatureTest extends TestCase
         ]);
     }
 
-    public function test_base_table_central_changes_refresh_decommissioning_form_options(): void
+    public function test_base_table_central_changes_are_searchable_from_decommissioning_form(): void
     {
         $this->seed(RoleSeeder::class);
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
 
         Central::create([
             'central' => 'OLD-CENTRAL',
             'region' => 'Lazio',
         ]);
 
-        Livewire::test(DecommissioningForm::class)
-            ->assertSee('OLD-CENTRAL')
-            ->assertDontSee('NEW-CENTRAL');
+        $this->actingAs($admin);
 
-        $this->assertTrue(Cache::has('deco_centrali_list'));
+        // Il form cerca le centrali su /lookups/centrals: niente cache da invalidare
+        $this->getJson(route('lookups.show', ['type' => 'centrals', 'q' => 'CENTRAL']))
+            ->assertOk()
+            ->assertJsonFragment(['text' => 'OLD-CENTRAL'])
+            ->assertJsonMissing(['text' => 'NEW-CENTRAL']);
 
         Livewire::test(AdminBaseTables::class)
             ->set('formData.central', 'NEW-CENTRAL')
             ->set('formData.region', 'Lazio')
             ->call('saveRecord');
 
-        Livewire::test(DecommissioningForm::class)
-            ->assertSee('NEW-CENTRAL');
+        $this->getJson(route('lookups.show', ['type' => 'centrals', 'q' => 'CENTRAL']))
+            ->assertJsonFragment(['text' => 'NEW-CENTRAL']);
     }
 
     public function test_decommissioning_can_be_associated_to_a_company(): void
@@ -202,6 +209,7 @@ class DecommissioningFeatureTest extends TestCase
         Decommissioning::create([
             'clli' => 'VAL-HIDDEN',
             'status' => 'Da Lavorare',
+            'progettista_id' => $deco->id,
             'val' => true,
         ]);
 
@@ -231,6 +239,196 @@ class DecommissioningFeatureTest extends TestCase
             ->assertSee('Val')
             ->assertSee('VAL-HIDDEN')
             ->assertSee('Vero');
+    }
+
+    public function test_non_admin_users_see_only_decommissionings_assigned_to_them(): void
+    {
+        $this->seed(RoleSeeder::class);
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $deco = User::factory()->create();
+        $deco->assignRole('Deco');
+
+        $otherDeco = User::factory()->create();
+        $otherDeco->assignRole('Deco');
+
+        Decommissioning::create([
+            'clli' => 'DECO-ASSIGNED',
+            'status' => 'Da Lavorare',
+            'progettista_id' => $deco->id,
+        ]);
+        Decommissioning::create([
+            'clli' => 'DECO-OTHER',
+            'status' => 'Da Lavorare',
+            'progettista_id' => $otherDeco->id,
+        ]);
+        Decommissioning::create([
+            'clli' => 'DECO-UNASSIGNED',
+            'status' => 'Da Lavorare',
+        ]);
+
+        $this->actingAs($deco);
+
+        Livewire::test(DecommissioningTable::class)
+            ->assertSee('DECO-ASSIGNED')
+            ->assertDontSee('DECO-OTHER')
+            ->assertDontSee('DECO-UNASSIGNED');
+
+        $this->actingAs($admin);
+
+        Livewire::test(DecommissioningTable::class)
+            ->assertSee('DECO-ASSIGNED')
+            ->assertSee('DECO-OTHER')
+            ->assertSee('DECO-UNASSIGNED');
+    }
+
+    public function test_non_admin_users_cannot_open_or_edit_decommissionings_not_assigned_to_them(): void
+    {
+        $this->seed(RoleSeeder::class);
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $deco = User::factory()->create();
+        $deco->assignRole('Deco');
+
+        $otherDeco = User::factory()->create();
+        $otherDeco->assignRole('Deco');
+
+        $assigned = Decommissioning::create([
+            'clli' => 'DECO-MINE',
+            'status' => 'Da Lavorare',
+            'progettista_id' => $deco->id,
+        ]);
+        $foreign = Decommissioning::create([
+            'clli' => 'DECO-FOREIGN',
+            'status' => 'Da Lavorare',
+            'progettista_id' => $otherDeco->id,
+        ]);
+
+        $this->actingAs($deco);
+
+        $this->get(route('editDecommissioning', $assigned->id))->assertOk();
+        $this->get(route('editDecommissioning', $foreign->id))->assertForbidden();
+
+        Livewire::test(DecommissioningForm::class)
+            ->call('viewDecommissioning', $foreign->id)
+            ->assertForbidden();
+
+        Livewire::test(DecommissioningForm::class)
+            ->call('editDecommissioning', $foreign->id)
+            ->assertForbidden();
+
+        Livewire::test(DecommissioningForm::class)
+            ->call('editDecommissioning', $assigned->id)
+            ->set('decommissioningId', $foreign->id)
+            ->set('clli', 'TAMPERED')
+            ->call('save')
+            ->assertForbidden();
+
+        $this->assertSame('DECO-FOREIGN', $foreign->fresh()->clli);
+
+        $this->actingAs($admin);
+
+        $this->get(route('editDecommissioning', $foreign->id))->assertOk();
+    }
+
+    public function test_only_admin_can_delete_decommissionings(): void
+    {
+        $this->seed(RoleSeeder::class);
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $deco = User::factory()->create();
+        $deco->assignRole('Deco');
+
+        $decommissioning = Decommissioning::create([
+            'clli' => 'DECO-DELETE',
+            'status' => 'Da Lavorare',
+            'progettista_id' => $deco->id,
+        ]);
+
+        $this->actingAs($deco)
+            ->delete(route('deleteDecommissioning', $decommissioning))
+            ->assertForbidden();
+
+        $this->assertDatabaseHas('decommissionings', ['id' => $decommissioning->id]);
+
+        $this->actingAs($admin)
+            ->delete(route('deleteDecommissioning', $decommissioning))
+            ->assertRedirect();
+
+        $this->assertDatabaseMissing('decommissionings', ['id' => $decommissioning->id]);
+    }
+
+    public function test_non_admin_users_are_assigned_as_progettista_by_default(): void
+    {
+        $this->seed(RoleSeeder::class);
+
+        $deco = User::factory()->create();
+        $deco->assignRole('Deco');
+
+        $this->actingAs($deco);
+
+        Livewire::test(DecommissioningForm::class)
+            ->assertSet('progettista_id', $deco->id)
+            ->set('progettista_id', '')
+            ->set('clli', 'DECO-DEFAULT')
+            ->call('save')
+            ->assertRedirect(route('decommissionings.table'));
+
+        $this->assertDatabaseHas('decommissionings', [
+            'clli' => 'DECO-DEFAULT',
+            'progettista_id' => $deco->id,
+        ]);
+    }
+
+    public function test_decommissioning_media_download_is_limited_to_assigned_progettista(): void
+    {
+        $this->seed(RoleSeeder::class);
+        Storage::fake('local');
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $deco = User::factory()->create();
+        $deco->assignRole('Deco');
+
+        $otherDeco = User::factory()->create();
+        $otherDeco->assignRole('Deco');
+
+        $decommissioning = Decommissioning::create([
+            'clli' => 'DECO-MEDIA',
+            'status' => 'Da Lavorare',
+            'progettista_id' => $deco->id,
+        ]);
+
+        Storage::disk('local')->put('decommissioning_media/allegato.txt', 'private attachment');
+
+        $media = Media::create([
+            'mediable_type' => Decommissioning::class,
+            'mediable_id' => $decommissioning->id,
+            'file_path' => 'decommissioning_media/allegato.txt',
+            'file_name' => 'allegato.txt',
+            'mime_type' => 'text/plain',
+            'size' => 18,
+        ]);
+
+        $this->actingAs($deco)
+            ->get(route('media.download', $media))
+            ->assertOk()
+            ->assertDownload('allegato.txt');
+
+        $this->actingAs($otherDeco)
+            ->get(route('media.download', $media))
+            ->assertForbidden();
+
+        $this->actingAs($admin)
+            ->get(route('media.download', $media))
+            ->assertOk();
     }
 
     public function test_decommissioning_table_filters_by_company(): void

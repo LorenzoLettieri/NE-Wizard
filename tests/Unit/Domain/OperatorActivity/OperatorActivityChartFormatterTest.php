@@ -86,8 +86,9 @@ class OperatorActivityChartFormatterTest extends TestCase
             Carbon::parse('2026-04-10 19:00:00', 'UTC'),
         );
 
+        // Nomi e colori delle serie come in OperatorActivityChartFormatter::TYPE_CONFIG (commit "chart colors")
         $presenceSeries = collect($series)->firstWhere('name', 'Presenza');
-        $activeWorkSeries = collect($series)->firstWhere('name', 'Lavoro attivo');
+        $activeWorkSeries = collect($series)->firstWhere('name', 'Lavorazioni');
         $suspensionSeries = collect($series)->firstWhere('name', 'Sospensione');
         $entrySeries = collect($series)->firstWhere('name', 'Ingresso turno');
         $breakStartSeries = collect($series)->firstWhere('name', 'Inizio pausa');
@@ -97,9 +98,9 @@ class OperatorActivityChartFormatterTest extends TestCase
         $this->assertNull($suspensionSeries);
         $this->assertNotNull($entrySeries);
         $this->assertNotNull($breakStartSeries);
-        $this->assertSame('#0d6efd', $presenceSeries['color']);
-        $this->assertSame('#198754', $activeWorkSeries['color']);
-        $this->assertSame('#0dcaf0', $breakStartSeries['color']);
+        $this->assertSame('#73A437', $presenceSeries['color']);
+        $this->assertSame('#faad50', $activeWorkSeries['color']);
+        $this->assertSame('#213E73', $breakStartSeries['color']);
         $this->assertTrue($entrySeries['data'][0]['meta']['is_event']);
         $this->assertSame(
             Carbon::parse('2026-04-10 07:00:00', 'UTC')->getTimestamp() * 1000,

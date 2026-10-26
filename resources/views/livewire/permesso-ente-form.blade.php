@@ -26,8 +26,8 @@
                         <li class="list-group-item d-flex justify-content-between"><span>Progetto</span> <strong>{{ $progetto ?? '-' }}</strong></li>
                         <li class="list-group-item d-flex justify-content-between"><span>Via</span> <strong>{{ $via ?? '-' }}</strong></li>
                         <li class="list-group-item d-flex justify-content-between"><span>Regione</span> <strong>{{ $this->regioni[$regione_id] ?? '-' }}</strong></li>
-                        <li class="list-group-item d-flex justify-content-between"><span>Comune</span> <strong>{{ $this->comuni[$comune_id] ?? '-' }}</strong></li>
-                        <li class="list-group-item d-flex justify-content-between"><span>Centrale</span> <strong>{{ $this->centrali[$central_id] ?? '-' }}</strong></li>
+                        <li class="list-group-item d-flex justify-content-between"><span>Comune</span> <strong>{{ $this->comuneName ?? '-' }}</strong></li>
+                        <li class="list-group-item d-flex justify-content-between"><span>Centrale</span> <strong>{{ $this->centralName ?? '-' }}</strong></li>
                     </ul>
                 </div>
 
@@ -165,30 +165,15 @@
                     <div class="row g-3 mb-4">
                         <div class="col-md-4">
                             <label class="form-label">Regione</label>
-                            <select class="form-select tom-select shadow-sm" wire:model="regione_id">
-                                <option value="">-- Seleziona --</option>
-                                @foreach ($this->regioni as $id => $nome)
-                                    <option value="{{ $id }}">{{ $nome }}</option>
-                                @endforeach
-                            </select>
+                            <x-tom-select model="regione_id" :options="$this->regioni" class="shadow-sm" />
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">Comune</label>
-                            <select class="form-select tom-select shadow-sm" wire:model="comune_id">
-                                <option value="">-- Seleziona --</option>
-                                @foreach ($this->comuni as $id => $nome)
-                                    <option value="{{ $id }}">{{ $nome }}</option>
-                                @endforeach
-                            </select>
+                            <x-tom-select model="comune_id" remote="comuni" placeholder="-- Cerca comune --" class="shadow-sm" />
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">Centrale</label>
-                            <select class="form-select tom-select shadow-sm" wire:model="central_id">
-                                <option value="">-- Seleziona --</option>
-                                @foreach ($this->centrali as $id => $nome)
-                                    <option value="{{ $id }}">{{ $nome }}</option>
-                                @endforeach
-                            </select>
+                            <x-tom-select model="central_id" remote="centrals" placeholder="-- Cerca centrale --" class="shadow-sm" />
                         </div>
                     </div>
 
@@ -262,16 +247,17 @@
                         </div>
                     </div>
 
+                    @can('assignOperators', \App\Models\PermessoEnte::class)
                     <div class="row mb-4">
                         <div class="col-12">
                             <label class="form-label fw-bold">Assegna Operatori:</label>
-                            <select wire:model="operator_id" class="form-select tom-select-multiple shadow-sm" multiple>
-                                @foreach ($this->operators as $operator)
-                                    <option value="{{$operator->id}}">{{$operator->name}}</option>
-                                @endforeach
-                            </select>
+                            <x-tom-select model="operator_id" :options="$this->operators->pluck('name', 'id')" multiple class="shadow-sm" />
+                            @error('operator_id.*')
+                                <div class="text-danger small mt-1">{{ $message }}</div>
+                            @enderror
                         </div>
                     </div>
+                    @endcan
 
                     @role('admin')
                     <h4 class="mt-5 mb-4 border-bottom pb-2">Contabilità (Admin)</h4>

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Exports\DecommissioningExport;
 use App\Models\Decommissioning;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -23,12 +24,15 @@ class DecommissioningController extends Controller
     public function edit($id)
     {
         $decommissioning = Decommissioning::findOrFail($id);
+        Gate::authorize('update', $decommissioning);
 
         return view('decommissionings.edit', compact('decommissioning'));
     }
 
     public function delete(Request $request, Decommissioning $decommissioning)
     {
+        Gate::authorize('delete', $decommissioning);
+
         $decommissioning->delete();
 
         return redirect()->back()->with('success', 'Decommissioning eliminato con successo!');

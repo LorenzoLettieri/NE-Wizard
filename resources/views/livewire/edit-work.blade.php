@@ -31,35 +31,25 @@
                             <div class="row">
                                 <div class="col-12 col-md-4 mb-4">
                                     <label for="company" class="form-label">Compagnia</label>
-                                    <select wire:model="company_id" class="form-select tom-select">
-                                        <option value="">-- Seleziona --</option>
-                                        @foreach($companies as $company)
-                                            <option value="{{ $company->id }}">{{ $company->name }}</option>
-                                        @endforeach
-                                    </select>
+                                    <x-tom-select model="company_id" :options="$companies->pluck('name', 'id')" />
                                 </div>
                                 @role('admin|supervisor')
 
                                 <div class="col-12 col-md-4 mb-4">
                                     <label for="status" class="form-label">Stato Lavorazione:</label>
-                                    <select wire:model="status" class="form-select tom-select">
-                                        <option value="">-- Seleziona --</option>
-                                        <option value="Da Lavorare">Da Lavorare</option>
-                                        <option value="In Lavorazione">In Lavorazione</option>
-                                        <option value="Sospeso">Sospeso</option>
-                                        <option value="Attesa Fine Lavori">Attesa Fine Lavori</option>
-                                        <option value="KO">KO</option>
+                                    <select wire:model="status" class="form-select">
+                                        @if (blank($work?->status))
+                                            <option value="">-- Seleziona --</option>
+                                        @endif
+                                        @foreach ($statusOptions as $statusOption)
+                                            <option value="{{ $statusOption }}">{{ $statusOption }}</option>
+                                        @endforeach
                                     </select>
                                 </div>
                                 @endrole
                                 <div class="col-12 col-md-4 mb-4">
                                     <label for="" class="form-label">Centrale:</label>
-                                    <select wire:model="central_id" class="form-select tom-select">
-                                        <option value="">-- Seleziona --</option>
-                                        @foreach($centrals as $central)
-                                            <option value="{{ $central->id }}">{{ $central->central }}</option>
-                                        @endforeach
-                                    </select>
+                                    <x-tom-select model="central_id" remote="centrals" placeholder="-- Cerca centrale --" />
                                 </div>
                             </div>
 
@@ -74,12 +64,7 @@
                                 </div>
                                 <div class="col-12 col-md-4 mb-4">
                                     <label for="network_scope_id" class="form-label">Ambito NTW:</label>
-                                    <select wire:model="network_scope_id" class="form-select tom-select">
-                                        <option value="">-- Seleziona --</option>
-                                        @foreach($networkScopes as $networkScope)
-                                            <option value="{{ $networkScope->id }}">{{ $networkScope->name }}</option>
-                                        @endforeach
-                                    </select>
+                                    <x-tom-select model="network_scope_id" :options="$networkScopes->pluck('name', 'id')" />
                                 </div>
                             </div>
                             <div class="row">
@@ -90,7 +75,7 @@
                                 </div>
                                 <div class="col-12 col-md-4 mb-4">
                                     <label for="type" class="form-label">RAME/OTTICO:</label>
-                                    <select wire:model="type" class="form-select tom-select">
+                                    <select wire:model="type" class="form-select">
                                         <option value="">-- Seleziona --</option>
                                         <option value="RAME">RAME</option>
                                         <option value="OTTICO">OTTICO</option>
@@ -98,8 +83,7 @@
                                 </div>
                                 <div class="col-12 col-md-4 mb-4">
                                     <label for="daphne" class="form-label">DAPHNE:</label>
-                                    <select wire:model="daphne" class="form-select tom-select">
-                                        <option value="">-- Seleziona --</option>
+                                    <select wire:model="daphne" class="form-select">
                                         <option value="1">SI</option>
                                         <option value="0">NO</option>
                                     </select>
@@ -113,12 +97,7 @@
                             <div class="row mb-5 pb-2">
                                 <div class="col-12 col-md-4 mb-4">
                                     <label for="work_phase_id" class="form-label">Fase Lavoro:</label>
-                                    <select wire:model="work_phase_id" class="form-select tom-select">
-                                        <option value="">-- Seleziona --</option>
-                                        @foreach($workPhases as $workPhase)
-                                            <option value="{{ $workPhase->id }}">{{ $workPhase->name }}</option>
-                                        @endforeach
-                                    </select>
+                                    <x-tom-select model="work_phase_id" :options="$workPhases->pluck('name', 'id')" />
                                 </div>
                                 <div class="col-12 col-md-4 mb-4">
                                     <label for="company_assistant" class="form-label">Assistente Impresa:</label>
@@ -127,7 +106,7 @@
                                 </div>
                                 <div class="col-12 col-md-4 mb-4">
                                     <label for="nroe" class="form-label">N ROE:</label>
-                                    <input type="nroe" class="form-control" id="nroe" wire:model="nroe" placeholder="">
+                                    <input type="number" min="0" step="1" class="form-control" id="nroe" wire:model="nroe" placeholder="">
                                 </div>
                                 <div class="col-12 col-md-6 mb-4">
                                     <label for="wo_number" class="form-label">WO Number:</label>
@@ -147,7 +126,7 @@
                                 @endrole
                                 <div class="col-4 col-md-4 mb-4">
                                     <label for="go_live" class="form-label">Go Live:</label>
-                                    <select wire:model="go_live" class="form-select tom-select">
+                                    <select wire:model="go_live" class="form-select">
                                         <option value="">-- Seleziona --</option>
                                         <option value="1">SI</option>
                                         <option value="0">NO</option>
@@ -174,12 +153,7 @@
                                 @include('livewire.partials.work-suspensions-editor')
                                 <div class="col-12 col-md-12 mb-4">
                                     <label for="phase" class="form-label">Assegna Lavorazione ad Operatore:</label>
-                                    <select wire:model="operator_id" class="form-select tom-select-multiple" multiple>
-                                        <option value="">-- Seleziona --</option>
-                                        @foreach ($operators as $operator)
-                                            <option value="{{$operator->id}}">{{$operator->name}}</option>
-                                        @endforeach
-                                    </select>
+                                    <x-tom-select model="operator_id" :options="$operators->pluck('name', 'id')" multiple />
                                 </div>
                                 @endrole
                             </div>

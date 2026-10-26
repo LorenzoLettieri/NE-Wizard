@@ -1,3 +1,6 @@
+@php
+  $isDelivered = in_array($row->status, \App\Models\PermessoEnte::deliveredStatuses(), true);
+@endphp
 <div data-bs-boundary="window" class="dropdown">
   <a class="btn btn-primary dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     <i class="bi bi-pencil"></i>
@@ -6,38 +9,39 @@
   <ul class="dropdown-menu shadow">
     {{-- DETTAGLIO: Per tutti --}}
     <li>
-      <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#viewModal"
+      <button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#viewModal"
         onclick="Livewire.dispatch('view-permesso', {id: {{ $row->id }}})">
         <i class="bi bi-eye me-2"></i> Dettaglio
-      </a>
+      </button>
     </li>
 
     {{-- MODIFICA: Per tutti --}}
     <li>
-      <a class="dropdown-item text-warning" href="#" data-bs-toggle="modal" data-bs-target="#editModal"
+      <button type="button" class="dropdown-item text-warning" data-bs-toggle="modal" data-bs-target="#editModal"
         onclick="Livewire.dispatch('edit-permesso', {id: {{ $row->id }}})">
         <i class="bi bi-pencil me-2"></i> Modifica
-      </a>
+      </button>
     </li>
 
-    {{-- DUPLICA: Solo Admin e Supervisor --}}
-    @hasanyrole('admin|supervisor')
+    {{-- DUPLICA: Solo Admin --}}
+    @role('admin')
     <li>
-      <a class="dropdown-item" href="#" onclick="Livewire.dispatch('duplicate-permesso', {id: {{ $row->id }}})">
+      <button type="button" class="dropdown-item"
+        onclick="if (confirm('Duplicare il permesso #{{ $row->id }}? Verrà creata una copia in stato Da Lavorare.')) Livewire.dispatch('duplicate-permesso', {id: {{ $row->id }}})">
         <i class="bi bi-files me-2"></i> Duplica
-      </a>
+      </button>
     </li>
-    @endhasanyrole
+    @endrole
 
-    <hr class="dropdown-divider">
+    <li><hr class="dropdown-divider"></li>
 
     {{-- PRENDI IN CARICO: Solo ruolo 'permessi ente' e se stato è 'Da Lavorare' --}}
     @role('permessi ente')
     @if ($row->status == 'Da Lavorare')
       <li>
-        <a class="dropdown-item text-primary" href="#" onclick="Livewire.dispatch('take-permesso', {id: {{ $row->id }}})">
+        <button type="button" class="dropdown-item text-primary" onclick="Livewire.dispatch('take-permesso', {id: {{ $row->id }}})">
           <i class="bi bi-hand-index-thumb me-2"></i> Prendi in carico
-        </a>
+        </button>
       </li>
     @endif
     @endrole
@@ -45,42 +49,43 @@
     {{-- CONSEGNA LAVORAZIONE: Se stato è 'In Lavorazione' --}}
     @if ($row->status == 'In Lavorazione')
       <li>
-        <a class="dropdown-item text-warning" href="#"
-          onclick="Livewire.dispatch('consegna-permesso', {id: {{ $row->id }}})">
+        <button type="button" class="dropdown-item text-warning"
+          onclick="if (confirm('Consegnare il permesso #{{ $row->id }}?')) Livewire.dispatch('consegna-permesso', {id: {{ $row->id }}})">
           <i class="bi bi-send me-2"></i> Consegna Lavorazione
-        </a>
+        </button>
       </li>
     @endif
 
-    {{-- FINE LAVORI: Solo Admin e Supervisor e se stato è 'Consegnato' --}}
-    @hasanyrole('admin|supervisor')
-    @if ($row->status == 'Consegnato')
+    {{-- FINE LAVORI: Solo Admin e se stato è 'Consegnato' (anche se salvato come 'Consegnata') --}}
+    @role('admin')
+    @if ($isDelivered)
       <li>
-        <a class="dropdown-item text-success" href="#" onclick="Livewire.dispatch('end-permesso', {id: {{ $row->id }}})">
+        <button type="button" class="dropdown-item text-success"
+          onclick="if (confirm('Segnare il permesso #{{ $row->id }} come Fine Lavori?')) Livewire.dispatch('end-permesso', {id: {{ $row->id }}})">
           <i class="bi bi-check-circle me-2"></i> Fine Lavori
-        </a>
+        </button>
       </li>
     @endif
-    @endhasanyrole
+    @endrole
 
-    {{-- ELIMINA: Solo Admin e Supervisor --}}
-    @hasanyrole('admin|supervisor')
+    {{-- ELIMINA: Solo Admin --}}
+    @role('admin')
+    <li><hr class="dropdown-divider"></li>
     <li>
-      <hr class="dropdown-divider">
-      <a class="dropdown-item text-danger" href="#" data-bs-toggle="modal" data-bs-target="#deleteModal{{ $row->id }}">
+      <button type="button" class="dropdown-item text-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ $row->id }}">
         <i class="bi bi-trash me-2"></i> Elimina
-      </a>
+      </button>
     </li>
-    @endhasanyrole
+    @endrole
   </ul>
 
   {{-- Modal Elimina (ID unico per riga) --}}
-  @hasanyrole('admin|supervisor')
+  @role('admin')
   <div class="modal fade" id="deleteModal{{ $row->id }}" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h1 class="modal-title fs-5">Sicuro di voler eliminare questa lavorazione?</h1>
+          <h1 class="modal-title fs-5">Sicuro di voler eliminare il permesso #{{ $row->id }}?</h1>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-footer">
@@ -94,5 +99,5 @@
       </div>
     </div>
   </div>
-  @endhasanyrole
+  @endrole
 </div>

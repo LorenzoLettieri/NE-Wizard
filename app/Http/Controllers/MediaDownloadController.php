@@ -74,9 +74,9 @@ class MediaDownloadController extends Controller
 
         $authorized = match (true) {
             $mediable instanceof Work => $user->can('view', $mediable),
-            $mediable instanceof Gbx => $user->hasAnyRole(['admin', 'GBX', 'GBX Supervisor']),
-            $mediable instanceof PermessoEnte => $user->hasAnyRole(['admin', 'permessi ente']),
-            $mediable instanceof Decommissioning => $user->hasAnyRole(['admin', 'Deco']),
+            $mediable instanceof Gbx => $user->can('view', $mediable),
+            $mediable instanceof PermessoEnte => $user->can('view', $mediable),
+            $mediable instanceof Decommissioning => $user->can('view', $mediable),
             default => false,
         };
 

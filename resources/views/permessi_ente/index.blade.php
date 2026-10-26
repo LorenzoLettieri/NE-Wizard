@@ -20,16 +20,8 @@
         @endrole
       </div>
 
-      @if (session('success'))
-        <div class="col-12 col-xl-10">
-          <div class="alert alert-success mt-3">
-            {{ session('success') }}
-          </div>
-        </div>
-      @endif
-
       <div class="col-12">
-        <livewire:notification-center></livewire:notification-center>
+        @include('partials.page-alerts')
         <livewire:permessi-ente-table></livewire:permessi-ente-table>
       </div>
     </div>
@@ -37,14 +29,14 @@
 </x-layout>
 
 <!-- View Modal -->
-<div class="modal fade" id="viewModal" tabindex="-1" aria-labelledby="viewModalLabel" aria-hidden="true">
+<div class="modal fade" id="viewModal" tabindex="-1" aria-labelledby="viewModalLabel" aria-hidden="true" data-livewire-modal>
   <div class="modal-dialog modal-xl">
     <livewire:permesso-ente-form :isShow="true"></livewire:permesso-ente-form>
   </div>
 </div>
 
 <!-- edit Modal -->
-<div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+<div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true" data-livewire-modal>
   <div class="modal-dialog modal-xl">
     <livewire:permesso-ente-form :isShow="false" :isEdit="true"></livewire:permesso-ente-form>
   </div>

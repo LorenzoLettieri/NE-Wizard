@@ -32,8 +32,8 @@
                     <ul class="list-group list-group-flush">
                         <li class="list-group-item d-flex justify-content-between"><span>CLLI</span><strong>{{ $clli ?? '-' }}</strong></li>
                         <li class="list-group-item d-flex justify-content-between"><span>Impresa</span><strong>{{ $this->companies[$company_id] ?? '-' }}</strong></li>
-                        <li class="list-group-item d-flex justify-content-between"><span>Centrale</span><strong>{{ $this->centrali[$central_id] ?? '-' }}</strong></li>
-                        <li class="list-group-item d-flex justify-content-between"><span>Comune</span><strong>{{ $this->comuni[$comune_id] ?? '-' }}</strong></li>
+                        <li class="list-group-item d-flex justify-content-between"><span>Centrale</span><strong>{{ $this->centralName ?? '-' }}</strong></li>
+                        <li class="list-group-item d-flex justify-content-between"><span>Comune</span><strong>{{ $this->comuneName ?? '-' }}</strong></li>
                         <li class="list-group-item d-flex justify-content-between"><span>Regione</span><strong>{{ $this->regioni[$regione_id] ?? '-' }}</strong></li>
                         <li class="list-group-item d-flex justify-content-between"><span>Permesso Ente</span><strong>{{ $permesso_ente ?? '-' }}</strong></li>
                         <li class="list-group-item d-flex justify-content-between"><span>FL Permesso</span><strong>{{ $fl_permesso ? \Carbon\Carbon::parse($fl_permesso)->format('d/m/Y') : '-' }}</strong></li>
@@ -163,42 +163,22 @@
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">Impresa</label>
-                            <select class="form-select tom-select shadow-sm" wire:model="company_id">
-                                <option value="">-- Seleziona --</option>
-                                @foreach ($this->companies as $id => $name)
-                                    <option value="{{ $id }}">{{ $name }}</option>
-                                @endforeach
-                            </select>
+                            <x-tom-select model="company_id" :options="$this->companies" class="shadow-sm" />
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">Centrale</label>
-                            <select class="form-select tom-select shadow-sm" wire:model="central_id">
-                                <option value="">-- Seleziona --</option>
-                                @foreach ($this->centrali as $id => $name)
-                                    <option value="{{ $id }}">{{ $name }}</option>
-                                @endforeach
-                            </select>
+                            <x-tom-select model="central_id" remote="centrals" placeholder="-- Cerca centrale --" class="shadow-sm" />
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">Comune</label>
-                            <select class="form-select tom-select shadow-sm" wire:model="comune_id">
-                                <option value="">-- Seleziona --</option>
-                                @foreach ($this->comuni as $id => $name)
-                                    <option value="{{ $id }}">{{ $name }}</option>
-                                @endforeach
-                            </select>
+                            <x-tom-select model="comune_id" remote="comuni" placeholder="-- Cerca comune --" class="shadow-sm" />
                         </div>
                     </div>
 
                     <div class="row g-3 mb-4">
                         <div class="col-md-4">
                             <label class="form-label">Regione</label>
-                            <select class="form-select tom-select shadow-sm" wire:model="regione_id">
-                                <option value="">-- Seleziona --</option>
-                                @foreach ($this->regioni as $id => $name)
-                                    <option value="{{ $id }}">{{ $name }}</option>
-                                @endforeach
-                            </select>
+                            <x-tom-select model="regione_id" :options="$this->regioni" class="shadow-sm" />
                         </div>
                     </div>
 
@@ -213,12 +193,7 @@
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">Progettista</label>
-                            <select class="form-select tom-select shadow-sm" wire:model="progettista_id">
-                                <option value="">-- Seleziona --</option>
-                                @foreach ($this->progettisti as $id => $name)
-                                    <option value="{{ $id }}">{{ $name }}</option>
-                                @endforeach
-                            </select>
+                            <x-tom-select model="progettista_id" :options="$this->progettisti" class="shadow-sm" />
                         </div>
                     </div>
 

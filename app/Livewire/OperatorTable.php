@@ -7,6 +7,7 @@ use App\Models\Company;
 use App\Models\NetworkScope;
 use App\Models\Work;
 use App\Models\WorkPhase;
+use App\Support\StatusBadge;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -88,16 +89,8 @@ class OperatorTable extends DataTableComponent
         }),
 
         SelectFilter::make('Status', 'status')
-            ->options([
-                '' => 'Tutti',
-                'Da Lavorare' => 'Da Lavorare',
-                'In Lavorazione' => 'In Lavorazione',
-                'Sospeso' => 'Sospeso',
-                'Attesa Fine Lavori' => 'Attesa Fine Lavori',
-                'KO' => 'KO',
-                'Consegnato' => 'Consegnato',
-
-            ])->filter(function(Builder $builder, string $value){
+            ->options(['' => 'Tutti'] + array_combine(Work::STATUSES, Work::STATUSES))
+            ->filter(function(Builder $builder, string $value){
                 $builder->where('status', $value);
             }),
 
@@ -152,7 +145,7 @@ class OperatorTable extends DataTableComponent
             ->filter(function(Builder $builder, string $value){
                 $builder->whereHas('users', function ($query) use ($value) {
                     $query->where('name', 'like', "%$value%");
-                })->get();
+                });
 
             }),
                 
@@ -180,31 +173,9 @@ class OperatorTable extends DataTableComponent
             Column::make("Regione", "central.region")
                 ->sortable()->searchable(),
             Column::make("Status", "status")
-                ->sortable()->searchable()->secondaryHeaderFilter('status')->format(function($value){
-                    if($value == "Sospeso"){
-                        return "<span class='badge rounded-pill text-bg-warning'>$value</span>";
-                    } 
-                    else if($value == "In Lavorazione"){
-                        return "<span class='badge rounded-pill text-bg-primary'>$value</span>";
-                    }
-                    else if($value == "Da Lavorare"){
-                        return "<span class='badge rounded-pill text-bg-info'>$value</span>";
-                    }
-                    else if($value == "KO"){
-                        return "<span class='badge rounded-pill text-bg-danger'>$value</span>";
-                    }
-                    else if($value == "Consegnato"){
-                        return "<span class='badge rounded-pill text-bg-success'>$value</span>";
-                    }
-                    else if($value == "Attesa Fine Lavori"){
-                        return "<span class='badge rounded-pill bg-warning-subtle text-white'>$value</span>";
-                    }
-                    else if($value == "Fine Lavori"){
-                        return "<span class='badge rounded-pill pill-fine-lavori'>$value</span>";
-                    }
-
-                    return $value;
-                })->html(),
+                ->sortable()->searchable()->secondaryHeaderFilter('status')
+                ->format(fn ($value) => StatusBadge::work($value))
+                ->html(),
             Column::make("Descrizione", "description")
                 ->sortable(),
             Column::make("Ambito NTW", "ntw_scope")
@@ -245,8 +216,9 @@ class OperatorTable extends DataTableComponent
             )
                 ->sortable(),
             Column::make('Actions')->label(function ($row, Column $column){
+                // La riga ha già id e status selezionati: niente query aggiuntiva per ogni riga
                 return view('operator.operator-table-actions', [
-                    'row' => Work::find($row->id),
+                    'row' => $row,
                     'readOnlyMode' => $this->readOnlyMode,
                 ]);
             })->html(),
@@ -266,6 +238,8 @@ class OperatorTable extends DataTableComponent
                 forceAcceptanceDate: true,
             );
         });
+
+        $this->dispatch('notify', message: "Lavorazione #{$id} presa in carico.");
     }
 
     public function deliveryWork($id){
@@ -276,6 +250,8 @@ class OperatorTable extends DataTableComponent
             $this->authorize('operate', $acceptedWork);
             $acceptedWork->transitionToStatus('Consegnato', Carbon::now());
         });
+
+        $this->dispatch('notify', message: "Lavorazione #{$id} consegnata.");
     }
 
     public function suspendWork($id){
@@ -286,6 +262,8 @@ class OperatorTable extends DataTableComponent
             $this->authorize('operate', $acceptedWork);
             $acceptedWork->transitionToStatus('Sospeso', Carbon::now());
         });
+
+        $this->dispatch('notify', message: "Lavorazione #{$id} sospesa.", type: 'warning');
     }
 
     public function unsuspendWork($id){
@@ -296,6 +274,8 @@ class OperatorTable extends DataTableComponent
             $this->authorize('operate', $acceptedWork);
             $acceptedWork->transitionToStatus('In Lavorazione', Carbon::now());
         });
+
+        $this->dispatch('notify', message: "Lavorazione #{$id} ripresa.");
     }
 
     protected function scopedOperatorId(): int

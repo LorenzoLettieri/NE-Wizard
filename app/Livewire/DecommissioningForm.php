@@ -10,6 +10,7 @@ use App\Models\Comune;
 use App\Models\Decommissioning;
 use App\Models\Regione;
 use App\Models\User;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
@@ -19,6 +20,7 @@ use Livewire\WithFileUploads;
 
 class DecommissioningForm extends Component
 {
+    use AuthorizesRequests;
     use HandlesMediaUploads;
     use WithFileUploads;
 
@@ -65,12 +67,17 @@ class DecommissioningForm extends Component
     public $existingMedia = [];
     public $successMessage = null;
 
+    // Comuni e centrali sono migliaia: nel form arrivano via ricerca (/lookups), qui serve solo il nome selezionato
     #[Computed]
-    public function centrali()
+    public function centralName(): ?string
     {
-        return cache()->remember('deco_centrali_list', 3600, function () {
-            return Central::orderBy('central')->pluck('central', 'id')->toArray();
-        });
+        return $this->central_id ? Central::whereKey($this->central_id)->value('central') : null;
+    }
+
+    #[Computed]
+    public function comuneName(): ?string
+    {
+        return $this->comune_id ? Comune::whereKey($this->comune_id)->value('name') : null;
     }
 
     #[Computed]
@@ -78,14 +85,6 @@ class DecommissioningForm extends Component
     {
         return cache()->remember('deco_companies_list', 3600, function () {
             return Company::orderBy('id')->pluck('name', 'id')->toArray();
-        });
-    }
-
-    #[Computed]
-    public function comuni()
-    {
-        return cache()->remember('deco_comuni_list', 3600, function () {
-            return Comune::orderBy('name')->pluck('name', 'id')->toArray();
         });
     }
 
@@ -136,6 +135,9 @@ class DecommissioningForm extends Component
 
         if (auth()->check() && auth()->user()->hasRole('admin')) {
             $this->syncEconomicFieldsWithQuantities();
+        } elseif (auth()->check()) {
+            // I non admin vedono solo i propri record: di default se ne assegnano la progettazione
+            $this->progettista_id = auth()->id();
         }
 
         $this->initializeChunkedMediaUploads('decommissioning');
@@ -195,15 +197,23 @@ class DecommissioningForm extends Component
     {
         $this->validate();
 
+        $decommissioning = $this->isEdit
+            ? Decommissioning::findOrFail($this->decommissioningId)
+            : new Decommissioning();
+
+        if ($this->isEdit) {
+            $this->authorize('update', $decommissioning);
+        }
+
+        if (! auth()->user()->hasRole('admin') && ! $this->progettista_id) {
+            $this->progettista_id = auth()->id();
+        }
+
         if ($this->progettista_id && ! array_key_exists((int) $this->progettista_id, $this->progettisti())) {
             $this->addError('progettista_id', 'Il progettista selezionato non ha il ruolo Deco.');
 
             return null;
         }
-
-        $decommissioning = $this->isEdit
-            ? Decommissioning::findOrFail($this->decommissioningId)
-            : new Decommissioning();
 
         $data = [
             'company_id' => $this->emptyToNull($this->company_id),
@@ -292,6 +302,7 @@ class DecommissioningForm extends Component
     private function loadDecommissioning(int $id): void
     {
         $decommissioning = Decommissioning::with('media')->findOrFail($id);
+        $this->authorize('view', $decommissioning);
 
         $this->successMessage = null;
         $this->decommissioningId = $decommissioning->id;
@@ -332,6 +343,11 @@ class DecommissioningForm extends Component
         $this->initializeChunkedMediaUploads('decommissioning', $decommissioning->id);
         $this->clearUploadFeedback();
         $this->clearPendingMediaRemovals();
+    }
+
+    protected function refreshMediaAfterChunkedUpload(): void
+    {
+        $this->refreshExistingMedia();
     }
 
     private function refreshExistingMedia(): void

@@ -22,7 +22,7 @@ class WorkController extends Controller
     }
 
     public function edit($id){
-        $work = Work::find($id);
+        $work = Work::findOrFail($id);
 
         return view('works.edit', compact('work'));
     }
@@ -30,7 +30,7 @@ class WorkController extends Controller
     public function delete(Request $request, Work $work){
          $work->delete();
 
-        return redirect()->back()->with('success','');
+        return redirect()->back()->with('success', "Lavorazione #{$work->id} eliminata.");
     }
 
     public function download(Request $request)
@@ -41,7 +41,13 @@ class WorkController extends Controller
             'end' => ['required', 'date', 'after_or_equal:start'],
         ]);
 
-        $export = new WorksExport($validated['date_field'], $validated['start'], $validated['end']);
+        // Importi e tariffe restano riservati agli admin, come nella tabella
+        $export = new WorksExport(
+            $validated['date_field'],
+            $validated['start'],
+            $validated['end'],
+            includeAccounting: $request->user()->hasRole('admin'),
+        );
 
         $filename = sprintf(
             'works_%s_%s_%s.xlsx',

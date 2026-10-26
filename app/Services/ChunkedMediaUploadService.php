@@ -188,6 +188,42 @@ class ChunkedMediaUploadService
         return $claimed;
     }
 
+    /**
+     * Upload completati da form di creazione mai salvati: il file esiste ma nessun record lo usa.
+     * Non è schedulato: si lancia a mano (con --dry-run per vedere prima cosa verrebbe rimosso).
+     */
+    public function cleanupUnclaimedCompleted(int $hours, bool $dryRun = false): int
+    {
+        $cutoff = now()->subHours($hours);
+        $count = 0;
+
+        MediaUploadSession::query()
+            ->where('status', 'completed')
+            ->whereNull('mediable_id')
+            ->where('updated_at', '<=', $cutoff)
+            ->get()
+            ->each(function (MediaUploadSession $session) use (&$count, $dryRun): void {
+                if ($session->final_path && Media::query()->where('file_path', $session->final_path)->exists()) {
+                    return;
+                }
+
+                $count++;
+
+                if ($dryRun) {
+                    return;
+                }
+
+                if ($session->final_path) {
+                    Storage::disk(Media::PRIVATE_DISK)->delete($session->final_path);
+                }
+
+                Storage::disk(Media::PRIVATE_DISK)->deleteDirectory($this->baseDirectory($session));
+                $session->delete();
+            });
+
+        return $count;
+    }
+
     public function cleanupExpired(int $hours): int
     {
         $cutoff = now()->subHours($hours);
@@ -309,7 +345,7 @@ class ChunkedMediaUploadService
 
     private function authorizeContext(User $user, string $context, ?Model $model): void
     {
-        if ($model instanceof Work) {
+        if ($model instanceof Work || $model instanceof Decommissioning || $model instanceof PermessoEnte || $model instanceof Gbx) {
             abort_unless($user->can('update', $model), 403);
 
             return;

@@ -26,8 +26,13 @@
                         <input type="email" class="form-control" id="email" name="email" value="{{$user->email}}">
                     </div>
                     <div class="mb-3">
-                        <label for="password" class="form-label">Password</label>
-                        <input type="password" class="form-control" id="password" name="password">
+                        <label for="password" class="form-label">Nuova Password</label>
+                        <input type="password" class="form-control" id="password" name="password" autocomplete="new-password">
+                        <div class="form-text">Lascia vuoto per non cambiarla.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password_confirmation" class="form-label">Ripeti Nuova Password</label>
+                        <input type="password" class="form-control" id="password_confirmation" name="password_confirmation" autocomplete="new-password">
                     </div>
                     <div class="mb-3">
                         <label for="company_id" class="form-label">Impresa</label>

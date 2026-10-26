@@ -11,6 +11,7 @@ use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithColumnFormatting;
 use Maatwebsite\Excel\Concerns\WithStyles;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
@@ -18,15 +19,19 @@ class WorksExport implements FromQuery, WithMapping, WithHeadings, ShouldAutoSiz
 {
     use Exportable;
 
+    private const ACCOUNTING_HEADINGS = ['Importo contabilizzato', 'Tariffa unitaria'];
+
     protected string $dateField;
     protected Carbon $start;
     protected Carbon $end;
+    protected bool $includeAccounting;
 
-    public function __construct(string $dateField, $startDate, $endDate)
+    public function __construct(string $dateField, $startDate, $endDate, bool $includeAccounting = true)
     {
         $this->dateField = $dateField;
         $this->start = Carbon::parse($startDate)->startOfDay();
         $this->end = Carbon::parse($endDate)->endOfDay();
+        $this->includeAccounting = $includeAccounting;
     }
 
     public function query()
@@ -45,6 +50,11 @@ class WorksExport implements FromQuery, WithMapping, WithHeadings, ShouldAutoSiz
     }
 
     public function headings(): array
+    {
+        return $this->withoutHiddenColumns($this->allHeadings());
+    }
+
+    private function allHeadings(): array
     {
         return [
             'Data creazione',      // A
@@ -81,7 +91,7 @@ class WorksExport implements FromQuery, WithMapping, WithHeadings, ShouldAutoSiz
     {
         $dt = fn($d) => $d ? Carbon::parse($d)->timezone('Europe/Rome') : null; // restituisco Carbon così Excel ottiene vere date
 
-        return [
+        return $this->withoutHiddenColumns([
             $dt($work->created_at),                 // Data creazione
             optional($work->company)->name,         // Impresa
             optional($work->central)->central,      // Centrale
@@ -109,20 +119,41 @@ class WorksExport implements FromQuery, WithMapping, WithHeadings, ShouldAutoSiz
             $work->company_assistant,               // Assistente Impresa
             $work->notes,                           // Note
             $work->suspension_history,              // Storico sospensioni
-        ];
+        ]);
     }
 
     public function columnFormats(): array
     {
-        // Colonne date: A (creazione), S (PiC), T (Consegna), V (FL)
-        return [
-            'A' => NumberFormat::FORMAT_DATE_DDMMYYYY,
-            'K' => NumberFormat::FORMAT_CURRENCY_EUR_SIMPLE,
-            'L' => NumberFormat::FORMAT_CURRENCY_EUR_SIMPLE,
-            'S' => NumberFormat::FORMAT_DATE_DDMMYYYY,
-            'T' => NumberFormat::FORMAT_DATE_DDMMYYYY,
-            'V' => NumberFormat::FORMAT_DATE_DDMMYYYY,
+        // Le lettere dipendono dalle colonne effettivamente esportate
+        $formats = [
+            'Data creazione' => NumberFormat::FORMAT_DATE_DDMMYYYY,
+            'Importo contabilizzato' => NumberFormat::FORMAT_CURRENCY_EUR_SIMPLE,
+            'Tariffa unitaria' => NumberFormat::FORMAT_CURRENCY_EUR_SIMPLE,
+            'Data PiC' => NumberFormat::FORMAT_DATE_DDMMYYYY,
+            'Data Consegna' => NumberFormat::FORMAT_DATE_DDMMYYYY,
+            'Data FL' => NumberFormat::FORMAT_DATE_DDMMYYYY,
         ];
+
+        $columns = [];
+
+        foreach ($this->headings() as $index => $heading) {
+            if (isset($formats[$heading])) {
+                $columns[Coordinate::stringFromColumnIndex($index + 1)] = $formats[$heading];
+            }
+        }
+
+        return $columns;
+    }
+
+    private function withoutHiddenColumns(array $row): array
+    {
+        if ($this->includeAccounting) {
+            return $row;
+        }
+
+        $hiddenIndexes = array_keys(array_intersect($this->allHeadings(), self::ACCOUNTING_HEADINGS));
+
+        return array_values(array_diff_key($row, array_flip($hiddenIndexes)));
     }
 
     public function styles(Worksheet $sheet)

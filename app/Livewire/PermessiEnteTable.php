@@ -3,9 +3,8 @@
 namespace App\Livewire;
 
 use Carbon\Carbon;
-use App\Models\Comune;
-use App\Models\Central;
 use App\Models\Regione;
+use App\Support\StatusBadge;
 use Livewire\Attributes\On;
 use App\Models\PermessoEnte;
 use Illuminate\Support\Facades\Auth;
@@ -24,7 +23,7 @@ class PermessiEnteTable extends DataTableComponent
     {
         $query = PermessoEnte::query()->with(['regione', 'comune', 'central', 'users'])->withCount('media');
 
-        if (Auth::user()->hasAnyRole('admin', 'supervisor')) {
+        if (Auth::user()->canManageAllPermessiEnte()) {
             return $query;
         }
 
@@ -38,16 +37,18 @@ class PermessiEnteTable extends DataTableComponent
         'take-permesso' => 'takePermesso',
         'consegna-permesso' => 'consegnaPermesso',
         'end-permesso' => 'endPermesso',
+        'duplicate-permesso' => 'duplicatePermesso',
     ];
 
     public function takePermesso($id)
     {
-        if (!Auth::user()->hasRole('permessi ente')) {
-            $this->dispatch('error', 'Solo gli operatori Permessi Ente possono prendere in carico un record.');
+        $permesso = PermessoEnte::findOrFail($id);
+
+        if (Auth::user()->cannot('take', $permesso)) {
+            $this->dispatch('error', 'Solo gli operatori Permessi Ente assegnati possono prendere in carico questo record.');
             return;
         }
 
-        $permesso = PermessoEnte::findOrFail($id);
         $permesso->update([
             'status' => 'In Lavorazione',
             'acception_date' => now()
@@ -55,40 +56,65 @@ class PermessiEnteTable extends DataTableComponent
         $permesso->users()->syncWithoutDetaching([Auth::id()]);
 
         $this->dispatch('permessoUpdated');
+        $this->dispatch('notify', message: "Permesso #{$permesso->id} preso in carico.");
     }
 
     public function consegnaPermesso($id)
     {
         $permesso = PermessoEnte::findOrFail($id);
 
-        // Verifica se l'utente è assegnato
-        if (!Auth::user()->hasAnyRole('admin', 'supervisor') && !$permesso->users->contains(Auth::id())) {
+        if (Auth::user()->cannot('deliver', $permesso)) {
             $this->dispatch('error', 'Non sei assegnato a questo permesso.');
             return;
         }
 
         $permesso->update([
-            'status' => 'Consegnato',
+            'status' => PermessoEnte::STATUS_DELIVERED,
             'delivery_date' => now()
         ]);
 
         $this->dispatch('permessoUpdated');
+        $this->dispatch('notify', message: "Permesso #{$permesso->id} consegnato.");
     }
 
     public function endPermesso($id)
     {
-        if (!Auth::user()->hasAnyRole('admin', 'supervisor')) {
-            $this->dispatch('error', 'Solo admin o supervisor possono segnare come Fine Lavori.');
+        $permesso = PermessoEnte::findOrFail($id);
+
+        if (Auth::user()->cannot('complete', $permesso)) {
+            $this->dispatch('error', 'Solo gli admin possono segnare come Fine Lavori.');
             return;
         }
 
-        $permesso = PermessoEnte::findOrFail($id);
         $permesso->update([
             'status' => 'Fine Lavori',
             'completion_date' => now()
         ]);
 
         $this->dispatch('permessoUpdated');
+        $this->dispatch('notify', message: "Permesso #{$permesso->id} segnato come Fine Lavori.");
+    }
+
+    public function duplicatePermesso($id)
+    {
+        $permesso = PermessoEnte::with('users')->findOrFail($id);
+
+        if (Auth::user()->cannot('duplicate', $permesso)) {
+            $this->dispatch('error', 'Solo gli admin possono duplicare un permesso.');
+            return;
+        }
+
+        $newPermesso = $permesso->replicate();
+        $newPermesso->status = 'Da Lavorare';
+        $newPermesso->acception_date = null;
+        $newPermesso->delivery_date = null;
+        $newPermesso->completion_date = null;
+        $newPermesso->save();
+
+        $newPermesso->users()->attach($permesso->users->pluck('id'));
+
+        return redirect()->route('editPermesso', $newPermesso->id)
+            ->with('success', 'Hai duplicato il permesso, puoi modificarlo da qui.');
     }
 
     public function configure(): void
@@ -123,8 +149,6 @@ class PermessiEnteTable extends DataTableComponent
     public function filters(): array
     {
         $regioni = ['' => 'Tutte'] + Regione::pluck('nome', 'id')->toArray();
-        $comuni = ['' => 'Tutti'] + Comune::pluck('name', 'id')->toArray();
-        $centrali = ['' => 'Tutte'] + Central::pluck('central', 'id')->toArray();
 
         $siNoOptions = [
             '' => '',
@@ -149,9 +173,18 @@ class PermessiEnteTable extends DataTableComponent
                     '' => 'Tutti',
                     'Da Lavorare' => 'Da Lavorare',
                     'In Lavorazione' => 'In Lavorazione',
-                    'Consegnato' => 'Consegnato',
+                    PermessoEnte::STATUS_DELIVERED => PermessoEnte::STATUS_DELIVERED,
                     'Fine Lavori' => 'Fine Lavori',
-                ])->filter(fn(Builder $builder, $value) => $builder->where('status', $value)),
+                ])->filter(function (Builder $builder, $value) {
+                    // "Consegnato" include anche i record salvati come "Consegnata"
+                    if ($value === PermessoEnte::STATUS_DELIVERED) {
+                        $builder->whereIn('status', PermessoEnte::deliveredStatuses());
+
+                        return;
+                    }
+
+                    $builder->where('status', $value);
+                }),
 
             DateRangeFilter::make('Consegna', 'consegna_filter')
                 ->config(['locale' => 'it'])
@@ -165,13 +198,14 @@ class PermessiEnteTable extends DataTableComponent
                 ->options($regioni)
                 ->filter(fn(Builder $builder, $value) => $builder->where('regione_id', $value)),
 
-            SelectFilter::make('Comune', 'comune_id')
-                ->options($comuni)
-                ->filter(fn(Builder $builder, $value) => $builder->where('comune_id', $value)),
+            // Comuni e centrali sono migliaia: filtro testuale invece di una select con tutte le voci
+            TextFilter::make('Comune', 'comune_filter')
+                ->config(['placeholder' => 'Comune'])
+                ->filter(fn(Builder $builder, string $value) => $builder->whereHas('comune', fn (Builder $query) => $query->where('name', 'like', "%$value%"))),
 
-            SelectFilter::make('Centrale', 'centrale_id')
-                ->options($centrali)
-                ->filter(fn(Builder $builder, $value) => $builder->where('central_id', $value)),
+            TextFilter::make('Centrale', 'centrale_filter')
+                ->config(['placeholder' => 'Centrale'])
+                ->filter(fn(Builder $builder, string $value) => $builder->whereHas('central', fn (Builder $query) => $query->where('central', 'like', "%$value%"))),
 
             TextFilter::make('Via', 'via_filter')
                 ->config(['placeholder' => 'Via'])
@@ -285,18 +319,8 @@ class PermessiEnteTable extends DataTableComponent
             Column::make('Status', 'status')
                 ->sortable()->searchable()
                 ->secondaryHeaderFilter('status_filter')
-                ->format(function ($value) {
-                    if ($value == "In Lavorazione") {
-                        return "<span class='badge rounded-pill text-bg-primary'>$value</span>";
-                    } else if ($value == "Da Lavorare") {
-                        return "<span class='badge rounded-pill text-bg-info'>$value</span>";
-                    } else if ($value == "Consegnato") {
-                        return "<span class='badge rounded-pill text-bg-warning'>$value</span>";
-                    } else if ($value == "Fine Lavori") {
-                        return "<span class='badge rounded-pill pill-fine-lavori'>$value</span>";
-                    }
-                    return $value;
-                })->html(),
+                ->format(fn ($value) => StatusBadge::permesso($value))
+                ->html(),
 
             Column::make('Consegna', 'consegna')
                 ->format(fn($value) => $value ? Carbon::parse($value)->format('d/m/Y') : '')
@@ -314,11 +338,11 @@ class PermessiEnteTable extends DataTableComponent
 
             Column::make('Comune', 'comune.name')
                 ->sortable()->searchable()
-                ->secondaryHeaderFilter('comune_id'),
+                ->secondaryHeaderFilter('comune_filter'),
 
             Column::make('Centrale', 'central.central')
                 ->sortable()->searchable()
-                ->secondaryHeaderFilter('centrale_id'),
+                ->secondaryHeaderFilter('centrale_filter'),
 
             Column::make('Via', 'via')
                 ->sortable()->searchable()

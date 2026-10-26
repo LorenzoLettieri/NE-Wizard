@@ -469,7 +469,8 @@
         </div>
     </div>
     @endrole
-    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    {{-- Versione fissata (quella servita dal CDN al momento del fix): un aggiornamento va provato, non subito in produzione --}}
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts@8.5.0/dist/apexcharts.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             let chart = null;

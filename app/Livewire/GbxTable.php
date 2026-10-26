@@ -3,7 +3,6 @@ namespace App\Livewire;
 
 use Carbon\Carbon;
 use App\Models\Gbx;
-use App\Models\Central;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Builder;
 use Rappasoft\LaravelLivewireTables\Views\Column;
@@ -21,9 +20,7 @@ class GbxTable extends DataTableComponent
         return Gbx::query()
             ->with(['company', 'central'])
             ->withCount('media')
-            ->when(!auth()->user()->hasAnyRole('admin|GBX Supervisor'), function ($query) {
-                $query->whereHas('company', fn($q) => $q->where('name', auth()->user()->company->name));
-            });
+            ->visibleTo(auth()->user());
     }
     protected $listeners = [
         'gbxUpdated' => '$refresh',
@@ -45,9 +42,6 @@ class GbxTable extends DataTableComponent
     {
         $companies = ['' => 'Tutte'];
         $companies = array_merge($companies, Company::pluck('name', 'name')->toArray());
-
-        $centrals = ['' => 'Tutte'];
-        $centrals = array_merge($centrals, Central::pluck('central', 'central')->toArray());
 
         return [
             DateRangeFilter::make('Data Creazione', 'date')->config([
@@ -83,10 +77,11 @@ class GbxTable extends DataTableComponent
                     $builder->where('SDF', 'like', "%$value%");
                 }),
 
-            SelectFilter::make('Centrale', 'central')
-                ->options($centrals)
+            // Le centrali sono migliaia: filtro testuale invece di una select con tutte le voci
+            TextFilter::make('Centrale', 'central')
+                ->config(['placeholder' => 'Centrale'])
                 ->filter(function (Builder $builder, string $value) {
-                    $builder->whereHas('central', fn($q) => $q->where('central', $value));
+                    $builder->whereHas('central', fn($q) => $q->where('central', 'like', "%$value%"));
                 }),
 
             TextFilter::make('Comune', 'comune')

@@ -19,28 +19,21 @@
                 @endrole
             </div>
 
-            @if (session('success'))
-                <div class="col-12 col-xl-10">
-                    <div class="alert alert-success mt-3">
-                        {{ session('success') }}
-                    </div>
-                </div>
-            @endif
-
             <div class="col-12">
+                @include('partials.page-alerts')
                 <livewire:decommissioning-table></livewire:decommissioning-table>
             </div>
         </div>
     </div>
 </x-layout>
 
-<div class="modal fade" id="viewModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="viewModal" tabindex="-1" aria-hidden="true" data-livewire-modal>
     <div class="modal-dialog modal-xl">
         <livewire:decommissioning-form :isShow="true"></livewire:decommissioning-form>
     </div>
 </div>
 
-<div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true" data-livewire-modal>
     <div class="modal-dialog modal-xl">
         <livewire:decommissioning-form :isShow="false" :isEdit="true"></livewire:decommissioning-form>
     </div>

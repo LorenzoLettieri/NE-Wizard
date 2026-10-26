@@ -4,25 +4,25 @@
     </a>
 
     <ul class="dropdown-menu">
-        <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#viewGbxModal"
+        <li><button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#viewGbxModal"
                 onclick="Livewire.dispatch('view-gbx', {id: {{$row->id}}})">
                 <i class="bi bi-eye me-2"></i> Dettaglio
-            </a></li>
-        <li><a class="dropdown-item text-warning" href="#" data-bs-toggle="modal" data-bs-target="#editGbxModal"
+            </button></li>
+        <li><button type="button" class="dropdown-item text-warning" data-bs-toggle="modal" data-bs-target="#editGbxModal"
                 onclick="Livewire.dispatch('edit-gbx', {id: {{$row->id}}})">
                 <i class="bi bi-pencil me-2"></i> Modifica
-            </a></li>
+            </button></li>
+        @role('admin')
         <li>
             <hr class="dropdown-divider">
         </li>
-        @role('admin')
-        <li><a class="dropdown-item text-danger" data-bs-toggle="modal" data-bs-target="#deleteGbxModal{{$row->id}}"
-                href="#">
+        <li><button type="button" class="dropdown-item text-danger" data-bs-toggle="modal" data-bs-target="#deleteGbxModal{{$row->id}}">
                 <i class="bi bi-trash me-2"></i> Elimina
-            </a></li>
+            </button></li>
         @endrole
     </ul>
 
+    @role('admin')
     <!-- Modal -->
     <div class="modal fade" id="deleteGbxModal{{$row->id}}" tabindex="-1" aria-labelledby="deleteGbxModalLabel"
         aria-hidden="true">
@@ -44,5 +44,6 @@
             </div>
         </div>
     </div>
+    @endrole
 
 </div>

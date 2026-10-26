@@ -8,14 +8,15 @@ use Tests\TestCase;
 
 class OperatorStatsViewTest extends TestCase
 {
-    public function test_operator_stats_chart_disables_zoom_pan_and_selection_interactions(): void
+    public function test_operator_stats_chart_enables_zoom_pan_and_selection_with_toolbar(): void
     {
+        // Lo zoom è stato reintrodotto di proposito (commit "zoom reintagrated in charts")
         $html = file_get_contents(resource_path('views/livewire/operator-stats.blade.php'));
 
-        $this->assertStringContainsString("toolbar: { show: false }", $html);
-        $this->assertStringContainsString("selection: { enabled: false }", $html);
-        $this->assertStringContainsString("zoom: { enabled: false, allowMouseWheelZoom: false }", $html);
-        $this->assertStringContainsString("pan: { enabled: false }", $html);
+        $this->assertStringContainsString("autoSelected: 'pan'", $html);
+        $this->assertStringContainsString("selection: { enabled: true }", $html);
+        $this->assertStringContainsString("zoom: { enabled: true, allowMouseWheelZoom: true }", $html);
+        $this->assertStringContainsString("pan: { enabled: true }", $html);
     }
 
     public function test_operator_stats_chart_uses_cursor_based_tooltip_positioning(): void
@@ -81,14 +82,13 @@ class OperatorStatsViewTest extends TestCase
         $this->assertSame('UTC', $end->timezoneName);
     }
 
-    public function test_operator_stats_chart_formats_axis_in_rome_timezone(): void
+    public function test_operator_stats_chart_formats_axis_in_local_time(): void
     {
+        // Dal commit "timezone fixes" l'asse usa l'ora locale del browser (datetimeUTC: false)
         $html = file_get_contents(resource_path('views/livewire/operator-stats.blade.php'));
 
-        $this->assertStringContainsString("timeZone: 'Europe/Rome'", $html);
-        $this->assertStringContainsString('formatRomeTimeLabel', $html);
-        $this->assertStringContainsString('formatter: function(value, timestamp, opts)', $html);
-        $this->assertStringContainsString('opts?.timestamp ?? timestamp', $html);
+        $this->assertStringContainsString('datetimeUTC: false', $html);
+        $this->assertStringNotContainsString('formatRomeTimeLabel', $html);
     }
 
     public function test_operator_stats_filter_range_uses_rome_day_boundaries(): void

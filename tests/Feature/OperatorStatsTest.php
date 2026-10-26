@@ -8,6 +8,7 @@ use App\Models\Timesheet;
 use App\Models\User;
 use App\Models\Work;
 use App\Models\WorkPhase;
+use App\Models\WorkStatusHistory;
 use Carbon\Carbon;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -238,6 +239,12 @@ class OperatorStatsTest extends TestCase
             'delivery_date' => Carbon::parse('2026-04-10 12:30:00', 'UTC'),
         ]);
 
+        // Il builder ricostruisce il lavoro attivo dallo storico stati: lo allineiamo alle date della lavorazione
+        WorkStatusHistory::where('work_id', $work->id)->update([
+            'started_at' => Carbon::parse('2026-04-10 08:30:00', 'UTC'),
+            'ended_at' => Carbon::parse('2026-04-10 12:30:00', 'UTC'),
+        ]);
+
         $work->users()->attach($operator->id, [
             'created_at' => Carbon::parse('2026-04-10 08:00:00', 'UTC'),
             'updated_at' => Carbon::parse('2026-04-10 08:00:00', 'UTC'),
@@ -266,8 +273,9 @@ class OperatorStatsTest extends TestCase
             ->assertViewHas('rows', function ($rows) {
                 $row = collect($rows)->firstWhere('operator_name', 'Mario Rossi');
 
+                // Presenza = ingresso -> uscita, pausa inclusa (come in OperatorActivityBuilderTest); la pausa è a parte
                 return $row
-                    && $row['presence_label'] === '8h 30m'
+                    && $row['presence_label'] === '9h'
                     && $row['break_label'] === '30m'
                     && $row['active_work_label'] === '3h'
                     && $row['suspension_label'] === '30m'

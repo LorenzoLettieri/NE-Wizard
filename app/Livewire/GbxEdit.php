@@ -3,8 +3,8 @@
 namespace App\Livewire;
 
 use App\Models\Gbx;
-use App\Models\Central;
 use App\Models\Company;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Livewire\Component;
 use Livewire\Attributes\On;
 use Livewire\WithFileUploads;
@@ -12,11 +12,12 @@ use App\Livewire\Concerns\HandlesMediaUploads;
 
 class GbxEdit extends Component
 {
+    use AuthorizesRequests;
     use WithFileUploads;
     use HandlesMediaUploads;
 
     public $gbx;
-    public $centrals, $companies;
+    public $companies;
     public $company_id, $network, $SDF, $central_id, $comune, $client, $coordinates;
     public $appointment_date, $inspection_date, $verbal_date, $obligation_date, $release_date, $project_date,
     $speedark_date;
@@ -29,7 +30,11 @@ class GbxEdit extends Component
     #[On('edit-gbx')]
     public function editGbx($id)
     {
-        $this->gbx = Gbx::with('media')->find($id);
+        $gbx = Gbx::with('media')->findOrFail($id);
+        $this->authorize('update', $gbx);
+
+        $this->resetValidation();
+        $this->gbx = $gbx;
         $this->fill($this->gbx->toArray());
         $this->files = [];
         $this->initializeChunkedMediaUploads('gbx', $this->gbx->id);
@@ -39,6 +44,9 @@ class GbxEdit extends Component
 
     public function update()
     {
+        $this->gbx = Gbx::with('media')->findOrFail($this->gbx->getKey());
+        $this->authorize('update', $this->gbx);
+
         $this->validate([
             'central_id' => 'nullable|exists:centrals,id',
             'company_id' => 'nullable|exists:companies,id',
@@ -92,8 +100,12 @@ class GbxEdit extends Component
 
     public function mount()
     {
-        $this->centrals = Central::all();
         $this->companies = Company::all();
+    }
+
+    protected function refreshMediaAfterChunkedUpload(): void
+    {
+        $this->gbx?->load('media');
     }
 
     public function render()

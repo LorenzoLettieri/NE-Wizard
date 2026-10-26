@@ -4,39 +4,43 @@
   </a>
 
   <ul class="dropdown-menu">
-    <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#viewModal"
+    <li><button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#viewModal"
         onclick="Livewire.dispatch('view-work', {id: {{$row->id}}})">
         <i class="bi bi-eye me-2"></i> Dettaglio
-      </a></li>
-    <li><a class="dropdown-item text-warning" href="#" data-bs-toggle="modal" data-bs-target="#editModal"
+      </button></li>
+    <li><button type="button" class="dropdown-item text-warning" data-bs-toggle="modal" data-bs-target="#editModal"
         onclick="Livewire.dispatch('edit-work', {id: {{$row->id}}})">
         <i class="bi bi-pencil me-2"></i> Modifica
-      </a></li>
-    <li><a class="dropdown-item" href="#" onclick="Livewire.dispatch('duplicate-work', {id: {{$row->id}}})">
+      </button></li>
+    <li><button type="button" class="dropdown-item"
+        onclick="if (confirm('Duplicare la lavorazione #{{ $row->id }}? Verrà creata una copia in stato Da Lavorare.')) Livewire.dispatch('duplicate-work', {id: {{$row->id}}})">
         <i class="bi bi-files me-2"></i> Duplica
-      </a></li>
+      </button></li>
+    @if ($row->status !== 'Fine Lavori')
+      <li>
+        <hr class="dropdown-divider">
+      </li>
+      <li><button type="button" class="dropdown-item text-success"
+          onclick="if (confirm('Segnare la lavorazione #{{ $row->id }} come Fine Lavori?')) Livewire.dispatch('end-work', {id: {{$row->id}}})">
+          <i class="bi bi-check-circle me-2"></i> Fine Lavori
+        </button></li>
+    @endif
     <li>
       <hr class="dropdown-divider">
     </li>
-    <li><a class="dropdown-item text-success" href="#" onclick="Livewire.dispatch('end-work', {id: {{$row->id}}})">
-        <i class="bi bi-check-circle me-2"></i> Fine Lavori
-      </a></li>
-    <li>
-      <hr class="dropdown-divider">
-    </li>
-    <li><a class="dropdown-item text-danger" data-bs-toggle="modal" data-bs-target="#deleteModal" href="#">
+    <li><button type="button" class="dropdown-item text-danger" data-bs-toggle="modal" data-bs-target="#deleteWorkModal{{ $row->id }}">
         <i class="bi bi-trash me-2"></i> Elimina
-      </a></li>
+      </button></li>
 
 
   </ul>
 
-  <!-- Modal -->
-  <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+  <!-- Modal: l'id contiene la riga, altrimenti Bootstrap aprirebbe sempre il modal della prima riga -->
+  <div class="modal fade" id="deleteWorkModal{{ $row->id }}" tabindex="-1" aria-labelledby="deleteWorkModalLabel{{ $row->id }}" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h1 class="modal-title fs-5" id="deleteModalLabel">Sicuro di voler eliminare questa lavorazione?</h1>
+          <h1 class="modal-title fs-5" id="deleteWorkModalLabel{{ $row->id }}">Sicuro di voler eliminare la lavorazione #{{ $row->id }}?</h1>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
 

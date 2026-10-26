@@ -22,7 +22,7 @@
             </div>
 
             <div class="col-12">
-                <livewire:notification-center></livewire:notification-center>
+                @include('partials.page-alerts')
                 <livewire:GbxTable></livewire:GbxTable>
             </div>
         </div>
@@ -30,14 +30,14 @@
 </x-layout>
 
 <!-- View Modal -->
-<div class="modal fade" id="viewGbxModal" tabindex="-1" aria-labelledby="viewGbxModalLabel" aria-hidden="true">
+<div class="modal fade" id="viewGbxModal" tabindex="-1" aria-labelledby="viewGbxModalLabel" aria-hidden="true" data-livewire-modal>
     <div class="modal-dialog modal-xl">
         <livewire:view-gbx></livewire:view-gbx>
     </div>
 </div>
 
 <!-- edit Modal -->
-<div class="modal fade" id="editGbxModal" tabindex="-1" aria-labelledby="editGbxModalLabel" aria-hidden="true">
+<div class="modal fade" id="editGbxModal" tabindex="-1" aria-labelledby="editGbxModalLabel" aria-hidden="true" data-livewire-modal>
     <div class="modal-dialog modal-xl">
         <livewire:gbx-edit></livewire:gbx-edit>
     </div>

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Exports\PermessiEnteExport;
 use App\Models\PermessoEnte;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Maatwebsite\Excel\Facades\Excel;
@@ -24,11 +25,15 @@ class PermessoEnteController extends Controller
     public function edit($id)
     {
         $permesso = PermessoEnte::findOrFail($id);
+        Gate::authorize('update', $permesso);
+
         return view('permessi_ente.edit', compact('permesso'));
     }
 
     public function delete(Request $request, PermessoEnte $permesso)
     {
+        Gate::authorize('delete', $permesso);
+
         $permesso->delete();
         return redirect()->back()->with('success', 'Permesso eliminato con successo');
     }

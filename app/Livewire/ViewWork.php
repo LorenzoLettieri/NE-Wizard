@@ -56,6 +56,7 @@ class ViewWork extends Component
         $work->transitionToStatus('Fine Lavori', Carbon::now());
 
         $this->dispatch('refreshDatatable');
+        $this->dispatch('notify', message: "Lavorazione #{$work->id} segnata come Fine Lavori.");
      }
 
     public function render()

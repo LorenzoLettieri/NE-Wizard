@@ -239,9 +239,11 @@ class OperatorStats extends Component
             'earnedWorks' => $this->earnedWorksQuery($operatorIds, $startDateLocal, $endDateLocal)
                 ->get()
                 ->groupBy('_operator_id'),
+            // whereDate invece di whereBetween: stesso risultato su MySQL, corretto anche su sqlite (test)
             'timesheets' => Timesheet::query()
                 ->whereIn('user_id', $operatorIds)
-                ->whereBetween('date', [$startDateLocal, $endDateLocal])
+                ->whereDate('date', '>=', $startDateLocal)
+                ->whereDate('date', '<=', $endDateLocal)
                 ->get()
                 ->groupBy('user_id'),
         ];

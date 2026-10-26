@@ -41,13 +41,13 @@
                     </ul>
                 </li>
                 @endhasanyrole
-                @hasanyrole('admin|supervisor|permessi ente|GBX|Deco')
+                @hasanyrole('admin|supervisor|permessi ente|GBX|GBX Supervisor|Deco')
                 <li class="nav-item dropdown">
-                    <a class="nav-link active dropdown-toggle" href="#" id="navbarDropdown" role="button"
+                    <a class="nav-link active dropdown-toggle" href="#" id="navbarTablesDropdown" role="button"
                         data-bs-toggle="dropdown" aria-expanded="false">
                         Tabelle
                     </a>
-                    <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                    <ul class="dropdown-menu" aria-labelledby="navbarTablesDropdown">
                         @hasanyrole('admin|supervisor')
                         <li class="nav-item">
                             <a class="dropdown-item" href="{{route('works-table')}}">Tabella Lavorazioni</a>
@@ -58,7 +58,7 @@
                             <a class="dropdown-item" href="{{route('permessi-ente.table')}}">Tabella Permessi</a>
                         </li>
                         @endhasanyrole
-                        @hasanyrole('admin|GBX')
+                        @hasanyrole('admin|GBX|GBX Supervisor')
                         <li class="nav-item">
                             <a class="dropdown-item" href="{{route('gbxes-table')}}">Tabella GBX</a>
                         </li>

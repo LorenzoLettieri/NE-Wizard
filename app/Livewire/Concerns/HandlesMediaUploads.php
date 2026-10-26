@@ -123,6 +123,8 @@ trait HandlesMediaUploads
         if (! in_array($sessionId, $this->completedUploadSessionIds, true)) {
             $this->completedUploadSessionIds[] = $sessionId;
         }
+
+        $this->refreshMediaAfterChunkedUpload();
     }
 
     public function unregisterCompletedUploadSession(string $sessionId): void
@@ -131,6 +133,16 @@ trait HandlesMediaUploads
             $this->completedUploadSessionIds,
             fn (string $id) => $id !== $sessionId
         ));
+
+        $this->refreshMediaAfterChunkedUpload();
+    }
+
+    /**
+     * In modifica il servizio aggancia l'allegato al record appena l'upload finisce:
+     * i componenti che mostrano gli allegati esistenti ricaricano qui la lista.
+     */
+    protected function refreshMediaAfterChunkedUpload(): void
+    {
     }
 
     protected function claimCompletedUploadSessions(Model $model): int

@@ -14,16 +14,18 @@ use App\Models\PermessoEnte;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
 use App\Livewire\Concerns\HandlesMediaUploads;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class PermessoEnteForm extends Component
 {
+    use AuthorizesRequests;
     use WithFileUploads;
     use HandlesMediaUploads;
 
     private const ADMIN_STATUS_OPTIONS = [
         'Da Lavorare',
         'In Lavorazione',
-        'Consegnata',
+        PermessoEnte::STATUS_DELIVERED,
         'Fine Lavori',
     ];
 
@@ -78,20 +80,17 @@ class PermessoEnteForm extends Component
         });
     }
 
+    // Comuni e centrali sono migliaia: nel form arrivano via ricerca (/lookups), qui serve solo il nome selezionato
     #[Computed]
-    public function comuni()
+    public function comuneName(): ?string
     {
-        return cache()->remember('comuni_list', 3600, function () {
-            return Comune::pluck('name', 'id')->toArray();
-        });
+        return $this->comune_id ? Comune::whereKey($this->comune_id)->value('name') : null;
     }
 
     #[Computed]
-    public function centrali()
+    public function centralName(): ?string
     {
-        return cache()->remember('centrali_list', 3600, function () {
-            return Central::pluck('central', 'id')->toArray();
-        });
+        return $this->central_id ? Central::whereKey($this->central_id)->value('central') : null;
     }
 
     #[Computed]
@@ -119,6 +118,7 @@ class PermessoEnteForm extends Component
     private function loadPermesso($id)
     {
         $permesso = PermessoEnte::findOrFail($id);
+        $this->authorize('view', $permesso);
         $this->successMessage = null;
         $this->permessoEnteId = $permesso->id;
 
@@ -159,7 +159,8 @@ class PermessoEnteForm extends Component
         $this->vdc2 = $permesso->vdc2;
         $this->vdc3 = $permesso->vdc3;
         $this->vdc4 = $permesso->vdc4;
-        $this->status = $permesso->status;
+        // "Consegnata" (vecchia opzione admin) viene mostrato come "Consegnato"; il dato cambia solo se si salva
+        $this->status = PermessoEnte::normalizeStatus($permesso->status);
         $this->acception_date = $permesso->acception_date;
         $this->delivery_date = $permesso->delivery_date;
         $this->completion_date = $permesso->completion_date;
@@ -185,6 +186,7 @@ class PermessoEnteForm extends Component
     {
         if ($permessoEnte && $permessoEnte->exists) {
             $this->loadPermesso($permessoEnte->id);
+            $this->isEdit = true;
 
             return;
         }
@@ -200,7 +202,16 @@ class PermessoEnteForm extends Component
             $statusRules[] = Rule::in(self::ADMIN_STATUS_OPTIONS);
         }
 
-        return [
+        $operatorRules = [];
+
+        if ($this->canAssignOperators()) {
+            $operatorRules = [
+                'operator_id' => ['nullable', 'array'],
+                'operator_id.*' => ['integer', Rule::in($this->operators->pluck('id')->all())],
+            ];
+        }
+
+        return $operatorRules + [
             'network' => 'nullable|numeric',
             'consegna' => 'nullable|date',
             'progetto' => 'nullable|string|max:255',
@@ -237,9 +248,27 @@ class PermessoEnteForm extends Component
         ] + $this->mediaUploadValidationRules();
     }
 
+    protected function messages(): array
+    {
+        return [
+            'operator_id.*.in' => 'Uno degli operatori selezionati non è abilitato ai Permessi Ente.',
+        ];
+    }
+
+    protected function canAssignOperators(): bool
+    {
+        return auth()->check() && auth()->user()->can('assignOperators', PermessoEnte::class);
+    }
+
     public function save()
     {
         $this->validate();
+
+        $permesso = $this->isEdit ? PermessoEnte::findOrFail($this->permessoEnteId) : null;
+
+        if ($permesso) {
+            $this->authorize('update', $permesso);
+        }
 
         $data = [
             'network' => $this->emptyToNull($this->network),
@@ -277,8 +306,6 @@ class PermessoEnteForm extends Component
         ];
 
         if ($this->isEdit) {
-            $permesso = PermessoEnte::findOrFail($this->permessoEnteId);
-
             if (auth()->check() && auth()->user()->hasRole('admin')) {
                 $data['status'] = $this->status ?: 'Da Lavorare';
             }
@@ -289,7 +316,12 @@ class PermessoEnteForm extends Component
             $permesso = PermessoEnte::create($data);
         }
 
-        $permesso->users()->sync($this->operator_id);
+        if ($this->canAssignOperators()) {
+            $permesso->users()->sync($this->operator_id ?? []);
+        } elseif (! $this->isEdit) {
+            // Chi non può assegnare operatori viene assegnato ai permessi che crea, altrimenti non li vedrebbe
+            $permesso->users()->attach(auth()->id());
+        }
 
         $uploadedCount = 0;
         if ($this->files) {
@@ -328,6 +360,11 @@ class PermessoEnteForm extends Component
 
         session()->flash('success', $message);
         return redirect()->route('permessi-ente.table');
+    }
+
+    protected function refreshMediaAfterChunkedUpload(): void
+    {
+        $this->refreshExistingMedia();
     }
 
     private function refreshExistingMedia(): void
