@@ -14,11 +14,21 @@ use App\Models\PermessoEnte;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
 use App\Livewire\Concerns\HandlesMediaUploads;
+use App\Livewire\Concerns\AuthorizesComponentAccess;
+use App\Support\Authorization\PermissionCatalog;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class PermessoEnteForm extends Component
 {
+    use AuthorizesComponentAccess;
     use AuthorizesRequests;
+
+    private const FINANCE_FIELDS = ['mese_saldo', 'pagato_dl', 'pagato_ne', 'al_dl', 'a_ne', 'delta', 'vdc1', 'vdc2', 'vdc3', 'vdc4'];
+
+    protected function canAccessComponent(User $user): bool
+    {
+        return $user->can(PermissionCatalog::PERMESSI_ACCESS);
+    }
     use WithFileUploads;
     use HandlesMediaUploads;
 
@@ -96,7 +106,7 @@ class PermessoEnteForm extends Component
     #[Computed]
     public function operators()
     {
-        return User::permission('get permessi ente')->select('id', 'name')->get();
+        return User::permission(PermissionCatalog::PERMESSI_OPERATE)->select('id', 'name')->get();
     }
 
     #[On('view-permesso')]
@@ -112,6 +122,7 @@ class PermessoEnteForm extends Component
     {
         $this->isShow = false;
         $this->isEdit = true;
+        $this->authorize('update', PermessoEnte::findOrFail($id));
         $this->loadPermesso($id);
     }
 
@@ -165,6 +176,14 @@ class PermessoEnteForm extends Component
         $this->delivery_date = $permesso->delivery_date;
         $this->completion_date = $permesso->completion_date;
 
+        // Le proprietà pubbliche finiscono nello snapshot Livewire della pagina:
+        // chi non vede la contabilità non deve riceverla nemmeno nascosta
+        if (! (auth()->user()?->canViewPermessiEnteFinance() ?? false)) {
+            foreach (self::FINANCE_FIELDS as $field) {
+                $this->$field = null;
+            }
+        }
+
         // Carica gli operatori assegnati
         $this->operator_id = $permesso->users->pluck('id')->toArray();
         $this->refreshExistingMedia();
@@ -198,7 +217,7 @@ class PermessoEnteForm extends Component
     {
         $statusRules = ['nullable', 'string'];
 
-        if (auth()->check() && auth()->user()->hasRole('admin')) {
+        if ($this->canManage()) {
             $statusRules[] = Rule::in(self::ADMIN_STATUS_OPTIONS);
         }
 
@@ -255,6 +274,11 @@ class PermessoEnteForm extends Component
         ];
     }
 
+    protected function canManage(): bool
+    {
+        return auth()->user()?->canManagePermessiEnte() ?? false;
+    }
+
     protected function canAssignOperators(): bool
     {
         return auth()->check() && auth()->user()->can('assignOperators', PermessoEnte::class);
@@ -266,9 +290,7 @@ class PermessoEnteForm extends Component
 
         $permesso = $this->isEdit ? PermessoEnte::findOrFail($this->permessoEnteId) : null;
 
-        if ($permesso) {
-            $this->authorize('update', $permesso);
-        }
+        $this->authorize($permesso ? 'update' : 'create', $permesso ?? PermessoEnte::class);
 
         $data = [
             'network' => $this->emptyToNull($this->network),
@@ -300,13 +322,19 @@ class PermessoEnteForm extends Component
             'vdc2' => $this->emptyToNull($this->vdc2),
             'vdc3' => $this->emptyToNull($this->vdc3),
             'vdc4' => $this->emptyToNull($this->vdc4),
-            'acception_date' => $this->emptyToNull($this->acception_date),
-            'delivery_date' => $this->emptyToNull($this->delivery_date),
-            'completion_date' => $this->emptyToNull($this->completion_date),
         ];
 
+        // I dati economici si scrivono solo con il permesso di modifica della contabilità:
+        // altrimenti restano quelli salvati, qualunque valore arrivi dal browser
+        if (! (auth()->user()?->canEditPermessiEnteFinance() ?? false)) {
+            $data = array_diff_key($data, array_flip(self::FINANCE_FIELDS));
+        }
+
+        // Le date operatore (presa in carico, consegna, fine lavori) cambiano solo con le azioni dedicate,
+        // il form non le espone e quindi non le salva
+
         if ($this->isEdit) {
-            if (auth()->check() && auth()->user()->hasRole('admin')) {
+            if ($this->canManage()) {
                 $data['status'] = $this->status ?: 'Da Lavorare';
             }
 

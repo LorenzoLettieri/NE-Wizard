@@ -25,7 +25,7 @@ class TimesheetRecapSheet implements FromCollection, WithHeadings, WithMapping, 
 
     public function collection()
     {
-        $users = User::role('operator')->get();
+        $users = User::permission(\App\Support\Authorization\PermissionCatalog::TIMESHEETS_TRACKED)->get();
         $report = collect();
 
         foreach ($users as $user) {

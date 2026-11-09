@@ -18,6 +18,8 @@ class GbxController extends Controller
 
     public function create()
     {
+        Gate::authorize('create', Gbx::class);
+
         return view('gbxes.create');
     }
 
@@ -50,7 +52,13 @@ class GbxController extends Controller
             'end' => ['required', 'date', 'after_or_equal:start'],
         ]);
 
-        $export = new GbxExport($validated['date_field'], $validated['start'], $validated['end']);
+        // Valore e pagamenti restano riservati a chi vede la contabilità, come nella tabella
+        $export = new GbxExport(
+            $validated['date_field'],
+            $validated['start'],
+            $validated['end'],
+            visibleTo: $request->user(),
+        );
 
         $filename = sprintf(
             'gbxes_%s_%s_%s.xlsx',

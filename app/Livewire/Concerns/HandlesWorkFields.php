@@ -190,6 +190,6 @@ trait HandlesWorkFields
 
     protected function canManageAdministrativeFields(): bool
     {
-        return auth()->check() && auth()->user()->hasAnyRole(['admin', 'supervisor']);
+        return auth()->user()?->canManageWorks() ?? false;
     }
 }

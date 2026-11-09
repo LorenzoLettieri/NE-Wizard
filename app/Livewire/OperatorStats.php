@@ -15,10 +15,15 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
+use App\Livewire\Concerns\AuthorizesComponentAccess;
+use App\Support\Authorization\PermissionCatalog;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 class OperatorStats extends Component
 {
+    use AuthorizesComponentAccess;
+
     private const TIMEZONE = 'Europe/Rome';
     private const METRIC_MODE_OPTIONS = [
         ['value' => 'amount', 'label' => 'Monetaria'],
@@ -82,9 +87,23 @@ class OperatorStats extends Component
 
     public $selectedWeekStart = '';
 
+    // Bloccati: nella vista di un singolo operatore il browser non può passare a un altro
+    #[Locked]
     public ?int $lockedOperatorId = null;
 
+    #[Locked]
     public bool $hideOperatorFilterWhenLocked = false;
+
+    protected function canAccessComponent(User $user): bool
+    {
+        return $user->canViewOperatorReports()
+            || ($this->lockedOperatorId !== null && $user->can(PermissionCatalog::OPERATORS_WORKSPACE));
+    }
+
+    private function canViewActivity(): bool
+    {
+        return auth()->user()?->can(PermissionCatalog::REPORTS_OPERATORS_ACTIVITY) ?? false;
+    }
 
     private ?float $amountTarget = null;
 
@@ -109,7 +128,8 @@ class OperatorStats extends Component
 
         [$startDate, $endDate] = $this->resolveReportRange($this->startDate, $this->endDate);
         [$viewWindowStart, $viewWindowEnd, $dayOptions, $weekOptions] = $this->resolveTimelineWindow($startDate, $endDate);
-        $canViewEconomicReport = auth()->check() && auth()->user()->hasRole('admin');
+        $canViewEconomicReport = auth()->user()?->canViewWorksFinance() ?? false;
+        $canViewActivity = $this->canViewActivity();
         $operators = $this->resolveOperators($this->selectedOperatorId());
 
         Log::debug('render: setup ' . round((microtime(true) - $t0) * 1000) . 'ms');
@@ -127,7 +147,10 @@ class OperatorStats extends Component
 
         $timelineConfig = $this->buildTimelineConfig($viewWindowStart, $viewWindowEnd);
 
-        $this->dispatch('timeline-data', series: $timelineData, config: $timelineConfig);
+        // La timeline (presenze, pause, lavorazioni) arriva al browser solo a chi può vederla
+        if ($canViewActivity) {
+            $this->dispatch('timeline-data', series: $timelineData, config: $timelineConfig);
+        }
 
         $view = view('livewire.operator-stats', $this->buildViewData(
             $rows,
@@ -603,7 +626,7 @@ class OperatorStats extends Component
 
     private function resolveOperators(string $selectedOperatorId): Collection
     {
-        return User::permission('get works')
+        return User::permission(PermissionCatalog::WORKS_OPERATE)
             ->when($selectedOperatorId !== '', fn (Builder $query) => $query->whereKey($selectedOperatorId))
             ->orderBy('name')
             ->get();
@@ -632,11 +655,12 @@ class OperatorStats extends Component
             'rows' => $rows,
             'economicSummary' => $this->buildEconomicSummary($rows),
             'canViewEconomicReport' => $canViewEconomicReport,
+            'canViewActivity' => $this->canViewActivity(),
             'monthlyTarget' => $this->amountTarget ?? 0.0,
             'dailyScoreTarget' => $this->dailyScoreTarget ?? 0.0,
             'metricMode' => $this->metricMode,
             'metricModeOptions' => self::METRIC_MODE_OPTIONS,
-            'operatorOptions' => User::permission('get works')->orderBy('name')->get(['id', 'name']),
+            'operatorOptions' => User::permission(PermissionCatalog::WORKS_OPERATE)->orderBy('name')->get(['id', 'name']),
             'hideOperatorFilter' => $this->hideOperatorFilterWhenLocked && $this->lockedOperatorId !== null,
             'companyOptions' => Company::orderBy('name')->get(['id', 'name']),
             'workPhaseOptions' => WorkPhase::orderBy('name')->get(['id', 'name']),

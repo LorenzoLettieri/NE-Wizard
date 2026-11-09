@@ -102,7 +102,7 @@ class NetworkScopeFeatureTest extends TestCase
         $scope = NetworkScope::create(['name' => 'TEST SCOPE']);
         Work::create(['network_scope_id' => $scope->id]);
 
-        Livewire::test(AdminBaseTables::class)
+        Livewire::actingAs($this->superAdmin())->test(AdminBaseTables::class)
             ->call('setTab', 'NetworkScope')
             ->call('deleteRecord', $scope->id);
 
@@ -114,7 +114,7 @@ class NetworkScopeFeatureTest extends TestCase
 
     public function test_admin_can_create_network_scope_via_admin_panel(): void
     {
-        Livewire::test(AdminBaseTables::class)
+        Livewire::actingAs($this->superAdmin())->test(AdminBaseTables::class)
             ->call('setTab', 'NetworkScope')
             ->call('openCreateModal')
             ->set('formData.name', 'NUOVO AMBITO')
@@ -127,7 +127,7 @@ class NetworkScopeFeatureTest extends TestCase
     {
         NetworkScope::create(['name' => 'FTTH']);
 
-        Livewire::test(AdminBaseTables::class)
+        Livewire::actingAs($this->superAdmin())->test(AdminBaseTables::class)
             ->call('setTab', 'NetworkScope')
             ->call('openCreateModal')
             ->set('formData.name', 'FTTH')

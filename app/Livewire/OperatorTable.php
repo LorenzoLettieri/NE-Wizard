@@ -3,6 +3,10 @@
 namespace App\Livewire;
 
 use Carbon\Carbon;
+use App\Livewire\Concerns\AuthorizesComponentAccess;
+use App\Models\User;
+use App\Support\Authorization\PermissionCatalog;
+use Livewire\Attributes\Locked;
 use App\Models\Company;
 use App\Models\NetworkScope;
 use App\Models\Work;
@@ -21,11 +25,30 @@ use Rappasoft\LaravelLivewireTables\Views\Filters\DateRangeFilter;
 
 class OperatorTable extends DataTableComponent
 {
+    use AuthorizesComponentAccess;
     use AuthorizesRequests;
 
+    // Bloccati: il browser non può cambiare operatore osservato né togliere la sola lettura
+    #[Locked]
     public ?int $targetOperatorId = null;
 
+    #[Locked]
     public bool $readOnlyMode = false;
+
+    protected function canAccessComponent(User $user): bool
+    {
+        if ($this->targetOperatorId !== null) {
+            return $user->can(PermissionCatalog::OPERATORS_WORKSPACE);
+        }
+
+        return $user->isWorksOperator();
+    }
+
+    private function assertCanOperate(): void
+    {
+        // Nella vista di un altro operatore non si agisce mai, a prescindere dal flag
+        abort_if($this->readOnlyMode || $this->targetOperatorId !== null, 403);
+    }
 
     public function mount(?int $targetOperatorId = null, bool $readOnlyMode = false): void
     {
@@ -227,7 +250,7 @@ class OperatorTable extends DataTableComponent
     }
 
     public function takeWork($id){
-        abort_if($this->readOnlyMode, 403);
+        $this->assertCanOperate();
 
         DB::transaction(function () use ($id): void {
             $acceptedWork = Work::query()->lockForUpdate()->findOrFail($id);
@@ -243,7 +266,7 @@ class OperatorTable extends DataTableComponent
     }
 
     public function deliveryWork($id){
-        abort_if($this->readOnlyMode, 403);
+        $this->assertCanOperate();
 
         DB::transaction(function () use ($id): void {
             $acceptedWork = Work::query()->lockForUpdate()->findOrFail($id);
@@ -255,7 +278,7 @@ class OperatorTable extends DataTableComponent
     }
 
     public function suspendWork($id){
-        abort_if($this->readOnlyMode, 403);
+        $this->assertCanOperate();
 
         DB::transaction(function () use ($id): void {
             $acceptedWork = Work::query()->lockForUpdate()->findOrFail($id);
@@ -267,7 +290,7 @@ class OperatorTable extends DataTableComponent
     }
 
     public function unsuspendWork($id){
-        abort_if($this->readOnlyMode, 403);
+        $this->assertCanOperate();
 
         DB::transaction(function () use ($id): void {
             $acceptedWork = Work::query()->lockForUpdate()->findOrFail($id);
@@ -280,7 +303,7 @@ class OperatorTable extends DataTableComponent
 
     protected function scopedOperatorId(): int
     {
-        if ($this->targetOperatorId !== null && Auth::user()?->hasRole('admin')) {
+        if ($this->targetOperatorId !== null && Auth::user()?->can(PermissionCatalog::OPERATORS_WORKSPACE)) {
             return $this->targetOperatorId;
         }
 

@@ -28,7 +28,7 @@
                             <ul class="dropdown-menu">
                                 <li><a class="dropdown-item" href="{{route('editUser', ['id' => $user->id])}}">Modifica Dati
                                         utente</a></li>
-                                @if(!$user->hasRole('admin') && $user->can('get works'))
+                                @if(! $user->isSuperAdmin() && $user->isWorksOperator())
                                     <li><a class="dropdown-item" href="{{ route('admin.operator-workspace', $user) }}">Vedi come operatore</a></li>
                                 @endif
                                 {{-- @if($user->hasRole('supervisor'))
@@ -39,7 +39,7 @@
                                         href="#">Rendi Supervisor</a></li>
                                 @endif --}}
 
-                                @if(!$user->hasRole('admin'))
+                                @if(! $user->isSuperAdmin())
                                     <li><a class="dropdown-item text-danger" wire:click="deleteUser({{$user->id}})"
                                             wire:confirm="Sei sicuro di voler eliminare questo account?" href="#">Elimina
                                             Account</a></li>

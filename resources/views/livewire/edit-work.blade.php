@@ -33,7 +33,7 @@
                                     <label for="company" class="form-label">Compagnia</label>
                                     <x-tom-select model="company_id" :options="$companies->pluck('name', 'id')" />
                                 </div>
-                                @role('admin|supervisor')
+                                @if (auth()->user()?->canManageWorks())
 
                                 <div class="col-12 col-md-4 mb-4">
                                     <label for="status" class="form-label">Stato Lavorazione:</label>
@@ -46,7 +46,7 @@
                                         @endforeach
                                     </select>
                                 </div>
-                                @endrole
+                                @endif
                                 <div class="col-12 col-md-4 mb-4">
                                     <label for="" class="form-label">Centrale:</label>
                                     <x-tom-select model="central_id" remote="centrals" placeholder="-- Cerca centrale --" />
@@ -118,12 +118,12 @@
                                     <input type="unica_number" class="form-control" id="unica_number"
                                         wire:model="unica_number" placeholder="">
                                 </div>
-                                @role('admin|supervisor')
+                                @if (auth()->user()?->canManageWorks())
                                 <div class="col-12 col-md-6 mb-4">
                                     <label for="expected_delivery_date" class="form-label">Data prevista consegna:</label>
                                     <input type="date" class="form-control" id="expected_delivery_date" wire:model="expected_delivery_date">
                                 </div>
-                                @endrole
+                                @endif
                                 <div class="col-4 col-md-4 mb-4">
                                     <label for="go_live" class="form-label">Go Live:</label>
                                     <select wire:model="go_live" class="form-select">
@@ -149,13 +149,13 @@
                                     <textarea class="form-control" id="suspension_history" rows="5"
                                         wire:model="suspension_history"></textarea>
                                 </div>
-                                @role('admin|supervisor')
+                                @if (auth()->user()?->canManageWorks())
                                 @include('livewire.partials.work-suspensions-editor')
                                 <div class="col-12 col-md-12 mb-4">
                                     <label for="phase" class="form-label">Assegna Lavorazione ad Operatore:</label>
                                     <x-tom-select model="operator_id" :options="$operators->pluck('name', 'id')" multiple />
                                 </div>
-                                @endrole
+                                @endif
                             </div>
 
                             <h4 class="mt-4 mb-4 border-bottom pb-2">Media</h4>

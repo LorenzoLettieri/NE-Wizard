@@ -2,7 +2,10 @@
 
 namespace App\Livewire;
 
+use App\Livewire\Concerns\AuthorizesComponentAccess;
 use App\Models\Timesheet;
+use App\Models\User;
+use App\Support\Authorization\PermissionCatalog;
 use App\Support\Timesheets\TimesheetStateMachine;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -10,6 +13,13 @@ use Livewire\Component;
 
 class OperatorTimesheet extends Component
 {
+    use AuthorizesComponentAccess;
+
+    protected function canAccessComponent(User $user): bool
+    {
+        return $user->can(PermissionCatalog::TIMESHEETS_CLOCK);
+    }
+
     public $inputTime;
     public $weekStartDate;
     public $actionType; // 'start_shift', 'start_break', 'end_break', 'end_shift', 'leave', 'overtime'

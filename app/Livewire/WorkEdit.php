@@ -14,9 +14,12 @@ use Livewire\WithFileUploads;
 use App\Livewire\Concerns\HandlesMediaUploads;
 use App\Livewire\Concerns\HandlesWorkFields;
 use App\Livewire\Concerns\HandlesWorkSuspensions;
+use App\Livewire\Concerns\AuthorizesComponentAccess;
+use App\Support\Authorization\PermissionCatalog;
 
 class WorkEdit extends Component
 {
+    use AuthorizesComponentAccess;
     use WithFileUploads;
     use HandlesMediaUploads;
     use HandlesWorkFields;
@@ -30,6 +33,11 @@ class WorkEdit extends Component
     public $company_id, $central_id, $operator_id, $status, $network, $ao_cno, $ntw_scope, $network_scope_id, $description, $type, $phase, $work_phase_id, $company_assistant, $nroe, $wo_number, $unica_number, $notes, $tempo_daphne, $expected_delivery_date;
 
     public $daphne = '0';
+
+    protected function canAccessComponent(User $user): bool
+    {
+        return $this->work instanceof Work && $user->can('update', $this->work);
+    }
 
     public function update(){
         $this->normalizeOperatorIdsInput();
@@ -80,7 +88,7 @@ class WorkEdit extends Component
         $this->companies = Company::all();
         $this->workPhases = WorkPhase::orderBy('name')->get();
         $this->networkScopes = NetworkScope::orderBy('name')->get();
-        $this->operators = User::permission('get works')->get();
+        $this->operators = User::permission(PermissionCatalog::WORKS_OPERATE)->get();
 
         $this->company_id = $work->company_id;
         $this->central_id = $work->central_id;

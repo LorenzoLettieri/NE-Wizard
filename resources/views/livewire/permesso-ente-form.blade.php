@@ -38,7 +38,7 @@
                         <!-- <li class="list-group-item d-flex justify-content-between"><span>Presa in Carico</span> <strong>{{ $acception_date ? \Carbon\Carbon::parse($acception_date)->format('d/m/Y H:i') : '-' }}</strong></li>
                         <li class="list-group-item d-flex justify-content-between"><span>Consegna Op.</span> <strong>{{ $delivery_date ? \Carbon\Carbon::parse($delivery_date)->format('d/m/Y H:i') : '-' }}</strong></li>
                         <li class="list-group-item d-flex justify-content-between"><span>Fine Lavori (Data)</span> <strong>{{ $completion_date ? \Carbon\Carbon::parse($completion_date)->format('d/m/Y H:i') : '-' }}</strong></li> -->
-                        @role('admin')<li class="list-group-item d-flex justify-content-between"><span>Mese Saldo</span> <strong>{{ $mese_saldo ? \Carbon\Carbon::parse($mese_saldo)->format('m/Y') : '-' }}</strong></li>@endrole
+                        @if (auth()->user()->canViewPermessiEnteFinance())<li class="list-group-item d-flex justify-content-between"><span>Mese Saldo</span> <strong>{{ $mese_saldo ? \Carbon\Carbon::parse($mese_saldo)->format('m/Y') : '-' }}</strong></li>@endif
                     </ul>
                 </div>
 
@@ -90,7 +90,7 @@
                     <div class="p-3 rounded shadow-sm border">{{ $descrizione ?? 'Nessuna descrizione.' }}</div>
                 </div>
 
-                @role('admin')
+                @if (auth()->user()->canManagePermessiEnte())
                 <div class="col-md-6 mt-4">
                     <h6 class="text-muted text-uppercase small fw-bold">Operatori Assegnati</h6>
                     <div class="d-flex flex-wrap gap-2 mt-2">
@@ -104,7 +104,9 @@
                         @endif
                     </div>
                 </div>
+                @endif
 
+                @if (auth()->user()->canViewPermessiEnteFinance())
                 <div class="col-12 mt-4">
                     <h6 class="text-muted text-uppercase small fw-bold border-bottom pb-2">Dati Economici (Admin)</h6>
                     <div class="row text-center mt-3">
@@ -136,7 +138,7 @@
                         </div>
                     </div>
                 </div>
-                @endrole
+                @endif
             </div>
         @else
             {{-- FORM MODE STYLE (CREATE/EDIT) --}}
@@ -187,7 +189,7 @@
                     <h4 class="mt-5 mb-4 border-bottom pb-2">Stati e Date</h4>
                     <div class="row g-3 mb-4">
                         @if($isEdit)
-                            @role('admin')
+                            @if (auth()->user()->canManagePermessiEnte())
                             <div class="col-md-4">
                                 <label class="form-label">Status</label>
                                 <select
@@ -200,7 +202,7 @@
                                     @endforeach
                                 </select>
                             </div>
-                            @endrole
+                            @endif
                         @endif
                         @foreach ([
                             'ap_chiusini' => 'AP Chiusini',
@@ -259,7 +261,7 @@
                     </div>
                     @endcan
 
-                    @role('admin')
+                    @if (auth()->user()->canEditPermessiEnteFinance())
                     <h4 class="mt-5 mb-4 border-bottom pb-2">Contabilità (Admin)</h4>
                     <div class="row g-3 mb-4">
                         <div class="col-md-4">
@@ -296,7 +298,7 @@
                             </div>
                         @endfor
                     </div>
-                    @endrole
+                    @endif
                     
                     <h4 class="mt-5 mb-4 border-bottom pb-2">Media</h4>
                     <div class="row g-3">

@@ -58,7 +58,7 @@ trait HandlesWorkSuspensions
 
     protected function canManageStructuredSuspensions(): bool
     {
-        return auth()->check() && auth()->user()->hasAnyRole(['admin', 'supervisor']);
+        return auth()->user()?->canManageWorks() ?? false;
     }
 
     /**

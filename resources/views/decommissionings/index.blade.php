@@ -4,19 +4,21 @@
             <div class="col-12 mt-3 d-flex justify-content-center align-items-center">
                 <h1 class="text-center mx-3">Tabella Decommissioning</h1>
 
+                @can('deco.create')
                 <div>
                     <a type="button" class="btn btn-success mx-2" href="{{ route('addDecommissioning') }}">
                         <i class="bi bi-plus"></i>
                     </a>
                 </div>
+                @endcan
 
-                @role('admin')
+                @can('deco.export')
                     <div>
                         <button type="button" class="btn btn-outline-primary mx-2" data-bs-toggle="modal" data-bs-target="#exportDecommissioningModal">
                             <i class="bi bi-file-earmark-spreadsheet"></i> Export
                         </button>
                     </div>
-                @endrole
+                @endcan
             </div>
 
             <div class="col-12">
@@ -39,7 +41,7 @@
     </div>
 </div>
 
-@role('admin')
+@can('deco.export')
     <div class="modal fade" id="exportDecommissioningModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
             <form method="GET" action="{{ route('exports.decommissionings') }}" class="modal-content">
@@ -82,4 +84,4 @@
             </form>
         </div>
     </div>
-@endrole
+@endcan

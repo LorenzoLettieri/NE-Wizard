@@ -2,7 +2,9 @@
 
 namespace App\Exports;
 
+use App\Exports\Concerns\RedactsColumns;
 use App\Models\PermessoEnte;
+use App\Models\User;
 use Illuminate\Support\Carbon;
 use Maatwebsite\Excel\Concerns\Exportable;
 use Maatwebsite\Excel\Concerns\FromQuery;
@@ -17,12 +19,17 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 class PermessiEnteExport implements FromQuery, WithMapping, WithHeadings, ShouldAutoSize, WithColumnFormatting, WithStyles
 {
     use Exportable;
+    use RedactsColumns;
+
+    private const FINANCE_HEADINGS = ['Mese Saldo', 'Al DL', 'A NE', 'Delta', 'VDC1', 'VDC2', 'VDC3', 'VDC4'];
+
+    private const OPERATOR_DATE_HEADINGS = ['Data PiC', 'Data Consegna', 'Data Completamento'];
 
     protected string $dateField;
     protected Carbon $start;
     protected Carbon $end;
 
-    public function __construct(string $dateField, $startDate, $endDate)
+    public function __construct(string $dateField, $startDate, $endDate, protected User $visibleTo)
     {
         $this->dateField = $dateField;
         $this->start = Carbon::parse($startDate)->startOfDay();
@@ -39,10 +46,22 @@ class PermessiEnteExport implements FromQuery, WithMapping, WithHeadings, Should
                 'users:id,name',
             ])
             ->whereBetween($this->dateField, [$this->start, $this->end])
+            ->when(
+                ! $this->visibleTo->canViewAllPermessiEnte(),
+                fn ($query) => $query->whereHas('users', fn ($users) => $users->where('users.id', $this->visibleTo->getKey()))
+            )
             ->orderBy('id');
     }
 
-    public function headings(): array
+    protected function hiddenHeadings(): array
+    {
+        return array_merge(
+            $this->visibleTo->canViewPermessiEnteFinance() ? [] : self::FINANCE_HEADINGS,
+            $this->visibleTo->canManagePermessiEnte() ? [] : self::OPERATOR_DATE_HEADINGS,
+        );
+    }
+
+    protected function allHeadings(): array
     {
         return [
             'Data creazione',           // A
@@ -81,7 +100,7 @@ class PermessiEnteExport implements FromQuery, WithMapping, WithHeadings, Should
         ];
     }
 
-    public function map($permesso): array
+    protected function allValues($permesso): array
     {
         $dt = fn($d) => $d ? Carbon::parse($d)->timezone('Europe/Rome') : null;
 
@@ -122,7 +141,7 @@ class PermessiEnteExport implements FromQuery, WithMapping, WithHeadings, Should
         ];
     }
 
-    public function columnFormats(): array
+    protected function allColumnFormats(): array
     {
         return [
             'A' => NumberFormat::FORMAT_DATE_DDMMYYYY,

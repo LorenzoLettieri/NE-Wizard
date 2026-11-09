@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Work;
 use App\Exports\WorksExport;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Maatwebsite\Excel\Facades\Excel;
@@ -17,18 +18,22 @@ class WorkController extends Controller
     }
 
     public function create(){
+        Gate::authorize('create', Work::class);
 
         return view('works.create');
     }
 
     public function edit($id){
         $work = Work::findOrFail($id);
+        Gate::authorize('update', $work);
 
         return view('works.edit', compact('work'));
     }
 
     public function delete(Request $request, Work $work){
-         $work->delete();
+        Gate::authorize('delete', $work);
+
+        $work->delete();
 
         return redirect()->back()->with('success', "Lavorazione #{$work->id} eliminata.");
     }
@@ -41,12 +46,12 @@ class WorkController extends Controller
             'end' => ['required', 'date', 'after_or_equal:start'],
         ]);
 
-        // Importi e tariffe restano riservati agli admin, come nella tabella
+        // Importi e tariffe restano riservati a chi vede la contabilità, come nella tabella
         $export = new WorksExport(
             $validated['date_field'],
             $validated['start'],
             $validated['end'],
-            includeAccounting: $request->user()->hasRole('admin'),
+            includeAccounting: $request->user()->canViewWorksFinance(),
         );
 
         $filename = sprintf(

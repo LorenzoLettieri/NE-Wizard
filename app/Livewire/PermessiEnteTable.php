@@ -3,6 +3,9 @@
 namespace App\Livewire;
 
 use Carbon\Carbon;
+use App\Livewire\Concerns\AuthorizesComponentAccess;
+use App\Models\User;
+use App\Support\Authorization\PermissionCatalog;
 use App\Models\Regione;
 use App\Support\StatusBadge;
 use Livewire\Attributes\On;
@@ -19,11 +22,18 @@ use Rappasoft\LaravelLivewireTables\Views\Filters\DateRangeFilter;
 
 class PermessiEnteTable extends DataTableComponent
 {
+    use AuthorizesComponentAccess;
+
+    protected function canAccessComponent(User $user): bool
+    {
+        return $user->can(PermissionCatalog::PERMESSI_ACCESS);
+    }
+
     public function builder(): Builder
     {
         $query = PermessoEnte::query()->with(['regione', 'comune', 'central', 'users'])->withCount('media');
 
-        if (Auth::user()->canManageAllPermessiEnte()) {
+        if (Auth::user()->canViewAllPermessiEnte()) {
             return $query;
         }
 
@@ -156,6 +166,11 @@ class PermessiEnteTable extends DataTableComponent
             0 => 'No',
         ];
 
+        // I filtri su importi e date operatore esistono solo per chi può vederli:
+        // un filtro registrato permetterebbe di ricavare i valori anche con la colonna nascosta
+        $canViewFinance = Auth::user()->canViewPermessiEnteFinance();
+        $canManage = Auth::user()->canManagePermessiEnte();
+
         return [
             TextFilter::make('Network', 'network_filter')
                 ->config(['placeholder' => 'Network'])
@@ -245,9 +260,11 @@ class PermessiEnteTable extends DataTableComponent
                 ->config(['locale' => 'it'])
                 ->filter(fn(Builder $builder, array $v) => $builder->whereDate('data_fl', '>=', $v['minDate'])->whereDate('data_fl', '<=', $v['maxDate'])),
 
-            DateRangeFilter::make('Data Completamento', 'completion_filter')
-                ->config(['locale' => 'it'])
-                ->filter(fn(Builder $builder, array $v) => $builder->whereDate('completion_date', '>=', $v['minDate'])->whereDate('completion_date', '<=', $v['maxDate'])),
+            ...($canManage ? [
+                DateRangeFilter::make('Data Completamento', 'completion_filter')
+                    ->config(['locale' => 'it'])
+                    ->filter(fn(Builder $builder, array $v) => $builder->whereDate('completion_date', '>=', $v['minDate'])->whereDate('completion_date', '<=', $v['maxDate'])),
+            ] : []),
 
             SelectFilter::make('RA', 'ra_filter')
                 ->options($siNoOptions)
@@ -261,40 +278,42 @@ class PermessiEnteTable extends DataTableComponent
                 ->config(['locale' => 'it'])
                 ->filter(fn(Builder $builder, array $v) => $builder->whereDate('evaso_dal_dl', '>=', $v['minDate'])->whereDate('evaso_dal_dl', '<=', $v['maxDate'])),
 
-            DateRangeFilter::make('Mese Saldo', 'mese_saldo_filter')
-                ->filter(fn(Builder $builder, array $v) => $builder->whereDate('mese_saldo', '>=', $v['minDate'])->whereDate('mese_saldo', '<=', $v['maxDate'])),
+            ...($canViewFinance ? [
+                DateRangeFilter::make('Mese Saldo', 'mese_saldo_filter')
+                    ->filter(fn(Builder $builder, array $v) => $builder->whereDate('mese_saldo', '>=', $v['minDate'])->whereDate('mese_saldo', '<=', $v['maxDate'])),
 
-            DateRangeFilter::make('Pagato DL', 'pagato_dl_filter')
-                ->config(['locale' => 'it'])
-                ->filter(fn(Builder $builder, array $v) => $builder->whereDate('pagato_dl', '>=', $v['minDate'])->whereDate('pagato_dl', '<=', $v['maxDate'])),
+                DateRangeFilter::make('Pagato DL', 'pagato_dl_filter')
+                    ->config(['locale' => 'it'])
+                    ->filter(fn(Builder $builder, array $v) => $builder->whereDate('pagato_dl', '>=', $v['minDate'])->whereDate('pagato_dl', '<=', $v['maxDate'])),
 
-            DateRangeFilter::make('Pagato NE', 'pagato_ne_filter')
-                ->config(['locale' => 'it'])
-                ->filter(fn(Builder $builder, array $v) => $builder->whereDate('pagato_ne', '>=', $v['minDate'])->whereDate('pagato_ne', '<=', $v['maxDate'])),
+                DateRangeFilter::make('Pagato NE', 'pagato_ne_filter')
+                    ->config(['locale' => 'it'])
+                    ->filter(fn(Builder $builder, array $v) => $builder->whereDate('pagato_ne', '>=', $v['minDate'])->whereDate('pagato_ne', '<=', $v['maxDate'])),
 
-            TextFilter::make('Al DL', 'al_dl_filter')
-                ->filter(fn(Builder $builder, $value) => $builder->where('al_dl', $value)),
+                TextFilter::make('Al DL', 'al_dl_filter')
+                    ->filter(fn(Builder $builder, $value) => $builder->where('al_dl', $value)),
 
-            TextFilter::make('A NE', 'a_ne_filter')
-                ->filter(fn(Builder $builder, $value) => $builder->where('a_ne', $value)),
+                TextFilter::make('A NE', 'a_ne_filter')
+                    ->filter(fn(Builder $builder, $value) => $builder->where('a_ne', $value)),
 
-            TextFilter::make('Delta', 'delta_filter')
-                ->filter(fn(Builder $builder, $value) => $builder->where('delta', $value)),
+                TextFilter::make('Delta', 'delta_filter')
+                    ->filter(fn(Builder $builder, $value) => $builder->where('delta', $value)),
 
+                TextFilter::make('VDC1', 'vdc1_filter')->filter(fn(Builder $builder, $v) => $builder->where('vdc1', $v)),
+                TextFilter::make('VDC2', 'vdc2_filter')->filter(fn(Builder $builder, $v) => $builder->where('vdc2', $v)),
+                TextFilter::make('VDC3', 'vdc3_filter')->filter(fn(Builder $builder, $v) => $builder->where('vdc3', $v)),
+                TextFilter::make('VDC4', 'vdc4_filter')->filter(fn(Builder $builder, $v) => $builder->where('vdc4', $v)),
+            ] : []),
 
-            TextFilter::make('VDC1', 'vdc1_filter')->filter(fn(Builder $builder, $v) => $builder->where('vdc1', $v)),
-            TextFilter::make('VDC2', 'vdc2_filter')->filter(fn(Builder $builder, $v) => $builder->where('vdc2', $v)),
-            TextFilter::make('VDC3', 'vdc3_filter')->filter(fn(Builder $builder, $v) => $builder->where('vdc3', $v)),
-            TextFilter::make('VDC4', 'vdc4_filter')->filter(fn(Builder $builder, $v) => $builder->where('vdc4', $v)),
+            ...($canManage ? [
+                DateRangeFilter::make('Presa in Carico', 'acception_filter')
+                    ->config(['locale' => 'it'])
+                    ->filter(fn(Builder $builder, array $v) => $builder->whereDate('acception_date', '>=', $v['minDate'])->whereDate('acception_date', '<=', $v['maxDate'])),
 
-
-            DateRangeFilter::make('Presa in Carico', 'acception_filter')
-                ->config(['locale' => 'it'])
-                ->filter(fn(Builder $builder, array $v) => $builder->whereDate('acception_date', '>=', $v['minDate'])->whereDate('acception_date', '<=', $v['maxDate'])),
-
-            DateRangeFilter::make('Consegna Op.', 'delivery_filter')
-                ->config(['locale' => 'it'])
-                ->filter(fn(Builder $builder, array $v) => $builder->whereDate('delivery_date', '>=', $v['minDate'])->whereDate('delivery_date', '<=', $v['maxDate'])),
+                DateRangeFilter::make('Consegna Op.', 'delivery_filter')
+                    ->config(['locale' => 'it'])
+                    ->filter(fn(Builder $builder, array $v) => $builder->whereDate('delivery_date', '>=', $v['minDate'])->whereDate('delivery_date', '<=', $v['maxDate'])),
+            ] : []),
 
             TextFilter::make('Operatori Assegnati', 'assigned_operators')
                 ->config(['placeholder' => 'Operatore'])
@@ -403,77 +422,71 @@ class PermessiEnteTable extends DataTableComponent
                 ->format(fn($v) => $v ? Carbon::parse($v)->format('d/m/Y') : '')
                 ->secondaryHeaderFilter('evaso_dl_filter'),
 
-            Column::make('Mese Saldo', 'mese_saldo')
-                ->format(fn($v) => $v ? Carbon::parse($v)->format('m/Y') : '')
-                ->secondaryHeaderFilter('mese_saldo_filter'),
+            // Colonne economiche e date operatore: aggiunte solo a chi può vederle, non solo nascoste,
+            // così non si possono nemmeno ordinare o filtrare dal browser
+            ...(Auth::user()->canViewPermessiEnteFinance() ? [
+                Column::make('Mese Saldo', 'mese_saldo')
+                    ->format(fn($v) => $v ? Carbon::parse($v)->format('m/Y') : '')
+                    ->secondaryHeaderFilter('mese_saldo_filter'),
 
-            Column::make('Al DL', 'al_dl')
-                ->format(fn($v) => number_format((float) $v, 2, ',', '.'))
-                ->hideIf(!Auth::user()->hasRole('admin'))
-                ->secondaryHeaderFilter('al_dl_filter'),
+                Column::make('Al DL', 'al_dl')
+                    ->format(fn($v) => number_format((float) $v, 2, ',', '.'))
+                    ->secondaryHeaderFilter('al_dl_filter'),
 
-            Column::make('A NE', 'a_ne')
-                ->format(fn($v) => number_format((float) $v, 2, ',', '.'))
-                ->hideIf(!Auth::user()->hasRole('admin'))
-                ->secondaryHeaderFilter('a_ne_filter'),
+                Column::make('A NE', 'a_ne')
+                    ->format(fn($v) => number_format((float) $v, 2, ',', '.'))
+                    ->secondaryHeaderFilter('a_ne_filter'),
 
-            Column::make('Delta', 'delta')
-                ->format(fn($v) => number_format((float) $v, 2, ',', '.'))
-                ->hideIf(!Auth::user()->hasRole('admin'))
-                ->secondaryHeaderFilter('delta_filter'),
+                Column::make('Delta', 'delta')
+                    ->format(fn($v) => number_format((float) $v, 2, ',', '.'))
+                    ->secondaryHeaderFilter('delta_filter'),
 
-            Column::make('Pagato DL', 'pagato_dl')
-                ->format(fn($v) => $v ? Carbon::parse($v)->format('d/m/Y') : '')
-                ->hideIf(!Auth::user()->hasRole('admin'))
-                ->sortable()
-                ->secondaryHeaderFilter('pagato_dl_filter'),
+                Column::make('Pagato DL', 'pagato_dl')
+                    ->format(fn($v) => $v ? Carbon::parse($v)->format('d/m/Y') : '')
+                    ->sortable()
+                    ->secondaryHeaderFilter('pagato_dl_filter'),
 
-            Column::make('Pagato NE', 'pagato_ne')
-                ->format(fn($v) => $v ? Carbon::parse($v)->format('d/m/Y') : '')
-                ->hideIf(!Auth::user()->hasRole('admin'))
-                ->sortable()
-                ->secondaryHeaderFilter('pagato_ne_filter'),
+                Column::make('Pagato NE', 'pagato_ne')
+                    ->format(fn($v) => $v ? Carbon::parse($v)->format('d/m/Y') : '')
+                    ->sortable()
+                    ->secondaryHeaderFilter('pagato_ne_filter'),
 
-            Column::make('VDC1', 'vdc1')
-                ->format(fn($v) => $v ?? 0)
-                ->hideIf(!Auth::user()->hasRole('admin'))
-                ->secondaryHeaderFilter('vdc1_filter'),
+                Column::make('VDC1', 'vdc1')
+                    ->format(fn($v) => $v ?? 0)
+                    ->secondaryHeaderFilter('vdc1_filter'),
 
-            Column::make('VDC2', 'vdc2')
-                ->format(fn($v) => $v ?? 0)
-                ->hideIf(!Auth::user()->hasRole('admin'))
-                ->secondaryHeaderFilter('vdc2_filter'),
+                Column::make('VDC2', 'vdc2')
+                    ->format(fn($v) => $v ?? 0)
+                    ->secondaryHeaderFilter('vdc2_filter'),
 
-            Column::make('VDC3', 'vdc3')
-                ->format(fn($v) => $v ?? 0)
-                ->hideIf(!Auth::user()->hasRole('admin'))
-                ->secondaryHeaderFilter('vdc3_filter'),
+                Column::make('VDC3', 'vdc3')
+                    ->format(fn($v) => $v ?? 0)
+                    ->secondaryHeaderFilter('vdc3_filter'),
 
-            Column::make('VDC4', 'vdc4')
-                ->format(fn($v) => $v ?? 0)
-                ->hideIf(!Auth::user()->hasRole('admin'))
-                ->secondaryHeaderFilter('vdc4_filter'),
+                Column::make('VDC4', 'vdc4')
+                    ->format(fn($v) => $v ?? 0)
+                    ->secondaryHeaderFilter('vdc4_filter'),
+            ] : []),
 
-            Column::make('Presa in Carico Op.', 'acception_date')
-                ->format(fn($v) => $v ? Carbon::parse($v)->format('d/m/Y H:i') : '-')
-                ->hideIf(!Auth::user()->hasRole('admin'))
-                ->sortable()
-                ->deselected()
-                ->secondaryHeaderFilter('acception_filter'),
+            ...(Auth::user()->canManagePermessiEnte() ? [
+                Column::make('Presa in Carico Op.', 'acception_date')
+                    ->format(fn($v) => $v ? Carbon::parse($v)->format('d/m/Y H:i') : '-')
+                    ->sortable()
+                    ->deselected()
+                    ->secondaryHeaderFilter('acception_filter'),
 
-            Column::make('Consegna Op.', 'delivery_date')
-                ->format(fn($v) => $v ? Carbon::parse($v)->format('d/m/Y H:i') : '-')
-                ->hideIf(!Auth::user()->hasRole('admin'))
-                ->sortable()
-                ->deselected()
-                ->secondaryHeaderFilter('delivery_filter'),
+                Column::make('Consegna Op.', 'delivery_date')
+                    ->format(fn($v) => $v ? Carbon::parse($v)->format('d/m/Y H:i') : '-')
+                    ->sortable()
+                    ->deselected()
+                    ->secondaryHeaderFilter('delivery_filter'),
 
-            Column::make('Fine Lavori Op.', 'completion_date')
-                ->format(fn($v) => $v ? Carbon::parse($v)->format('d/m/Y H:i') : '-')
-                ->hideIf(!Auth::user()->hasRole('admin'))
-                ->sortable()
-                ->deselected()
-                ->secondaryHeaderFilter('completion_filter'),
+                Column::make('Fine Lavori Op.', 'completion_date')
+                    ->format(fn($v) => $v ? Carbon::parse($v)->format('d/m/Y H:i') : '-')
+                    ->sortable()
+                    ->deselected()
+                    ->secondaryHeaderFilter('completion_filter'),
+            ] : []),
 
             Column::make('Allegati')
                 ->label(fn($row) => ($row->media_count ?? 0) > 0

@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use App\Livewire\Concerns\AuthorizesComponentAccess;
 use App\Livewire\Concerns\HandlesMediaUploads;
 use App\Models\Central;
 use App\Models\Company;
@@ -10,6 +11,7 @@ use App\Models\Comune;
 use App\Models\Decommissioning;
 use App\Models\Regione;
 use App\Models\User;
+use App\Support\Authorization\PermissionCatalog;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
@@ -20,7 +22,13 @@ use Livewire\WithFileUploads;
 
 class DecommissioningForm extends Component
 {
+    use AuthorizesComponentAccess;
     use AuthorizesRequests;
+
+    protected function canAccessComponent(User $user): bool
+    {
+        return $user->can(PermissionCatalog::DECO_ACCESS);
+    }
     use HandlesMediaUploads;
     use WithFileUploads;
 
@@ -99,7 +107,7 @@ class DecommissioningForm extends Component
     #[Computed]
     public function progettisti()
     {
-        return User::role('Deco')->orderBy('name')->pluck('name', 'id')->toArray();
+        return User::permission(PermissionCatalog::DECO_ASSIGNABLE)->orderBy('name')->pluck('name', 'id')->toArray();
     }
 
     #[Computed]
@@ -121,6 +129,7 @@ class DecommissioningForm extends Component
     {
         $this->isShow = false;
         $this->isEdit = true;
+        $this->authorize('update', Decommissioning::findOrFail($id));
         $this->loadDecommissioning($id);
     }
 
@@ -133,10 +142,12 @@ class DecommissioningForm extends Component
             return;
         }
 
-        if (auth()->check() && auth()->user()->hasRole('admin')) {
+        if ($this->canEditFinance()) {
             $this->syncEconomicFieldsWithQuantities();
-        } elseif (auth()->check()) {
-            // I non admin vedono solo i propri record: di default se ne assegnano la progettazione
+        }
+
+        if (auth()->check() && ! auth()->user()->canViewAllDecommissionings()) {
+            // Chi vede solo i propri record di default se ne assegna la progettazione
             $this->progettista_id = auth()->id();
         }
 
@@ -146,8 +157,7 @@ class DecommissioningForm extends Component
     public function updated($property): void
     {
         if (
-            auth()->check() &&
-            auth()->user()->hasRole('admin') &&
+            $this->canEditFinance() &&
             in_array($property, array_merge(['company_id'], $this->quantityFields()), true)
         ) {
             $this->syncEconomicFieldsWithQuantities();
@@ -201,16 +211,14 @@ class DecommissioningForm extends Component
             ? Decommissioning::findOrFail($this->decommissioningId)
             : new Decommissioning();
 
-        if ($this->isEdit) {
-            $this->authorize('update', $decommissioning);
-        }
+        $this->authorize($this->isEdit ? 'update' : 'create', $this->isEdit ? $decommissioning : Decommissioning::class);
 
-        if (! auth()->user()->hasRole('admin') && ! $this->progettista_id) {
+        if (! auth()->user()->canViewAllDecommissionings() && ! $this->progettista_id) {
             $this->progettista_id = auth()->id();
         }
 
         if ($this->progettista_id && ! array_key_exists((int) $this->progettista_id, $this->progettisti())) {
-            $this->addError('progettista_id', 'Il progettista selezionato non ha il ruolo Deco.');
+            $this->addError('progettista_id', 'Il progettista selezionato non è abilitato come progettista Deco.');
 
             return null;
         }
@@ -230,7 +238,7 @@ class DecommissioningForm extends Component
             'data_fl' => $this->emptyToNull($this->data_fl),
         ];
 
-        if (auth()->user()->hasRole('admin')) {
+        if ($this->canEditFinance()) {
             $data['val'] = $this->stringToBool($this->val);
         }
 
@@ -238,7 +246,7 @@ class DecommissioningForm extends Component
             $data[$field] = $this->normalizeIntegerField($this->$field);
         }
 
-        if (auth()->user()->hasRole('admin')) {
+        if ($this->canEditFinance()) {
             $data = array_merge($data, $this->economicPayloadFromAdminInputs());
         } else {
             $computed = $this->calculateEconomicFieldsFromQuantities();
@@ -323,26 +331,35 @@ class DecommissioningForm extends Component
             $this->$field = $decommissioning->$field;
         }
 
-        foreach ($this->progAmountFields() as $field) {
-            $this->$field = $decommissioning->$field ?? 0;
-        }
-
-        foreach ($this->neAmountFields() as $field) {
-            $this->$field = $decommissioning->$field ?? 0;
-        }
-
-        $this->tot_prog = $decommissioning->tot_prog ?? 0;
-        $this->tot_ne = $decommissioning->tot_ne ?? 0;
-        $this->agio = $decommissioning->agio ?? 0;
-        $this->pagata_prog = $this->boolToString($decommissioning->pagata_prog);
-        $this->pagata_ne = $this->boolToString($decommissioning->pagata_ne);
-        $this->val = $this->boolToString($decommissioning->val);
+        $this->loadFinanceFields($decommissioning);
 
         $this->refreshExistingMedia();
         $this->files = [];
         $this->initializeChunkedMediaUploads('decommissioning', $decommissioning->id);
         $this->clearUploadFeedback();
         $this->clearPendingMediaRemovals();
+    }
+
+    /**
+     * Le proprietà pubbliche finiscono nello snapshot Livewire della pagina: chi non vede la contabilità
+     * non deve riceverle nemmeno nascoste, quindi restano ai valori neutri.
+     */
+    private function loadFinanceFields(Decommissioning $decommissioning): void
+    {
+        $canView = auth()->user()?->canViewDecommissioningFinance() ?? false;
+
+        foreach (array_merge($this->progAmountFields(), $this->neAmountFields(), ['tot_prog', 'tot_ne', 'agio']) as $field) {
+            $this->$field = $canView ? ($decommissioning->$field ?? 0) : 0;
+        }
+
+        $this->pagata_prog = $canView ? $this->boolToString($decommissioning->pagata_prog) : '0';
+        $this->pagata_ne = $canView ? $this->boolToString($decommissioning->pagata_ne) : '0';
+        $this->val = $canView ? $this->boolToString($decommissioning->val) : '0';
+    }
+
+    private function canEditFinance(): bool
+    {
+        return auth()->user()?->canEditDecommissioningFinance() ?? false;
     }
 
     protected function refreshMediaAfterChunkedUpload(): void

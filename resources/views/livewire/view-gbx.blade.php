@@ -126,7 +126,7 @@
                             </div>
                         </div>
                     </div>
-                    @role('admin')
+                    @if (auth()->user()->canViewGbxFinance())
                     <div class="col-12">
                         <h6 class="text-muted text-uppercase small fw-bold">Contabilità</h6>
                         <div class="row text-center mt-2">
@@ -152,7 +152,7 @@
                             </div>
                         </div>
                     </div>
-                    @endrole
+                    @endif
 
         @else
                     <div class="text-center p-5">

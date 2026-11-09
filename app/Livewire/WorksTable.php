@@ -3,6 +3,8 @@
 namespace App\Livewire;
 
 use Carbon\Carbon;
+use App\Livewire\Concerns\AuthorizesComponentAccess;
+use App\Models\User;
 use App\Models\Work;
 use App\Models\Central;
 use App\Models\Company;
@@ -23,6 +25,13 @@ use Rappasoft\LaravelLivewireTables\Views\Filters\DateRangeFilter;
 
 class WorksTable extends DataTableComponent
 {
+    use AuthorizesComponentAccess;
+
+    protected function canAccessComponent(User $user): bool
+    {
+        return $user->canViewAllWorks();
+    }
+
     protected $model = Work::class;
 
     public function builder(): Builder
@@ -362,6 +371,6 @@ class WorksTable extends DataTableComponent
 
     protected function canViewAccountingColumns(): bool
     {
-        return auth()->check() && auth()->user()->hasRole('admin');
+        return auth()->user()?->canViewWorksFinance() ?? false;
     }
 }

@@ -33,7 +33,7 @@ class TimesheetDetailsSheet implements FromCollection, WithHeadings, WithStyles,
 
     public function collection()
     {
-        $users = User::role('operator')->orderBy('name')->get();
+        $users = User::permission(\App\Support\Authorization\PermissionCatalog::TIMESHEETS_TRACKED)->orderBy('name')->get();
         $startOfMonth = Carbon::create($this->year, $this->month, 1)->startOfMonth();
         $endOfMonth = $startOfMonth->copy()->endOfMonth();
         $period = CarbonPeriod::create($startOfMonth, $endOfMonth);

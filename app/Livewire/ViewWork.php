@@ -2,7 +2,10 @@
 
 namespace App\Livewire;
 
+use App\Livewire\Concerns\AuthorizesComponentAccess;
+use App\Models\User;
 use App\Models\Work;
+use App\Support\Authorization\PermissionCatalog;
 use Carbon\Carbon;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Livewire\Component;
@@ -10,7 +13,16 @@ use Livewire\Attributes\On;
 
 class ViewWork extends Component
 {
+    use AuthorizesComponentAccess;
     use AuthorizesRequests;
+
+    // Il modale è nella tabella Lavorazioni, nella bacheca operatore e nella vista admin dell'operatore
+    protected function canAccessComponent(User $user): bool
+    {
+        return $user->canViewAllWorks()
+            || $user->isWorksOperator()
+            || $user->can(PermissionCatalog::OPERATORS_WORKSPACE);
+    }
 
     public $work;
     public $operators;

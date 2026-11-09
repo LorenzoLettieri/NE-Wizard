@@ -105,7 +105,7 @@ class WorkPhaseFeatureTest extends TestCase
         $phase = WorkPhase::create(['name' => 'FASE TEST']);
         Work::create(['work_phase_id' => $phase->id]);
 
-        Livewire::test(AdminBaseTables::class)
+        Livewire::actingAs($this->superAdmin())->test(AdminBaseTables::class)
             ->call('setTab', 'WorkPhase')
             ->call('deleteRecord', $phase->id);
 
@@ -333,7 +333,7 @@ class WorkPhaseFeatureTest extends TestCase
         $company = Company::create(['name' => 'SIRTI']);
         $phase = WorkPhase::create(['name' => 'FASE TEST']);
 
-        Livewire::test(AdminBaseTables::class)
+        Livewire::actingAs($this->superAdmin())->test(AdminBaseTables::class)
             ->call('setTab', 'CompanyWorkPhaseRate')
             ->set("rateValues.{$company->id}.{$phase->id}", '18.75')
             ->call('saveRate', $company->id, $phase->id);

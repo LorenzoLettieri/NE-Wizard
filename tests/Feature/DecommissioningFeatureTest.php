@@ -105,7 +105,7 @@ class DecommissioningFeatureTest extends TestCase
     {
         $company = Company::create(['name' => 'Impresa Deco']);
 
-        Livewire::test(AdminBaseTables::class)
+        Livewire::actingAs($this->superAdmin())->test(AdminBaseTables::class)
             ->call('setTab', 'CompanyDecommissioningRate')
             ->set("decommissioningRateValues.{$company->id}.2.prog_price", '88,50')
             ->set("decommissioningRateValues.{$company->id}.2.ne_price", '120.75')

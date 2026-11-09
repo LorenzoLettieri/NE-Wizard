@@ -4,21 +4,23 @@
             <div class="col-12 mt-3 d-flex justify-content-center align-items-center">
                 <h1 class="text-center mx-3">Tabella GBX</h1>
 
+                @can('create', \App\Models\Gbx::class)
                 <div>
                     <a type="button" class="btn btn-success mx-2" href="{{ route('addGbx') }}">
                         <i class="bi bi-plus"></i>
                     </a>
                 </div>
+                @endcan
 
                 {{-- Export button --}}
-                @role('admin')
+                @can('gbx.export')
                 <div>
                     <button type="button" class="btn btn-outline-primary mx-2" data-bs-toggle="modal"
                         data-bs-target="#exportGbxModal">
                         <i class="bi bi-file-earmark-spreadsheet"></i> Export
                     </button>
                 </div>
-                @endrole
+                @endcan
             </div>
 
             <div class="col-12">

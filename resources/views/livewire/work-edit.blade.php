@@ -24,7 +24,7 @@
                     <label for="company" class="form-label">Compagnia</label>
                     <x-tom-select model="company_id" :options="$companies->pluck('name', 'id')" />
                 </div>
-                @role('admin|supervisor')
+                @if (auth()->user()->canManageWorks())
                 <div class="col-12 col-md-4 mb-4">
                     <label for="status" class="form-label">Stato Lavorazione:</label>
                     <select wire:model="status" class="form-select">
@@ -36,7 +36,7 @@
                         @endforeach
                     </select>
                 </div>
-                @endrole
+                @endif
                 <div class="col-12 col-md-4 mb-4">
                     <label for="" class="form-label">Centrale:</label>
                     <x-tom-select model="central_id" remote="centrals" placeholder="-- Cerca centrale --" />
@@ -104,9 +104,9 @@
                     <label for="suspension_history" class="form-label">Storico Sospensioni:</label>
                     <textarea class="form-control" id="suspension_history" rows="5" wire:model="suspension_history"></textarea>
                 </div>
-                @role('admin|supervisor')
+                @if (auth()->user()->canManageWorks())
                     @include('livewire.partials.work-suspensions-editor')
-                @endrole
+                @endif
                   <div class="col-12 col-md-12 mb-4">
                     <label for="phase" class="form-label">Assegna Lavorazione ad Operatore:</label>
                     <x-tom-select model="operator_id" :options="$operators->pluck('name', 'id')" multiple />

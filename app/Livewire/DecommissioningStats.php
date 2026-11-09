@@ -5,6 +5,8 @@ namespace App\Livewire;
 use App\Models\Company;
 use App\Models\Decommissioning;
 use App\Models\User;
+use App\Support\Authorization\PermissionCatalog;
+use App\Livewire\Concerns\AuthorizesComponentAccess;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -12,6 +14,14 @@ use Livewire\Component;
 
 class DecommissioningStats extends Component
 {
+    use AuthorizesComponentAccess;
+
+    // Il report è fatto di totali economici
+    protected function canAccessComponent(User $user): bool
+    {
+        return $user->canViewDecommissioningReport();
+    }
+
     private const TIMEZONE = 'Europe/Rome';
     private const COUNTED_STATUSES = [
         'in_progress_count' => 'In Lavorazione',
@@ -43,7 +53,7 @@ class DecommissioningStats extends Component
         return view('livewire.decommissioning-stats', [
             'rows' => $rows,
             'summary' => $this->buildSummary($rows),
-            'designerOptions' => User::role('Deco')->orderBy('name')->get(['id', 'name']),
+            'designerOptions' => User::permission(PermissionCatalog::DECO_ASSIGNABLE)->orderBy('name')->get(['id', 'name']),
             'companyOptions' => Company::orderBy('name')->get(['id', 'name']),
         ]);
     }
@@ -68,7 +78,7 @@ class DecommissioningStats extends Component
 
     private function resolveDesigners(): Collection
     {
-        return User::role('Deco')
+        return User::permission(PermissionCatalog::DECO_ASSIGNABLE)
             ->when($this->designerId !== '', fn (Builder $query) => $query->whereKey($this->designerId))
             ->orderBy('name')
             ->get();

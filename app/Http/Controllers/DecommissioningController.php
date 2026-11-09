@@ -18,6 +18,8 @@ class DecommissioningController extends Controller
 
     public function create()
     {
+        Gate::authorize('create', Decommissioning::class);
+
         return view('decommissionings.create');
     }
 
@@ -46,10 +48,12 @@ class DecommissioningController extends Controller
             'end' => 'required|date|after_or_equal:start',
         ]);
 
+        // Importi, pagamenti e Val restano riservati a chi vede la contabilità, come nella tabella
         $export = new DecommissioningExport(
             $validated['date_field'],
             $validated['start'],
-            $validated['end']
+            $validated['end'],
+            visibleTo: $request->user(),
         );
 
         $filename = sprintf(

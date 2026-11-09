@@ -47,7 +47,7 @@
                         <li class="list-group-item d-flex justify-content-between"><span>Stato</span><span class="badge {{ $status === 'Annullato' ? 'text-bg-danger' : 'bg-primary' }}">{{ $status ?? 'Da Lavorare' }}</span></li>
                         <li class="list-group-item d-flex justify-content-between"><span>Data IL</span><strong>{{ $data_il ? \Carbon\Carbon::parse($data_il)->format('d/m/Y') : '-' }}</strong></li>
                         <li class="list-group-item d-flex justify-content-between"><span>Data FL</span><strong>{{ $data_fl ? \Carbon\Carbon::parse($data_fl)->format('d/m/Y') : '-' }}</strong></li>
-                        @role('admin')
+                        @can('deco.finance.view')
                             <li class="list-group-item d-flex justify-content-between align-items-center"><span>Val</span>
                                 @if ($val === '1')
                                     <span class="badge rounded-pill text-bg-success"><i class="bi bi-check-lg"></i> Vero</span>
@@ -55,7 +55,7 @@
                                     <span class="badge rounded-pill text-bg-danger"><i class="bi bi-x-lg"></i> Falso</span>
                                 @endif
                             </li>
-                        @endrole
+                        @endcan
                     </ul>
                 </div>
 
@@ -101,7 +101,7 @@
                     @endif
                 </div>
 
-                @role('admin')
+                @can('deco.finance.view')
                     <div class="col-12">
                         <h6 class="text-muted text-uppercase small fw-bold border-bottom pb-2">Contabilità Admin</h6>
                         <div class="row g-3 mt-2">
@@ -150,7 +150,7 @@
                             </div>
                         </div>
                     </div>
-                @endrole
+                @endcan
             </div>
         @else
             <form wire:submit.prevent="save">
@@ -218,7 +218,7 @@
                         </div>
                     </div>
 
-                    @role('admin')
+                    @if (auth()->user()->canEditDecommissioningFinance())
                         <div class="row g-3 mb-4">
                             <div class="col-md-4">
                                 <label class="form-label">Val</label>
@@ -228,7 +228,7 @@
                                 </select>
                             </div>
                         </div>
-                    @endrole
+                    @endif
 
                     <div class="row g-3 mb-4">
                         <div class="col-12">
@@ -247,7 +247,7 @@
                         @endforeach
                     </div>
 
-                    @role('admin')
+                    @if (auth()->user()->canEditDecommissioningFinance())
                         <h4 class="mt-5 mb-4 border-bottom pb-2">Contabilità Admin</h4>
                         <div class="row g-3 mb-4">
                             @for ($i = 1; $i <= 6; $i++)
@@ -298,7 +298,7 @@
                                 </select>
                             </div>
                         </div>
-                    @endrole
+                    @endif
 
                     <h4 class="mt-5 mb-4 border-bottom pb-2">Media</h4>
                     <div class="row g-3">

@@ -16,9 +16,12 @@ use Illuminate\Support\Carbon;
 use App\Livewire\Concerns\HandlesMediaUploads;
 use App\Livewire\Concerns\HandlesWorkFields;
 use App\Livewire\Concerns\HandlesWorkSuspensions;
+use App\Livewire\Concerns\AuthorizesComponentAccess;
+use App\Support\Authorization\PermissionCatalog;
 
 class EditWork extends Component
 {
+    use AuthorizesComponentAccess;
     use AuthorizesRequests;
     use WithFileUploads;
     use HandlesMediaUploads;
@@ -36,6 +39,12 @@ class EditWork extends Component
     public $company_id, $central_id, $operator_id, $status, $network, $ao_cno, $ntw_scope, $network_scope_id, $description, $type, $phase, $work_phase_id, $company_assistant, $nroe, $wo_number, $unica_number, $notes, $tempo_daphne, $expected_delivery_date;
     public $go_live, $date_in_str, $date_out_str;
     public $daphne = '0';
+
+    // Il modale è nella tabella Lavorazioni e nella bacheca operatore; ogni record è poi autorizzato con la policy
+    protected function canAccessComponent(User $user): bool
+    {
+        return $user->canViewAllWorks() || $user->isWorksOperator();
+    }
 
     #[On('edit-work')]
     public function editWork($id)
@@ -128,7 +137,7 @@ class EditWork extends Component
         $this->companies = Company::all();
         $this->workPhases = WorkPhase::orderBy('name')->get();
         $this->networkScopes = NetworkScope::orderBy('name')->get();
-        $this->operators = User::permission('get works')->get();
+        $this->operators = User::permission(PermissionCatalog::WORKS_OPERATE)->get();
     }
 
     protected function rules(): array

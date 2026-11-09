@@ -8,21 +8,23 @@
                 onclick="Livewire.dispatch('view-gbx', {id: {{$row->id}}})">
                 <i class="bi bi-eye me-2"></i> Dettaglio
             </button></li>
+        @can('update', $row)
         <li><button type="button" class="dropdown-item text-warning" data-bs-toggle="modal" data-bs-target="#editGbxModal"
                 onclick="Livewire.dispatch('edit-gbx', {id: {{$row->id}}})">
                 <i class="bi bi-pencil me-2"></i> Modifica
             </button></li>
-        @role('admin')
+        @endcan
+        @can('delete', $row)
         <li>
             <hr class="dropdown-divider">
         </li>
         <li><button type="button" class="dropdown-item text-danger" data-bs-toggle="modal" data-bs-target="#deleteGbxModal{{$row->id}}">
                 <i class="bi bi-trash me-2"></i> Elimina
             </button></li>
-        @endrole
+        @endcan
     </ul>
 
-    @role('admin')
+    @can('delete', $row)
     <!-- Modal -->
     <div class="modal fade" id="deleteGbxModal{{$row->id}}" tabindex="-1" aria-labelledby="deleteGbxModalLabel"
         aria-hidden="true">
@@ -44,6 +46,6 @@
             </div>
         </div>
     </div>
-    @endrole
+    @endcan
 
 </div>

@@ -15,28 +15,30 @@
       </button>
     </li>
 
-    {{-- MODIFICA: Per tutti --}}
+    {{-- MODIFICA: chi può modificare il record --}}
+    @can('update', $row)
     <li>
       <button type="button" class="dropdown-item text-warning" data-bs-toggle="modal" data-bs-target="#editModal"
         onclick="Livewire.dispatch('edit-permesso', {id: {{ $row->id }}})">
         <i class="bi bi-pencil me-2"></i> Modifica
       </button>
     </li>
+    @endcan
 
     {{-- DUPLICA: Solo Admin --}}
-    @role('admin')
+    @can('duplicate', $row)
     <li>
       <button type="button" class="dropdown-item"
         onclick="if (confirm('Duplicare il permesso #{{ $row->id }}? Verrà creata una copia in stato Da Lavorare.')) Livewire.dispatch('duplicate-permesso', {id: {{ $row->id }}})">
         <i class="bi bi-files me-2"></i> Duplica
       </button>
     </li>
-    @endrole
+    @endcan
 
     <li><hr class="dropdown-divider"></li>
 
     {{-- PRENDI IN CARICO: Solo ruolo 'permessi ente' e se stato è 'Da Lavorare' --}}
-    @role('permessi ente')
+    @can('take', $row)
     @if ($row->status == 'Da Lavorare')
       <li>
         <button type="button" class="dropdown-item text-primary" onclick="Livewire.dispatch('take-permesso', {id: {{ $row->id }}})">
@@ -44,10 +46,10 @@
         </button>
       </li>
     @endif
-    @endrole
+    @endcan
 
     {{-- CONSEGNA LAVORAZIONE: Se stato è 'In Lavorazione' --}}
-    @if ($row->status == 'In Lavorazione')
+    @if ($row->status == 'In Lavorazione' && auth()->user()?->can('deliver', $row))
       <li>
         <button type="button" class="dropdown-item text-warning"
           onclick="if (confirm('Consegnare il permesso #{{ $row->id }}?')) Livewire.dispatch('consegna-permesso', {id: {{ $row->id }}})">
@@ -57,7 +59,7 @@
     @endif
 
     {{-- FINE LAVORI: Solo Admin e se stato è 'Consegnato' (anche se salvato come 'Consegnata') --}}
-    @role('admin')
+    @can('complete', $row)
     @if ($isDelivered)
       <li>
         <button type="button" class="dropdown-item text-success"
@@ -66,21 +68,21 @@
         </button>
       </li>
     @endif
-    @endrole
+    @endcan
 
     {{-- ELIMINA: Solo Admin --}}
-    @role('admin')
+    @can('delete', $row)
     <li><hr class="dropdown-divider"></li>
     <li>
       <button type="button" class="dropdown-item text-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ $row->id }}">
         <i class="bi bi-trash me-2"></i> Elimina
       </button>
     </li>
-    @endrole
+    @endcan
   </ul>
 
   {{-- Modal Elimina (ID unico per riga) --}}
-  @role('admin')
+  @can('delete', $row)
   <div class="modal fade" id="deleteModal{{ $row->id }}" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content">
@@ -99,5 +101,5 @@
       </div>
     </div>
   </div>
-  @endrole
+  @endcan
 </div>

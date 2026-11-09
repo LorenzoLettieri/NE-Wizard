@@ -192,7 +192,7 @@
             </div>
         </div>
     @endif
-    @role('admin')
+    @if ($canViewActivity)
     <div class="card border-0 shadow-sm mb-4">
         <div class="card-body">
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
@@ -468,7 +468,7 @@
             @endif
         </div>
     </div>
-    @endrole
+    @endif
     {{-- Versione fissata (quella servita dal CDN al momento del fix): un aggiornamento va provato, non subito in produzione --}}
     <script src="https://cdn.jsdelivr.net/npm/apexcharts@8.5.0/dist/apexcharts.min.js"></script>
     <script>

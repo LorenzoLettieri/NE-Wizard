@@ -1,42 +1,27 @@
 <div>
-    <!-- Tabs Navigation -->
+    <!-- Tabs Navigation: solo le schede consentite dai permessi -->
+    @php
+        $tabLabels = [
+            'Central' => 'Centrali',
+            'Comune' => 'Comuni',
+            'Regione' => 'Regioni',
+            'Company' => 'Company',
+            'WorkPhase' => 'Fasi Lavoro',
+            'NetworkScope' => 'Ambiti Network',
+            'CompanyWorkPhaseRate' => 'Matrice Prezzi',
+            'CompanyDecommissioningRate' => 'Matrice Prezzi Decommissioning',
+            'ProductionTarget' => 'Target Produzione',
+        ];
+    @endphp
     <ul class="nav nav-tabs mb-4">
-        <li class="nav-item">
-            <a class="nav-link cursor-pointer {{ $activeTab === 'Central' ? 'active' : '' }}" 
-               wire:click="setTab('Central')">Centrali</a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link cursor-pointer {{ $activeTab === 'Comune' ? 'active' : '' }}" 
-               wire:click="setTab('Comune')">Comuni</a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link cursor-pointer {{ $activeTab === 'Regione' ? 'active' : '' }}" 
-               wire:click="setTab('Regione')">Regioni</a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link cursor-pointer {{ $activeTab === 'Company' ? 'active' : '' }}" 
-               wire:click="setTab('Company')">Company</a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link cursor-pointer {{ $activeTab === 'WorkPhase' ? 'active' : '' }}"
-               wire:click="setTab('WorkPhase')">Fasi Lavoro</a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link cursor-pointer {{ $activeTab === 'NetworkScope' ? 'active' : '' }}"
-               wire:click="setTab('NetworkScope')">Ambiti Network</a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link cursor-pointer {{ $activeTab === 'CompanyWorkPhaseRate' ? 'active' : '' }}"
-               wire:click="setTab('CompanyWorkPhaseRate')">Matrice Prezzi</a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link cursor-pointer {{ $activeTab === 'CompanyDecommissioningRate' ? 'active' : '' }}"
-               wire:click="setTab('CompanyDecommissioningRate')">Matrice Prezzi Decommissioning</a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link cursor-pointer {{ $activeTab === 'ProductionTarget' ? 'active' : '' }}"
-               wire:click="setTab('ProductionTarget')">Target Produzione</a>
-        </li>
+        @foreach ($tabLabels as $tab => $tabLabel)
+            @if ($this->canUseTab($tab))
+                <li class="nav-item">
+                    <a class="nav-link cursor-pointer {{ $activeTab === $tab ? 'active' : '' }}"
+                       wire:click="setTab('{{ $tab }}')">{{ $tabLabel }}</a>
+                </li>
+            @endif
+        @endforeach
     </ul>
 
     <!-- Action Bar -->

@@ -10,24 +10,26 @@
                 <i class="bi bi-eye me-2"></i> Dettaglio
             </a>
         </li>
+        @can('update', $row)
         <li>
             <a class="dropdown-item text-warning" href="#" data-bs-toggle="modal" data-bs-target="#editModal"
                 onclick="Livewire.dispatch('edit-decommissioning', {id: {{ $row->id }}})">
                 <i class="bi bi-pencil me-2"></i> Modifica
             </a>
         </li>
+        @endcan
 
-        @role('admin')
+        @can('delete', $row)
             <li><hr class="dropdown-divider"></li>
             <li>
                 <a class="dropdown-item text-danger" href="#" data-bs-toggle="modal" data-bs-target="#deleteDecommissioningModal{{ $row->id }}">
                     <i class="bi bi-trash me-2"></i> Elimina
                 </a>
             </li>
-        @endrole
+        @endcan
     </ul>
 
-    @role('admin')
+    @can('delete', $row)
         <div class="modal fade" id="deleteDecommissioningModal{{ $row->id }}" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog">
                 <div class="modal-content">
@@ -47,5 +49,5 @@
                 </div>
             </div>
         </div>
-    @endrole
+    @endcan
 </div>

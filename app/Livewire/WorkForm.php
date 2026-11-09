@@ -10,14 +10,22 @@ use App\Models\WorkPhase;
 use Carbon\Carbon;
 use Livewire\Component;
 use Livewire\WithFileUploads;
+use App\Livewire\Concerns\AuthorizesComponentAccess;
 use App\Livewire\Concerns\HandlesMediaUploads;
 use App\Livewire\Concerns\HandlesWorkFields;
+use App\Support\Authorization\PermissionCatalog;
 
 class WorkForm extends Component
 {
+    use AuthorizesComponentAccess;
     use WithFileUploads;
     use HandlesMediaUploads;
     use HandlesWorkFields;
+
+    protected function canAccessComponent(User $user): bool
+    {
+        return $user->can('create', Work::class);
+    }
 
     public $operators;
     public $companies, $workPhases, $networkScopes;
@@ -39,7 +47,10 @@ class WorkForm extends Component
         $this->validate($this->rules());
 
         $work = Work::create($this->workPayload());
-        $work->users()->attach($this->selectedOperatorIds(), ['created_at' => Carbon::now()]);
+
+        if ($this->canManageAdministrativeFields()) {
+            $work->users()->attach($this->selectedOperatorIds(), ['created_at' => Carbon::now()]);
+        }
 
         if ($this->files) {
             $this->persistUploadedFiles($work, 'works_media');
@@ -57,7 +68,7 @@ class WorkForm extends Component
         $this->companies = Company::all();
         $this->workPhases = WorkPhase::orderBy('name')->get();
         $this->networkScopes = NetworkScope::orderBy('name')->get();
-        $this->operators = User::permission('get works')->get();
+        $this->operators = User::permission(PermissionCatalog::WORKS_OPERATE)->get();
         $this->initializeChunkedMediaUploads('work');
     }
 
@@ -80,10 +91,13 @@ class WorkForm extends Component
 
     protected function workPayload(): array
     {
+        // Stato, data prevista e operatori sono campi di gestione: senza works.manage si parte dai valori di default
+        $canManage = $this->canManageAdministrativeFields();
+
         return array_merge([
             'company_id' => $this->blankToNull($this->company_id),
             'central_id' => $this->blankToNull($this->central_id),
-            'status' => $this->status,
+            'status' => $canManage ? $this->status : 'Da Lavorare',
             'network' => $this->network,
             'ao_cno' => $this->ao_cno,
             'ntw_scope' => $this->selectedNetworkScopeName(),
@@ -102,7 +116,7 @@ class WorkForm extends Component
             'date_in_str' => $this->date_in_str,
             'date_out_str' => $this->date_out_str,
             'notes' => $this->notes,
-            'expected_delivery_date' => $this->blankToNull($this->expected_delivery_date),
+            'expected_delivery_date' => $canManage ? $this->blankToNull($this->expected_delivery_date) : null,
         ], $this->accountingPayload());
     }
 

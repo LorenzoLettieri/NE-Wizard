@@ -3,15 +3,20 @@
 namespace App\Livewire;
 
 use App\Models\Gbx;
+use App\Models\User;
 use App\Models\Company;
 use Livewire\Component;
 use Livewire\WithFileUploads;
+use App\Livewire\Concerns\AuthorizesComponentAccess;
 use App\Livewire\Concerns\HandlesMediaUploads;
 
 class GbxForm extends Component
 {
+    use AuthorizesComponentAccess;
     use WithFileUploads;
     use HandlesMediaUploads;
+
+    public const FINANCE_FIELDS = ['value', 'company_paid', 'bezzi_paid', 'project_paid', 'dl_paid'];
 
     public $companies;
     public $company_id, $network, $SDF, $central_id, $comune, $client, $coordinates;
@@ -22,6 +27,11 @@ class GbxForm extends Component
     public $is_adeguate = 0, $permissions = 0, $CO_advancement = 0;
     public $value, $company_paid, $bezzi_paid, $project_paid, $dl_paid;
     public $inspection_notes, $permission_notes, $project_notes, $client_notes;
+
+    protected function canAccessComponent(User $user): bool
+    {
+        return $user->can('create', Gbx::class);
+    }
 
     public function mount()
     {
@@ -43,7 +53,7 @@ class GbxForm extends Component
             'date' => 'nullable|date',
         ] + $this->mediaUploadValidationRules());
 
-        $gbx = Gbx::create($this->except([
+        $data = $this->except([
             'centrals',
             'companies',
             'files',
@@ -53,7 +63,14 @@ class GbxForm extends Component
             'mediaUploadModelId',
             'mediaUploadFormToken',
             'completedUploadSessionIds',
-        ]));
+        ]);
+
+        // Valore e pagamenti si scrivono solo con il permesso di modifica della contabilità
+        if (! auth()->user()->canEditGbxFinance()) {
+            $data = array_diff_key($data, array_flip(self::FINANCE_FIELDS));
+        }
+
+        $gbx = Gbx::create($data);
 
         if ($this->files) {
             $this->persistUploadedFiles($gbx, 'gbx_media');

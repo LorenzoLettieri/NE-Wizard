@@ -2,10 +2,8 @@
 
 namespace Database\Seeders;
 
+use App\Support\Authorization\PermissionCatalog;
 use Illuminate\Database\Seeder;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 
 class RoleSeeder extends Seeder
 {
@@ -14,20 +12,7 @@ class RoleSeeder extends Seeder
      */
     public function run(): void
     {
-        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
-
-        Permission::firstOrCreate(["name" => "get works"]);
-        Permission::firstOrCreate(["name" => "get permessi ente"]);
-        Permission::firstOrCreate(["name" => "get gbx"]);
-        Permission::firstOrCreate(["name" => "get decommissioning"]);
-
-        Role::firstOrCreate(['name' => 'admin'])->givePermissionTo(['get gbx', 'get decommissioning']);
-        Role::firstOrCreate(['name' => 'supervisor'])->givePermissionTo('get works');
-        Role::firstOrCreate(['name' => 'operator'])->givePermissionTo('get works');
-        Role::firstOrCreate(['name' => 'freelance operator'])->givePermissionTo('get works');
-        Role::firstOrCreate(['name' => 'permessi ente'])->givePermissionTo('get permessi ente');
-        Role::firstOrCreate(['name' => 'GBX'])->givePermissionTo('get gbx');
-        Role::firstOrCreate(['name' => 'GBX Supervisor'])->givePermissionTo('get gbx');
-        Role::firstOrCreate(['name' => 'Deco'])->givePermissionTo('get decommissioning');
+        PermissionCatalog::sync();
+        PermissionCatalog::grantDefaults(createRoles: true);
     }
 }

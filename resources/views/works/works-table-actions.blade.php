@@ -8,14 +8,19 @@
         onclick="Livewire.dispatch('view-work', {id: {{$row->id}}})">
         <i class="bi bi-eye me-2"></i> Dettaglio
       </button></li>
+    @can('update', $row)
     <li><button type="button" class="dropdown-item text-warning" data-bs-toggle="modal" data-bs-target="#editModal"
         onclick="Livewire.dispatch('edit-work', {id: {{$row->id}}})">
         <i class="bi bi-pencil me-2"></i> Modifica
       </button></li>
+    @endcan
+    @can('duplicate', $row)
     <li><button type="button" class="dropdown-item"
         onclick="if (confirm('Duplicare la lavorazione #{{ $row->id }}? Verrà creata una copia in stato Da Lavorare.')) Livewire.dispatch('duplicate-work', {id: {{$row->id}}})">
         <i class="bi bi-files me-2"></i> Duplica
       </button></li>
+    @endcan
+    @can('complete', $row)
     @if ($row->status !== 'Fine Lavori')
       <li>
         <hr class="dropdown-divider">
@@ -25,16 +30,20 @@
           <i class="bi bi-check-circle me-2"></i> Fine Lavori
         </button></li>
     @endif
+    @endcan
+    @can('delete', $row)
     <li>
       <hr class="dropdown-divider">
     </li>
     <li><button type="button" class="dropdown-item text-danger" data-bs-toggle="modal" data-bs-target="#deleteWorkModal{{ $row->id }}">
         <i class="bi bi-trash me-2"></i> Elimina
       </button></li>
+    @endcan
 
 
   </ul>
 
+  @can('delete', $row)
   <!-- Modal: l'id contiene la riga, altrimenti Bootstrap aprirebbe sempre il modal della prima riga -->
   <div class="modal fade" id="deleteWorkModal{{ $row->id }}" tabindex="-1" aria-labelledby="deleteWorkModalLabel{{ $row->id }}" aria-hidden="true">
     <div class="modal-dialog">
@@ -55,5 +64,7 @@
       </div>
     </div>
   </div>
+
+  @endcan
 
 </div>

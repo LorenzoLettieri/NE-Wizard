@@ -118,7 +118,7 @@
                         <textarea class="form-control" wire:model="client_notes" rows="3"></textarea>
                     </div>
                 </div>
-                @role('admin')
+                @if (auth()->user()->canEditGbxFinance())
                 <div class="col-md-2">
                     <label class="form-label">Valore</label>
                     <input type="number" step="0.01" class="form-control" wire:model="value">
@@ -142,7 +142,7 @@
                         <span class="input-group-text">€</span>
                     </div>
                 </div>
-                @endrole
+                @endif
 
                 <h4 class="mt-5 mb-4 border-bottom pb-2">Media</h4>
                 <div class="row g-3">

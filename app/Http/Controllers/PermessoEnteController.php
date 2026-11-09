@@ -19,6 +19,8 @@ class PermessoEnteController extends Controller
 
     public function create()
     {
+        Gate::authorize('create', PermessoEnte::class);
+
         return view('permessi_ente.create');
     }
 
@@ -56,7 +58,13 @@ class PermessoEnteController extends Controller
             'end' => ['required', 'date', 'after_or_equal:start'],
         ]);
 
-        $export = new PermessiEnteExport($validated['date_field'], $validated['start'], $validated['end']);
+        // Importi e date operatore restano riservati a chi può vederli, come nella tabella
+        $export = new PermessiEnteExport(
+            $validated['date_field'],
+            $validated['start'],
+            $validated['end'],
+            visibleTo: $request->user(),
+        );
 
         $filename = sprintf(
             'permessi_ente_%s_%s_%s.xlsx',

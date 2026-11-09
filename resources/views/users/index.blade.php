@@ -3,10 +3,10 @@
         <div class="row justify-content-center">
             <div class="col-12 mt-3 d-flex justify-content-center align-items-center">
                 <h1 class="text-center mx-3">Report Operatori</h1>
-                @hasanyrole('admin')
+                @if (auth()->user()->isSuperAdmin())
                 <div><a type="button" class="btn btn-primary mx-3" href="{{route('accounts-table')}}"> <i
                             class="bi bi-gear-fill"></i> </a></div>
-                @endhasanyrole
+                @endif
             </div>
             <div class="col-12 col-md-10">
                 @if (session('message'))

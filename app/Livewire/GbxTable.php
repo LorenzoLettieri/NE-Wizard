@@ -2,7 +2,10 @@
 namespace App\Livewire;
 
 use Carbon\Carbon;
+use App\Livewire\Concerns\AuthorizesComponentAccess;
 use App\Models\Gbx;
+use App\Models\User;
+use App\Support\Authorization\PermissionCatalog;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Builder;
 use Rappasoft\LaravelLivewireTables\Views\Column;
@@ -14,6 +17,13 @@ use App\Models\Company;
 
 class GbxTable extends DataTableComponent
 {
+    use AuthorizesComponentAccess;
+
+    protected function canAccessComponent(User $user): bool
+    {
+        return $user->can(PermissionCatalog::GBX_ACCESS);
+    }
+
     // protected $model = Gbx::class;
     public function builder(): Builder
     {
@@ -243,7 +253,7 @@ class GbxTable extends DataTableComponent
                 ->html(),
         ];
 
-        if (auth()->user()->hasRole('admin')) {
+        if (auth()->user()->canViewGbxFinance()) {
             $columns[] = Column::make("Valore", "value")->format(fn($v) => $v ? number_format($v, 2, ',', '.') . ' €' : '-')->sortable();
             $columns[] = Column::make("Pagato Impresa", "company_paid")->format(fn($v) => $v ? number_format($v, 2, ',', '.') . ' €' : '-')->sortable();
             $columns[] = Column::make("Pagato Bezzi", "bezzi_paid")->format(fn($v) => $v ? number_format($v, 2, ',', '.') . ' €' : '-')->sortable();

@@ -9,7 +9,7 @@ class OperatorWorkspaceController extends Controller
 {
     public function show(User $user)
     {
-        abort_unless($user->can('get works'), 404);
+        abort_unless($user->isWorksOperator(), 404);
 
         return view('admin.operators.show', [
             'operator' => $user,

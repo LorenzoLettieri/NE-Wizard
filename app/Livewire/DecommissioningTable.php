@@ -6,6 +6,8 @@ use App\Models\Company;
 use App\Models\Decommissioning;
 use App\Models\Regione;
 use App\Models\User;
+use App\Livewire\Concerns\AuthorizesComponentAccess;
+use App\Support\Authorization\PermissionCatalog;
 use App\Support\StatusBadge;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
@@ -18,6 +20,13 @@ use Rappasoft\LaravelLivewireTables\Views\Filters\TextFilter;
 
 class DecommissioningTable extends DataTableComponent
 {
+    use AuthorizesComponentAccess;
+
+    protected function canAccessComponent(User $user): bool
+    {
+        return $user->can(PermissionCatalog::DECO_ACCESS);
+    }
+
     protected $listeners = [
         'decommissioningUpdated' => '$refresh',
     ];
@@ -28,7 +37,7 @@ class DecommissioningTable extends DataTableComponent
             ->with(['company', 'central', 'comune', 'regione', 'progettista'])
             ->withCount('media');
 
-        if (Auth::user()->hasRole('admin')) {
+        if (Auth::user()->canViewAllDecommissionings()) {
             return $query;
         }
 
@@ -88,7 +97,7 @@ class DecommissioningTable extends DataTableComponent
                 ->filter(fn (Builder $builder, string $value) => $builder->where('regione_id', $value)),
 
             SelectFilter::make('Progettista', 'progettista_id')
-                ->options(['' => 'Tutti'] + User::role('Deco')->orderBy('name')->pluck('name', 'id')->toArray())
+                ->options(['' => 'Tutti'] + User::permission(PermissionCatalog::DECO_ASSIGNABLE)->orderBy('name')->pluck('name', 'id')->toArray())
                 ->filter(fn (Builder $builder, string $value) => $builder->where('progettista_id', $value)),
 
             DateRangeFilter::make('FL Permesso', 'fl_permesso')
@@ -209,32 +218,30 @@ class DecommissioningTable extends DataTableComponent
                     : '<span class="badge rounded-pill text-bg-danger" title="Nessun allegato"><i class="bi bi-x-lg"></i></span>')
                 ->html(),
 
-            Column::make('Tot Prog', 'tot_prog')
-                ->format(fn ($value) => number_format((float) $value, 2, ',', '.') . ' €')
-                ->hideIf(! Auth::user()->hasRole('admin')),
+            // Colonne economiche: aggiunte solo a chi può vederle, non solo nascoste,
+            // così non si possono nemmeno ordinare o filtrare dal browser
+            ...(Auth::user()->canViewDecommissioningFinance() ? [
+                Column::make('Tot Prog', 'tot_prog')
+                    ->format(fn ($value) => number_format((float) $value, 2, ',', '.') . ' €'),
 
-            Column::make('Tot NE', 'tot_ne')
-                ->format(fn ($value) => number_format((float) $value, 2, ',', '.') . ' €')
-                ->hideIf(! Auth::user()->hasRole('admin')),
+                Column::make('Tot NE', 'tot_ne')
+                    ->format(fn ($value) => number_format((float) $value, 2, ',', '.') . ' €'),
 
-            Column::make('Agio', 'agio')
-                ->format(fn ($value) => number_format((float) $value, 2, ',', '.') . ' €')
-                ->hideIf(! Auth::user()->hasRole('admin')),
+                Column::make('Agio', 'agio')
+                    ->format(fn ($value) => number_format((float) $value, 2, ',', '.') . ' €'),
 
-            Column::make('Pagata Prog', 'pagata_prog')
-                ->format(fn ($value) => $value ? 'SI' : 'NO')
-                ->hideIf(! Auth::user()->hasRole('admin')),
+                Column::make('Pagata Prog', 'pagata_prog')
+                    ->format(fn ($value) => $value ? 'SI' : 'NO'),
 
-            Column::make('Pagata NE', 'pagata_ne')
-                ->format(fn ($value) => $value ? 'SI' : 'NO')
-                ->hideIf(! Auth::user()->hasRole('admin')),
+                Column::make('Pagata NE', 'pagata_ne')
+                    ->format(fn ($value) => $value ? 'SI' : 'NO'),
 
-            Column::make('Val', 'val')
-                ->label(fn ($row) => $row->val
-                    ? '<span class="badge rounded-pill text-bg-success" title="Vero"><i class="bi bi-check-lg"></i></span>'
-                    : '<span class="badge rounded-pill text-bg-danger" title="Falso"><i class="bi bi-x-lg"></i></span>')
-                ->hideIf(! Auth::user()->hasRole('admin'))
-                ->html(),
+                Column::make('Val', 'val')
+                    ->label(fn ($row) => $row->val
+                        ? '<span class="badge rounded-pill text-bg-success" title="Vero"><i class="bi bi-check-lg"></i></span>'
+                        : '<span class="badge rounded-pill text-bg-danger" title="Falso"><i class="bi bi-x-lg"></i></span>')
+                    ->html(),
+            ] : []),
 
             Column::make('Azioni')
                 ->label(fn ($row) => view('decommissionings.decommissionings-table-actions', ['row' => $row]))

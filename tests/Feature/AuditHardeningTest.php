@@ -76,6 +76,9 @@ class AuditHardeningTest extends TestCase
         $first = Work::create(['status' => 'Da Lavorare']);
         $second = Work::create(['status' => 'Da Lavorare']);
 
+        // Il pulsante Elimina e il suo modal compaiono solo a chi può eliminare
+        $this->actingAs($this->superAdmin());
+
         $html = view('works.works-table-actions', ['row' => $first])->render()
             .view('works.works-table-actions', ['row' => $second])->render();
 

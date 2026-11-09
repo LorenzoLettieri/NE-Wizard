@@ -352,10 +352,11 @@ class ChunkedMediaUploadService
         }
 
         $authorized = match ($context) {
-            'work' => $user->hasAnyRole(['admin', 'supervisor']),
-            'gbx' => $user->hasAnyRole(['admin', 'GBX', 'GBX Supervisor']),
-            'permesso_ente' => $user->hasAnyRole(['admin', 'permessi ente']),
-            'decommissioning' => $user->hasAnyRole(['admin', 'Deco']),
+            // Senza record l'upload appartiene a un form di creazione
+            'work' => $user->can('create', Work::class),
+            'gbx' => $user->can('create', Gbx::class),
+            'permesso_ente' => $user->can('create', PermessoEnte::class),
+            'decommissioning' => $user->can('create', Decommissioning::class),
             default => false,
         };
 

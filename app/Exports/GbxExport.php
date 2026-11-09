@@ -2,7 +2,9 @@
 
 namespace App\Exports;
 
+use App\Exports\Concerns\RedactsColumns;
 use App\Models\Gbx;
+use App\Models\User;
 use Illuminate\Support\Carbon;
 use Maatwebsite\Excel\Concerns\Exportable;
 use Maatwebsite\Excel\Concerns\FromQuery;
@@ -18,11 +20,15 @@ class GbxExport implements FromQuery, WithMapping, WithHeadings, ShouldAutoSize,
 {
     use Exportable;
 
+    use RedactsColumns;
+
+    private const FINANCE_HEADINGS = ['Valore', 'Pagato Impresa', 'Pagato Bezzi', 'Pagato Progetto', 'Pagato DL'];
+
     protected string $dateField;
     protected Carbon $start;
     protected Carbon $end;
 
-    public function __construct(string $dateField, $startDate, $endDate)
+    public function __construct(string $dateField, $startDate, $endDate, protected User $visibleTo)
     {
         $this->dateField = $dateField;
         $this->start = Carbon::parse($startDate)->startOfDay();
@@ -37,10 +43,16 @@ class GbxExport implements FromQuery, WithMapping, WithHeadings, ShouldAutoSize,
                 'central:id,central,region',
             ])
             ->whereBetween($this->dateField, [$this->start, $this->end])
+            ->visibleTo($this->visibleTo)
             ->orderBy('id');
     }
 
-    public function headings(): array
+    protected function hiddenHeadings(): array
+    {
+        return $this->visibleTo->canViewGbxFinance() ? [] : self::FINANCE_HEADINGS;
+    }
+
+    protected function allHeadings(): array
     {
         return [
             'Data creazione',           // A
@@ -77,7 +89,7 @@ class GbxExport implements FromQuery, WithMapping, WithHeadings, ShouldAutoSize,
         ];
     }
 
-    public function map($gbx): array
+    protected function allValues($gbx): array
     {
         $dt = fn($d) => $d ? Carbon::parse($d)->timezone('Europe/Rome') : null;
 
@@ -116,7 +128,7 @@ class GbxExport implements FromQuery, WithMapping, WithHeadings, ShouldAutoSize,
         ];
     }
 
-    public function columnFormats(): array
+    protected function allColumnFormats(): array
     {
         return [
             'A' => NumberFormat::FORMAT_DATE_DDMMYYYY,

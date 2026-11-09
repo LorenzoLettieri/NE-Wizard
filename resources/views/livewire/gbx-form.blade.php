@@ -125,7 +125,7 @@
                 </div>
             </div>
 
-            @role('admin')
+            @if (auth()->user()->canEditGbxFinance())
             <h4 class="mt-5 mb-4 border-bottom pb-2">Contabilità</h4>
             <div class="row g-3">
                 <div class="col-md-2">
@@ -164,7 +164,7 @@
                     </div>
                 </div>
             </div>
-            @endrole
+            @endif
 
             <h4 class="mt-5 mb-4 border-bottom pb-2">Media</h4>
             <div class="row g-3">

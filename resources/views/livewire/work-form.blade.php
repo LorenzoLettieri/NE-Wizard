@@ -24,6 +24,7 @@
                     <x-tom-select model="company_id" :options="$companies->pluck('name', 'id')" />
                 </div>
 
+                @if (auth()->user()->canManageWorks())
                 <div class="col-12 col-md-4 mb-4">
                     <label for="status" class="form-label">Stato Lavorazione:</label>
                     <select wire:model="status" class="form-select">
@@ -32,6 +33,7 @@
                         @endforeach
                     </select>
                 </div>
+                @endif
 
                 <div class="col-12 col-md-4 mb-4">
                     <label for="" class="form-label">Centrale:</label>
@@ -102,10 +104,12 @@
                     <input type="unica_number" class="form-control" id="unica_number" wire:model="unica_number"
                         placeholder="">
                 </div>
+                @if (auth()->user()->canManageWorks())
                 <div class="col-12 col-md-6 mb-4">
                     <label for="expected_delivery_date" class="form-label">Data prevista consegna:</label>
                     <input type="date" class="form-control" id="expected_delivery_date" wire:model="expected_delivery_date">
                 </div>
+                @endif
                 <div class="col-4 col-md-4 mb-4">
                     <label for="go_live" class="form-label">Go Live:</label>
                     <select wire:model="go_live" class="form-select">
@@ -126,10 +130,12 @@
                     <label for="notes" class="form-label">Note:</label>
                     <textarea class="form-control" id="notes" rows="5" wire:model="notes"></textarea>
                 </div>
+                @if (auth()->user()->canManageWorks())
                 <div class="col-12 col-md-12 mb-4">
                     <label for="phase" class="form-label">Assegna Lavorazione ad Operatore:</label>
                     <x-tom-select model="operator_id" :options="$operators->pluck('name', 'id')" multiple />
                 </div>
+                @endif
             </div>
 
             <h4 class="mt-4 mb-4 border-bottom pb-2">Media</h4>

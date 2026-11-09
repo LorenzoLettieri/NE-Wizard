@@ -60,7 +60,7 @@
                 </div>
                 <div class="container">
                     <div class="row my-3">
-                        @hasanyrole('admin|supervisor')
+                        @if (auth()->user()->canViewAllWorks())
                         <div class="col-12 col-md-4">
                             <a href="{{route('works-table')}}" class="text-decoration-none">
                                 <div
@@ -69,8 +69,8 @@
                                 </div>
                             </a>
                         </div>
-                        @endhasanyrole
-                        @can('get gbx')
+                        @endif
+                        @can('gbx.access')
                             <div class="col-12 col-md-4">
                                 <a href="{{route('gbxes-table')}}" class="text-decoration-none">
                                     <div class="border border-black rounded-4 p-4 d-flex justify-content-between hover-lighten">
@@ -79,7 +79,7 @@
                                 </a>
                             </div>
                         @endcan
-                        @can('get works')
+                        @can('works.operate')
                             <div class="col-12 col-md-4">
                                 <a href="{{route(name: 'operator-table')}}" class="text-decoration-none">
                                     <div class="border border-black rounded-4 p-4 d-flex justify-content-between hover-lighten">
@@ -88,7 +88,7 @@
                                 </a>
                             </div>
                         @endcan
-                        @hasanyrole('admin|permessi ente')
+                        @can('permessi.access')
                         <div class="col-12 col-md-4">
                             <a href="{{route('permessi-ente.table')}}" class="text-decoration-none">
                                 <div class="border border-black rounded-4 p-4 d-flex justify-content-between hover-lighten">
@@ -96,8 +96,8 @@
                                 </div>
                             </a>
                         </div>
-                        @endhasanyrole
-                        @can('get decommissioning')
+                        @endcan
+                        @can('deco.access')
                         <div class="col-12 col-md-4 mt-3">
                             <a href="{{route('decommissionings.table')}}" class="text-decoration-none">
                                 <div class="border border-black rounded-4 p-4 d-flex justify-content-between hover-lighten">
@@ -108,7 +108,7 @@
                         @endcan
                     </div>
                     <div class="row my-3">
-                        @role('admin')
+                        @if (auth()->user()->isSuperAdmin())
                         <div class="col-12 col-md-4">
                             <a href="{{route('accounts-table')}}" class="text-decoration-none">
                                 <div
@@ -117,7 +117,7 @@
                                 </div>
                             </a>
                         </div>
-                        @endrole
+                        @endif
                     </div>
                 </div>
             @endauth

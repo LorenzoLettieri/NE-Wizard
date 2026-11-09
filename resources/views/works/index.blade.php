@@ -4,19 +4,21 @@
             <div class="col-12 mt-3 d-flex justify-content-center align-items-center">
                 <h1 class="text-center mx-3">Tabella Lavorazioni</h1>
                 
-                {{-- Pulsante + già presente --}}
+                @can('create', \App\Models\Work::class)
                 <div>
                     <a type="button" class="btn btn-success mx-2" href="{{ route('addWork') }}">
                         <i class="bi bi-plus"></i>
                     </a>
                 </div>
+                @endcan
 
-                {{-- NUOVO: Pulsante Export che apre la modale --}}
+                @can('works.export')
                 <div>
                     <button type="button" class="btn btn-outline-primary mx-2" data-bs-toggle="modal" data-bs-target="#exportModal">
                         <i class="bi bi-file-earmark-spreadsheet"></i> Export
                     </button>
                 </div>
+                @endcan
             </div>
 
             <div class="col-12">

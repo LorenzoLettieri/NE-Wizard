@@ -3,16 +3,24 @@
 namespace App\Livewire;
 
 use App\Domain\OperatorActivity\OperatorActivityBuilder;
+use App\Livewire\Concerns\AuthorizesComponentAccess;
 use App\Models\Timesheet;
 use App\Models\User;
 use App\Models\Work;
+use App\Support\Authorization\PermissionCatalog;
 use Carbon\Carbon;
 use Livewire\Component;
 use Livewire\WithPagination;
 
 class AdminTimesheetDashboard extends Component
 {
+    use AuthorizesComponentAccess;
     use WithPagination;
+
+    protected function canAccessComponent(User $user): bool
+    {
+        return $user->can(PermissionCatalog::TIMESHEETS_MANAGE);
+    }
 
     // Detailed View Filters
     public $viewDate; // Specific day
@@ -64,7 +72,7 @@ class AdminTimesheetDashboard extends Component
     public function getMonthlyReportProperty()
     {
         // Get all users (or filtered)
-        $usersQuery = User::role('operator');
+        $usersQuery = User::permission(PermissionCatalog::TIMESHEETS_TRACKED);
         if ($this->reportSearch) {
             $usersQuery->where('name', 'like', '%' . $this->reportSearch . '%');
         }

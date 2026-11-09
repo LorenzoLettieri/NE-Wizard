@@ -3,7 +3,10 @@
 namespace App\Livewire;
 
 use App\Models\Gbx;
+use App\Models\User;
 use App\Models\Company;
+use App\Livewire\Concerns\AuthorizesComponentAccess;
+use App\Support\Authorization\PermissionCatalog;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Livewire\Component;
 use Livewire\Attributes\On;
@@ -12,7 +15,13 @@ use App\Livewire\Concerns\HandlesMediaUploads;
 
 class GbxEdit extends Component
 {
+    use AuthorizesComponentAccess;
     use AuthorizesRequests;
+
+    protected function canAccessComponent(User $user): bool
+    {
+        return $user->can(PermissionCatalog::GBX_ACCESS);
+    }
     use WithFileUploads;
     use HandlesMediaUploads;
 
@@ -35,7 +44,16 @@ class GbxEdit extends Component
 
         $this->resetValidation();
         $this->gbx = $gbx;
-        $this->fill($this->gbx->toArray());
+
+        // Le proprietà pubbliche finiscono nello snapshot Livewire della pagina:
+        // chi non vede la contabilità non deve ricevere valore e pagamenti nemmeno nascosti
+        $attributes = $this->gbx->toArray();
+
+        if (! auth()->user()->canViewGbxFinance()) {
+            $attributes = array_merge($attributes, array_fill_keys(GbxForm::FINANCE_FIELDS, null));
+        }
+
+        $this->fill($attributes);
         $this->files = [];
         $this->initializeChunkedMediaUploads('gbx', $this->gbx->id);
         $this->clearUploadFeedback();
@@ -58,7 +76,7 @@ class GbxEdit extends Component
             'date' => 'nullable|date',
         ] + $this->mediaUploadValidationRules());
 
-        $this->gbx->update($this->except([
+        $data = $this->except([
             'centrals',
             'companies',
             'gbx',
@@ -69,7 +87,15 @@ class GbxEdit extends Component
             'mediaUploadModelId',
             'mediaUploadFormToken',
             'completedUploadSessionIds',
-        ]));
+        ]);
+
+        // Valore e pagamenti si scrivono solo con il permesso di modifica della contabilità:
+        // altrimenti restano quelli salvati, qualunque valore arrivi dal browser
+        if (! auth()->user()->canEditGbxFinance()) {
+            $data = array_diff_key($data, array_flip(GbxForm::FINANCE_FIELDS));
+        }
+
+        $this->gbx->update($data);
 
         $uploadedCount = 0;
         if ($this->files) {

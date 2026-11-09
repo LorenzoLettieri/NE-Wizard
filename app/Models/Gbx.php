@@ -59,13 +59,13 @@ class Gbx extends Model
     // Stessa regola della policy: chi non gestisce tutti i GBX vede solo quelli della propria impresa
     public function scopeVisibleTo(Builder $query, User $user): Builder
     {
-        if ($user->canManageAllGbx()) {
+        if ($user->canViewAllGbx()) {
             return $query;
         }
 
         $companyName = $user->company?->name;
 
-        if ($companyName === null) {
+        if ($companyName === null || ! $user->can(\App\Support\Authorization\PermissionCatalog::GBX_ACCESS)) {
             return $query->whereRaw('1 = 0');
         }
 

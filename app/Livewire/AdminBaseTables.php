@@ -2,8 +2,12 @@
 
 namespace App\Livewire;
 
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 use Livewire\WithPagination;
+use App\Livewire\Concerns\AuthorizesComponentAccess;
+use App\Models\User;
+use App\Support\Authorization\PermissionCatalog;
 use App\Models\Central;
 use App\Models\Comune;
 use App\Models\Regione;
@@ -17,13 +21,47 @@ use Illuminate\Support\Facades\Cache;
 
 class AdminBaseTables extends Component
 {
+    use AuthorizesComponentAccess;
     use WithPagination;
 
     private const PER_PAGE = 20;
 
+    // Anagrafiche: settings.base-tables
+    public const BASE_TABS = ['Central', 'Comune', 'Regione', 'Company', 'WorkPhase', 'NetworkScope'];
+
+    // Prezzi e obiettivi economici: settings.rates
+    public const RATE_TABS = ['CompanyWorkPhaseRate', 'CompanyDecommissioningRate', 'ProductionTarget'];
+
     protected $paginationTheme = 'bootstrap';
 
+    // Bloccato: si cambia solo da setTab(), che controlla i permessi della scheda
+    #[Locked]
     public $activeTab = 'Central';
+
+    protected function canAccessComponent(User $user): bool
+    {
+        return $this->canUseTab((string) $this->activeTab);
+    }
+
+    public function canUseTab(string $tab): bool
+    {
+        $user = auth()->user();
+
+        if ($user === null) {
+            return false;
+        }
+
+        return match (true) {
+            in_array($tab, self::BASE_TABS, true) => $user->can(PermissionCatalog::SETTINGS_BASE_TABLES),
+            in_array($tab, self::RATE_TABS, true) => $user->can(PermissionCatalog::SETTINGS_RATES),
+            default => false,
+        };
+    }
+
+    private function assertCanManageRates(): void
+    {
+        abort_unless(auth()->user()?->can(PermissionCatalog::SETTINGS_RATES) ?? false, 403);
+    }
     public string $search = '';
     
     // Modal states
@@ -55,10 +93,19 @@ class AdminBaseTables extends Component
     public function mount()
     {
         $this->resetForm();
+
+        // Si apre la prima scheda consentita (chi ha solo le tariffe non vede le anagrafiche)
+        $firstAllowed = collect(array_merge(self::BASE_TABS, self::RATE_TABS))->first(fn (string $tab) => $this->canUseTab($tab));
+
+        if ($firstAllowed !== null && $firstAllowed !== $this->activeTab) {
+            $this->setTab($firstAllowed);
+        }
     }
 
     public function setTab($tab)
     {
+        abort_unless(is_string($tab) && $this->canUseTab($tab), 403);
+
         $this->activeTab = $tab;
         $this->search = '';
         $this->resetPage();
@@ -257,6 +304,8 @@ class AdminBaseTables extends Component
 
     public function saveRate(int $companyId, int $workPhaseId): void
     {
+        $this->assertCanManageRates();
+
         $value = $this->rateValues[$companyId][$workPhaseId] ?? null;
         $value = is_string($value) ? str_replace(',', '.', trim($value)) : $value;
 
@@ -302,6 +351,8 @@ class AdminBaseTables extends Component
 
     public function saveDecommissioningRate(int $companyId, int $itemIndex): void
     {
+        $this->assertCanManageRates();
+
         abort_unless(array_key_exists($itemIndex, CompanyDecommissioningRate::ITEM_LABELS), 404);
 
         $values = $this->decommissioningRateValues[$companyId][$itemIndex] ?? [];
@@ -374,6 +425,8 @@ class AdminBaseTables extends Component
 
     public function saveProductionTarget(): void
     {
+        $this->assertCanManageRates();
+
         $amount = $this->normalizeDecimalInput($this->productionTargetValues['monthly_amount_target'] ?? null);
         $score = $this->normalizeDecimalInput($this->productionTargetValues['daily_score_target'] ?? null);
 

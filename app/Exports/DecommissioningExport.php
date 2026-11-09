@@ -2,7 +2,9 @@
 
 namespace App\Exports;
 
+use App\Exports\Concerns\RedactsColumns;
 use App\Models\Decommissioning;
+use App\Models\User;
 use Illuminate\Support\Carbon;
 use Maatwebsite\Excel\Concerns\Exportable;
 use Maatwebsite\Excel\Concerns\FromQuery;
@@ -17,16 +19,28 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 class DecommissioningExport implements FromQuery, WithMapping, WithHeadings, ShouldAutoSize, WithColumnFormatting, WithStyles
 {
     use Exportable;
+    use RedactsColumns;
 
     protected string $dateField;
     protected Carbon $start;
     protected Carbon $end;
 
-    public function __construct(string $dateField, $startDate, $endDate)
+    private const FINANCE_HEADINGS = [
+        'Prog 1.0', 'Prog 2.0', 'Prog 3.0', 'Prog 4.0', 'Prog 5.0', 'Prog 6.0',
+        'NE 1.0', 'NE 2.0', 'NE 3.0', 'NE 4.0', 'NE 5.0', 'NE 6.0',
+        'Tot Prog', 'Tot NE', 'Agio', 'Pagata Prog', 'Pagata NE', 'Val',
+    ];
+
+    public function __construct(string $dateField, $startDate, $endDate, protected User $visibleTo)
     {
         $this->dateField = $dateField;
         $this->start = Carbon::parse($startDate)->startOfDay();
         $this->end = Carbon::parse($endDate)->endOfDay();
+    }
+
+    protected function hiddenHeadings(): array
+    {
+        return $this->visibleTo->canViewDecommissioningFinance() ? [] : self::FINANCE_HEADINGS;
     }
 
     public function query()
@@ -40,10 +54,14 @@ class DecommissioningExport implements FromQuery, WithMapping, WithHeadings, Sho
                 'progettista:id,name',
             ])
             ->whereBetween($this->dateField, [$this->start, $this->end])
+            ->when(
+                ! $this->visibleTo->canViewAllDecommissionings(),
+                fn ($query) => $query->where('progettista_id', $this->visibleTo->getKey())
+            )
             ->orderBy('id');
     }
 
-    public function headings(): array
+    protected function allHeadings(): array
     {
         return [
             'Data inserimento',
@@ -86,7 +104,7 @@ class DecommissioningExport implements FromQuery, WithMapping, WithHeadings, Sho
         ];
     }
 
-    public function map($decommissioning): array
+    protected function allValues($decommissioning): array
     {
         $dt = fn($value) => $value ? Carbon::parse($value)->timezone('Europe/Rome') : null;
 
@@ -131,7 +149,7 @@ class DecommissioningExport implements FromQuery, WithMapping, WithHeadings, Sho
         ];
     }
 
-    public function columnFormats(): array
+    protected function allColumnFormats(): array
     {
         return [
             'A' => NumberFormat::FORMAT_DATE_DDMMYYYY,
