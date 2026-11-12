@@ -23,6 +23,13 @@ class DecommissioningController extends Controller
         return view('decommissionings.create');
     }
 
+    public function import()
+    {
+        abort_unless(request()->user()->canImportDecommissionings(), 403);
+
+        return view('decommissionings.import');
+    }
+
     public function edit($id)
     {
         $decommissioning = Decommissioning::findOrFail($id);

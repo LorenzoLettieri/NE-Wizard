@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class Decommissioning extends Model
 {
+    public const STATUSES = ['Da Lavorare', 'In Lavorazione', 'Sospeso', 'Fine Lavori', 'Annullato'];
+
     protected $fillable = [
         'company_id',
         'clli',

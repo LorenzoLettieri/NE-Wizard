@@ -176,7 +176,7 @@ class DecommissioningForm extends Component
             'permesso_ente' => 'nullable|string|max:255',
             'fl_permesso' => 'nullable|date',
             'note_permesso' => 'nullable|string',
-            'status' => ['required', Rule::in(['Da Lavorare', 'In Lavorazione', 'Sospeso', 'Fine Lavori', 'Annullato'])],
+            'status' => ['required', Rule::in(Decommissioning::STATUSES)],
             'data_il' => 'nullable|date',
             'data_fl' => 'nullable|date',
             'qty_1' => 'nullable|integer|min:0',

@@ -194,6 +194,12 @@ class User extends Authenticatable
             && $this->can(PermissionCatalog::DECO_FINANCE_EDIT);
     }
 
+    public function canImportDecommissionings(): bool
+    {
+        // L'import è una modifica massiva: serve anche il permesso di modifica
+        return $this->hasAllAbilities(PermissionCatalog::DECO_ACCESS, PermissionCatalog::DECO_EDIT, PermissionCatalog::DECO_IMPORT);
+    }
+
     public function canViewDecommissioningReport(): bool
     {
         // Il report è fatto di totali economici

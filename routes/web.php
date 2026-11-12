@@ -100,6 +100,7 @@ Route::middleware(['auth', 'permission:permessi.access'])->group(function () {
 Route::middleware(['auth', 'permission:deco.access'])->group(function () {
     Route::get('/decommissionings/table', [DecommissioningController::class, 'index'])->name('decommissionings.table');
     Route::get('/decommissionings/create', [DecommissioningController::class, 'create'])->name('addDecommissioning')->middleware('permission:deco.create');
+    Route::get('/decommissionings/import', [DecommissioningController::class, 'import'])->name('decommissionings.import');
     Route::get('/decommissionings/edit/{id}', [DecommissioningController::class, 'edit'])->name('editDecommissioning');
     Route::delete('/decommissionings/delete/{decommissioning}', [DecommissioningController::class, 'delete'])->name('deleteDecommissioning');
     Route::get('/exports/decommissionings', [DecommissioningController::class, 'download'])->name('exports.decommissionings')->middleware('permission:deco.export');

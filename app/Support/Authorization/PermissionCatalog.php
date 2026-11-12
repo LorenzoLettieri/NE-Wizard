@@ -62,6 +62,7 @@ final class PermissionCatalog
     public const DECO_EDIT = 'deco.edit';
     public const DECO_DELETE = 'deco.delete';
     public const DECO_EXPORT = 'deco.export';
+    public const DECO_IMPORT = 'deco.import';
     public const DECO_FINANCE_VIEW = 'deco.finance.view';
     public const DECO_FINANCE_EDIT = 'deco.finance.edit';
     public const DECO_REPORT = 'deco.report';
@@ -128,6 +129,7 @@ final class PermissionCatalog
                 self::DECO_EDIT => 'Modifica decommissioning visibili',
                 self::DECO_DELETE => 'Elimina decommissioning',
                 self::DECO_EXPORT => 'Export Excel (senza importi se manca la contabilità)',
+                self::DECO_IMPORT => 'Import Excel: modifica massiva dei decommissioning visibili (importi solo con la modifica della contabilità)',
                 self::DECO_FINANCE_VIEW => 'Contabilità: vede importi, pagamenti e Val',
                 self::DECO_FINANCE_EDIT => 'Contabilità: modifica importi, pagamenti e Val',
                 self::DECO_REPORT => 'Report Deco (contiene importi: serve anche la visione della contabilità)',
@@ -199,6 +201,7 @@ final class PermissionCatalog
             self::DECO_EDIT => self::DECO_ACCESS,
             self::DECO_DELETE => self::DECO_ACCESS,
             self::DECO_EXPORT => self::DECO_ACCESS,
+            self::DECO_IMPORT => self::DECO_EDIT,
             self::DECO_FINANCE_VIEW => self::DECO_ACCESS,
             self::DECO_FINANCE_EDIT => self::DECO_FINANCE_VIEW,
             self::DECO_REPORT => self::DECO_FINANCE_VIEW,

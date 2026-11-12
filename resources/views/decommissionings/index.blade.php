@@ -19,6 +19,14 @@
                         </button>
                     </div>
                 @endcan
+
+                @if (auth()->user()->canImportDecommissionings())
+                    <div>
+                        <a class="btn btn-outline-primary mx-2" href="{{ route('decommissionings.import') }}">
+                            <i class="bi bi-file-earmark-arrow-up"></i> Import
+                        </a>
+                    </div>
+                @endif
             </div>
 
             <div class="col-12">
